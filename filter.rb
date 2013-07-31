@@ -58,9 +58,6 @@ module Filter
               Array.new(newHeight * newWidth){|index| 0}]
 
       threadLambda = lambda{|rowStart, numRows, colStart, numCols|
-         #TEST
-         puts "In lambda: #{rowStart}"
-
          for row in rowStart...(rowStart + numRows)
             for col in colStart...(colStart + numCols)
                r = 0.0
@@ -134,21 +131,9 @@ module Filter
       currentRow = rowStart
 
       for i in 0...numThreads
-         #TEST
-         puts "Init: #{currentRow}"
-
          pool << Thread.new(currentRow){|rowStart|
-            #TEST
-            puts "Thread start: #{currentRow}"
-
             workLambda.call(rowStart, rowDelta, colStart, colEnd)
-            #TEST
-            puts "Thread done: #{currentRow}"
-
          }
-
-         #TEST
-         puts "Back to main: #{currentRow}"
 
          currentRow += rowDelta
       end

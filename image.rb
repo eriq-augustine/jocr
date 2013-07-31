@@ -1,18 +1,22 @@
 # the internal representation for images.
 # Currently just the rgba channels.
 
-require 'vips'
 require 'RMagick'
 
-include VIPS
+require './base'
 
-# Some ImageMagick installs default to a quantum depth of 16.
-# 16 bits per pixel.
+R = 0
+G = 1
+B = 2
+A = 3
+
+# Some ImageMagick installs default to a quantum depth of 16 (16 bits per pixel).
 # For simplicity/consistency, they will be converted to a standard depth of 8.
 DESIRED_QUANTUM_DEPTH = 8
 QUANTUM_CONVERSION_FACTOR = ((2.0 ** DESIRED_QUANTUM_DEPTH) - 1) /
                             ((2.0 ** Magick::QuantumDepth) - 1)
 
+# Images should be immutable.
 class InternalImage
    def self.read(filename)
       image = Magick::Image.read(filename)[0]
@@ -37,7 +41,12 @@ class InternalImage
                                rgba[0], rgba[1], rgba[2], rgba[3])
    end
 
+   attr_reader :width, :height
+
    def initialize(width, height, r, g, b, a)
+      assert(r.length == g.length && r.length == b.length && r.length == a.length)
+      assert(width * height == r.length)
+
       @width = width
       @height = height
 
@@ -45,6 +54,24 @@ class InternalImage
       @g = g
       @b = b
       @a = a
+   end
+
+   def pixel(x, y)
+      index = index(x, y)
+      return [@r[index], @g[index], @b[index], @a[index]]
+   end
+
+   # Average rgb bands.
+   def avg(x, y)
+      index = index(x, y)
+      return (@r[index] + @g[index] + @b[index]) / 3.0
+   end
+
+   def index(x, y)
+      assert(x >= 0 && x < @width)
+      assert(y >= 0 && y < @height)
+
+      return y * @width + x
    end
 
    def write(basename)
@@ -63,7 +90,3 @@ class InternalImage
       image.write("#{basename}.png")
    end
 end
-
-#TEST
-img = InternalImage::read('testImages/testAlpha.png')
-img.write('asd')

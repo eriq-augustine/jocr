@@ -46,4 +46,14 @@ public class Util {
    public static String itterationDir(String baseDir) {
       return itterationDir(baseDir, "");
    }
+
+   // Convert a 1D index to the row the index is on.
+   public static int indexToRow(int index, int width) {
+      return index / width;
+   }
+
+   // Convert a 1D index to the col the index is on.
+   public static int indexToCol(int index, int width) {
+      return index - (indexToRow(index, width) * width);
+   }
 }

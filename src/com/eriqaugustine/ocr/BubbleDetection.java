@@ -18,6 +18,11 @@ import magick.PixelPacket;
 
 public class BubbleDetection {
    public static final int DEFAULT_MIN_BLOB_SIZE = 2000;
+   public static final double DEFAULT_MIN_BLOB_DENSITY = 0.65;
+
+   public static Map<Integer, Blob> getBlobs(MagickImage image) throws Exception {
+      return null;
+   }
 
    /**
     * Color all the text bubbles.
@@ -26,7 +31,7 @@ public class BubbleDetection {
     * White pixels are edges.
     */
    public static MagickImage findBubbles(MagickImage image) throws Exception {
-      // TODO(eriq): Take in base image and do all necessary transforms.
+      image = Filters.bw(image, 40).edgeImage(3);
 
       Dimension dimensions = image.getDimension();
 
@@ -35,13 +40,24 @@ public class BubbleDetection {
       byte[] pixels = Filters.bwPixels(image);
 
       // {blob start point (blob identifier) -> blob size}
-      Map<Integer, Integer> blobs = new HashMap<Integer, Integer>();
+      Map<Integer, Blob> blobs = new HashMap<Integer, Blob>();
+      // TODO(eriq): May not need this because of Blob change.
       // {pixel index -> blob identifier)}
-      Map<Integer, Integer> pixelLookup = new HashMap<Integer, Integer>();
+      Map<Integer, Integer> pixelLookup =
+         new HashMap<Integer, Integer>(pixels.length / 3);
       getBlobs(dimensions.width, pixels, blobs, pixelLookup);
 
       // Fill the blobs.
-      fillBlobs(pixels, blobs, dimensions.width);
+      fillBlobs(pixels, blobs);
+
+      //TEST
+      System.out.println("Num Blobs: " + blobs.size() + "\n");
+      for (Map.Entry<Integer, Blob> blobEntry : blobs.entrySet()) {
+         System.out.println(String.format("%d => %d (%f)",
+                                          blobEntry.getKey(),
+                                          blobEntry.getValue().size(),
+                                          blobEntry.getValue().density()));
+      }
 
       MagickImage newImage = new MagickImage();
       newImage.constituteImage(dimensions.width, dimensions.height,
@@ -54,49 +70,15 @@ public class BubbleDetection {
    /**
     * Modify |pixels| to fill in all the blobs as red.
     */
-   private static void fillBlobs(byte[] pixels,
-                                 Map<Integer, Integer> blobs,
-                                 int width) {
-      boolean[] visited = new boolean[pixels.length / 3];
-      Queue<Integer> toVisit = new LinkedList<Integer>();
-
-      // All the offsets to check for blobs.
-      // left, right, up, down
-      int[] offsets = {-1, 1,
-                       -1 * width, 1 * width};
-
-      // Fill the visited pixels with edges.
-      for (int i = 0; i < visited.length; i++) {
-         if ((0xFF & pixels[i * 3]) == 255) {
-            visited[i] = true;
-         }
-      }
-
-      for (Integer blobStart : blobs.keySet()) {
-         toVisit.add(blobStart);
-         visited[blobStart.intValue()] = true;
-
-         while (!toVisit.isEmpty()) {
-            int index = toVisit.remove().intValue();
+   private static void fillBlobs(byte[] pixels, Map<Integer, Blob> blobs) {
+      for (Blob blob : blobs.values()) {
+         for (Integer index : blob.getPoints()) {
+            int pixelIndex = index.intValue() * 3;
 
             // Mark the blobs as red.
-            int pixelIndex = index * 3;
             pixels[pixelIndex + 0] = (byte)0xFF;
             pixels[pixelIndex + 1] = 0;
             pixels[pixelIndex + 2] = 0;
-
-            // Check all neighbors
-            // No need to check color, only visited is necessary
-            //  since the edges have already been marked as visited.
-            for (int offset : offsets) {
-               int newIndex = index + offset;
-               if (inBoundsAdjacent(index, newIndex, width, visited.length) &&
-                   !visited[newIndex]) {
-                  toVisit.add(newIndex);
-                  // Mark as visited a little early so that it is not added multiple times.
-                  visited[newIndex] = true;
-               }
-            }
          }
       }
    }
@@ -107,7 +89,7 @@ public class BubbleDetection {
     *  it has RGB.
     */
    private static void getBlobs(int width, byte[] pixels,
-                                Map<Integer, Integer> blobs,
+                                Map<Integer, Blob> blobs,
                                 Map<Integer, Integer> pixelLookup) {
       blobs.clear();
       pixelLookup.clear();
@@ -127,22 +109,19 @@ public class BubbleDetection {
          }
       }
 
-      Set<Integer> blobSet = new HashSet<Integer>();
-
       // Depth-first w.r.t. blobs.
       for (int i = 0; i < visited.length; i++) {
          if (!visited[i]) {
-            int blobStart = i;
-            int blobSize = 0;
+            // Keep track of the dimensions of the blob for density calculations.
+            Blob blob = new Blob(visited.length, width);
 
-            toVisit.add(new Integer(blobStart));
-            visited[blobStart] = true;
+            toVisit.add(new Integer(i));
+            visited[i] = true;
 
-            blobSet.add(new Integer(blobStart));
+            blob.addPoint(i);
 
             while (!toVisit.isEmpty()) {
                int index = toVisit.remove().intValue();
-               blobSize++;
 
                // Check all neighbors
                // No need to check color, only visited is necessary
@@ -156,36 +135,22 @@ public class BubbleDetection {
                      // Mark as visited a little early so that it is not added multiple times.
                      visited[newIndex] = true;
 
-                     blobSet.add(new Integer(newIndex));
+                     blob.addPoint(newIndex);
                   }
                }
             }
 
-            if (blobSize > DEFAULT_MIN_BLOB_SIZE &&
-                !isBorderBlob(blobSet, width, visited.length)) {
-               blobs.put(blobStart, blobSize);
+            if (blob.size() > DEFAULT_MIN_BLOB_SIZE &&
+                !blob.isBorderBlob() &&
+                blob.density() >= DEFAULT_MIN_BLOB_DENSITY) {
+               blobs.put(blob.getStart(), blob);
 
-               for (Integer blobComponent : blobSet) {
-                  pixelLookup.put(blobComponent, blobStart);
+               for (Integer blobComponent : blob.getPoints()) {
+                  pixelLookup.put(blobComponent, blob.getStart());
                }
             }
-
-            blobSet.clear();
          }
       }
-   }
-
-   /**
-    * Check if the the blob represented by |blobSet| is the border blob
-    * (the blob the surrounds the initial borders of the image).
-    */
-   private static boolean isBorderBlob(Set<Integer> blobSet,
-                                       int width,
-                                       int length) {
-      return blobSet.contains(0) &&
-             blobSet.contains(length - 1) &&
-             blobSet.contains(width - 1) &&
-             blobSet.contains(length - width + 1);
    }
 
    // Endure that |index| is adjacent to |base|.
@@ -194,8 +159,7 @@ public class BubbleDetection {
                                            int width, int length) {
       int baseRowStart = base / width * width;
 
-      return index >= 0 &&
-             index < length &&
+      return index >= 0 && index < length &&
              // Vertical
              ((Math.abs(index - base) == width) ||
              // Horozontal, needs an extra check because of wrapping.

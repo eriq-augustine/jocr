@@ -12,6 +12,28 @@ public class Test {
       ImageInfo info = new ImageInfo("testImages/test.png");
       // ImageInfo info = new ImageInfo("testImages/testSmall.png");
 
+      MagickImage image = new MagickImage(info);
+      image.setFileName(outDirectory + "/test00-base.png");
+      image.writeImage(info);
+
+      MagickImage bubbles = BubbleDetection.findBubbles(image);
+      bubbles.setFileName(outDirectory + "/test01-bubbles.png");
+      bubbles.writeImage(info);
+
+      /*
+      MagickImage bw40 = Filters.bw(image, 40);
+      bw40.setFileName(outDirectory + "/test01-bw40.png");
+      bw40.writeImage(info);
+
+      MagickImage bwEdge = bw40.edgeImage(3);
+      bwEdge.setFileName(outDirectory + "/test02-bw40-edge.png");
+      bwEdge.writeImage(info);
+
+      MagickImage bwEdgeBubbles = BubbleDetection.findBubbles(bwEdge);
+      bwEdgeBubbles.setFileName(outDirectory + "/test03-bw40-edge-bubbles.png");
+      bwEdgeBubbles.writeImage(info);
+      */
+
       /*
       MagickImage image = new MagickImage(info);
       image.setFileName(outDirectory + "/test01-base.png");
@@ -63,10 +85,7 @@ public class Test {
       threshBlurEdge.writeImage(info);
       */
 
-      MagickImage image = new MagickImage(info);
-      image.setFileName(outDirectory + "/test00-base.png");
-      image.writeImage(info);
-
+      /*
       int count = 0;
       for (int threshold = 100; threshold >= 0; threshold -= 10) {
          MagickImage bw = Filters.bw(image, threshold);
@@ -90,19 +109,9 @@ public class Test {
       MagickImage bubbles = BubbleDetection.findBubbles(blur);
       bubbles.setFileName(outDirectory + "/test04-thresh-blur-edge-bubbles.png");
       bubbles.writeImage(info);
+      */
 
-      MagickImage bw40 = Filters.bw(image, 40);
-      bw40.setFileName(outDirectory + "/test05-bw40.png");
-      bw40.writeImage(info);
-
-      MagickImage bwEdge = bw40.edgeImage(3);
-      bwEdge.setFileName(outDirectory + "/test06-bw40-edge.png");
-      bwEdge.writeImage(info);
-
-      MagickImage bwEdgeBubbles = BubbleDetection.findBubbles(bwEdge);
-      bwEdgeBubbles.setFileName(outDirectory + "/test07-bw40-edge-bubbles.png");
-      bwEdgeBubbles.writeImage(info);
-
+      /*
       MagickImage bwBlur = bw40.blurImage(3, 1);
       bwBlur.setFileName(outDirectory + "/test08-bw40-blur.png");
       bwBlur.writeImage(info);
@@ -114,6 +123,7 @@ public class Test {
       MagickImage bwBlurEdgeBubbles = BubbleDetection.findBubbles(bwBlurEdge);
       bwBlurEdgeBubbles.setFileName(outDirectory + "/test10-bw40-blur-edge-bubbles.png");
       bwBlurEdgeBubbles.writeImage(info);
+      */
 
       /*
       MagickImage blur2 = blur.blurImage(2, 1);

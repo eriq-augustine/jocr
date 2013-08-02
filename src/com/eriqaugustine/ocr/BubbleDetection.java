@@ -18,7 +18,12 @@ import magick.PixelPacket;
 
 public class BubbleDetection {
    public static final int DEFAULT_MIN_BLOB_SIZE = 2000;
-   public static final double DEFAULT_MIN_BLOB_DENSITY = 0.65;
+
+   // The minimum density for a blob on the first pass.
+   public static final double DEFAULT_MIN_BLOB_DENSITY_1 = 0.40;
+
+   // Second pass.
+   public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.70;
 
    public static Map<Integer, Blob> getBubbles(MagickImage image) throws Exception {
       image = Filters.bw(image, 40).edgeImage(3);
@@ -28,7 +33,7 @@ public class BubbleDetection {
       // Note: bw pixels pulls out three values for each pixel.
       byte[] pixels = Filters.bwPixels(image);
 
-      // {blob start point (blob identifier) -> blob size}
+      // {blob identifier -> blob size}
       Map<Integer, Blob> blobs = getBlobs(dimensions.width, pixels);
 
       return blobs;
@@ -132,10 +137,17 @@ public class BubbleDetection {
                }
             }
 
+            // Do a quick check for size and border before shifting geometry.
             if (blob.size() > DEFAULT_MIN_BLOB_SIZE &&
                 !blob.isBorderBlob() &&
-                blob.density() >= DEFAULT_MIN_BLOB_DENSITY) {
-               blobs.put(blob.getStart(), blob);
+                blob.density() >= DEFAULT_MIN_BLOB_DENSITY_1) {
+               blob.gemoetryAdjust();
+
+               // Recheck the size after the geometry adjust.
+               if (blob.size() > DEFAULT_MIN_BLOB_SIZE &&
+                   blob.density() >= DEFAULT_MIN_BLOB_DENSITY_2) {
+                  blobs.put(blob.getId(), blob);
+               }
             }
          }
       }

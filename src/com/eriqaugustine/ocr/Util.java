@@ -56,4 +56,8 @@ public class Util {
    public static int indexToCol(int index, int width) {
       return index - (indexToRow(index, width) * width);
    }
+
+   public static int rowColToIndex(int row, int col, int width) {
+      return row * width + col;
+   }
 }

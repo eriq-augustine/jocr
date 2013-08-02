@@ -1,6 +1,8 @@
 package com.eriqaugustine.ocr;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Blob {
@@ -8,7 +10,12 @@ public class Blob {
    // Will be used in the initial size of the blob's set.
    public static final double BLOB_COVERAGE = 0.05;
 
-   private int start;
+   // The necessary percentage of points on an edge during adjustments.
+   public static final double SIDE_COVERAGE = 0.10;
+
+   private static int nextId = 0;
+
+   private int id;
    private Set<Integer> points;
 
    private int minRow;
@@ -20,7 +27,7 @@ public class Blob {
    private final int imageLength;
 
    public Blob(int imageLength, int imageWidth) {
-      start = -1;
+      id = nextId++;
       points = new HashSet<Integer>((int)(imageLength * BLOB_COVERAGE));
 
       minRow = Util.indexToRow(imageLength - 1, imageWidth);
@@ -33,10 +40,6 @@ public class Blob {
    }
 
    public void addPoint(int index) {
-      if (points.size() == 0) {
-         start = index;
-      }
-
       points.add(index);
 
       int row = Util.indexToRow(index, imageWidth);
@@ -64,22 +67,127 @@ public class Blob {
     * The density is percentage of the circumscribing rectangle covered by the blob.
     */
    public double density() {
-      //TEST
-      System.err.println(start + " -- " + size());
-      System.err.println("   " + minCol + " - " + maxCol);
-      System.err.println("   " + minRow + " - " + maxRow);
-      System.err.println("      " + ((maxCol - minCol + 1) * (maxRow - minRow + 1)));
-      System.err.println();
-
       return size() / (double)((maxCol - minCol + 1) * (maxRow - minRow + 1));
+   }
+
+   /**
+    * Adjust the geometry of the blob to be more regular.
+    * This shold be done after the blob is already constructed.
+    * This is allowd to add and drop points without consulting the actual image.
+    * As a result, blobs may not be disjoint.
+    */
+   public void gemoetryAdjust() {
+      adjustBoundaries();
+   }
+
+   /**
+    * Average the edges of the blob to be more rectangular.
+    * We will do this by shrinking the circumscribing rectangle until
+    *  each side has a significant amount of points on it.
+    */
+   private void adjustBoundaries() {
+      // The sides must be fixed all at the same time, or it would affect
+      //  the other sides.
+      boolean leftDone = false;
+      boolean rightDone = false;
+      boolean upDone = false;
+      boolean downDone = false;
+
+      while (!leftDone || !rightDone || !upDone || !downDone) {
+         if (maxRow <= minRow) {
+            upDone = true;
+            downDone = true;
+
+            if (maxRow < minRow) {
+               int temp = minRow;
+               minRow = maxRow;
+               maxRow = temp;
+            }
+         }
+
+         if (maxCol <= minCol) {
+            leftDone = true;
+            rightDone = true;
+
+            if (maxCol < minCol) {
+               int temp = minCol;
+               minCol = maxCol;
+               maxCol = temp;
+            }
+         }
+
+         if (!upDone) {
+            if (adjustEdge(minRow, minRow, minCol, maxCol)) {
+               minRow++;
+            } else {
+               upDone = true;
+            }
+         }
+
+         if (!rightDone) {
+            if (adjustEdge(minRow, maxRow, maxCol, maxCol)) {
+               maxCol--;
+            } else {
+               rightDone = true;
+            }
+         }
+
+         if (!downDone) {
+            if (adjustEdge(maxRow, maxRow, minCol, maxCol)) {
+               maxRow--;
+            } else {
+               downDone = true;
+            }
+         }
+
+         if (!leftDone) {
+            if (adjustEdge(minRow, maxRow, minCol, minCol)) {
+               minCol++;
+            } else {
+               leftDone = true;
+            }
+         }
+      }
+   }
+
+   /**
+    * Adjust a single edge.
+    * Wither minRow == maxRow || minCol == maxCol.
+    * Return false if no adjustment was made.
+    */
+   private boolean adjustEdge(int firstRow, int lastRow, int firstCol, int lastCol) {
+      assert(firstRow == lastRow || firstCol == lastCol);
+
+      int length = (lastCol - firstCol) + (lastRow - firstRow) + 1;
+      List<Integer> edgePoints = new ArrayList<Integer>(length);
+
+      for (int row = firstRow; row <= lastRow; row++) {
+         for (int col = firstCol; col <= lastCol; col++) {
+            int index = Util.rowColToIndex(row, col, imageWidth);
+
+            if (points.contains(index)) {
+               edgePoints.add(index);
+            }
+         }
+      }
+
+      if (edgePoints.size() / (double)length >= SIDE_COVERAGE) {
+         return false;
+      } else {
+         for (Integer edgePoint : edgePoints) {
+            points.remove(edgePoint);
+         }
+      }
+
+      return true;
    }
 
    public int size() {
       return points.size();
    }
 
-   public int getStart() {
-      return start;
+   public int getId() {
+      return id;
    }
 
    public Set<Integer> getPoints() {

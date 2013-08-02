@@ -16,7 +16,7 @@ public class Test {
       image.setFileName(outDirectory + "/test00-base.png");
       image.writeImage(info);
 
-      MagickImage bubbles = BubbleDetection.findBubbles(image);
+      MagickImage bubbles = BubbleDetection.fillBubbles(image);
       bubbles.setFileName(outDirectory + "/test01-bubbles.png");
       bubbles.writeImage(info);
 

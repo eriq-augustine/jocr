@@ -20,8 +20,18 @@ public class BubbleDetection {
    public static final int DEFAULT_MIN_BLOB_SIZE = 2000;
    public static final double DEFAULT_MIN_BLOB_DENSITY = 0.65;
 
-   public static Map<Integer, Blob> getBlobs(MagickImage image) throws Exception {
-      return null;
+   public static Map<Integer, Blob> getBubbles(MagickImage image) throws Exception {
+      image = Filters.bw(image, 40).edgeImage(3);
+
+      Dimension dimensions = image.getDimension();
+
+      // Note: bw pixels pulls out three values for each pixel.
+      byte[] pixels = Filters.bwPixels(image);
+
+      // {blob start point (blob identifier) -> blob size}
+      Map<Integer, Blob> blobs = getBlobs(dimensions.width, pixels);
+
+      return blobs;
    }
 
    /**
@@ -30,34 +40,19 @@ public class BubbleDetection {
     *  only two colors, true black and true white.
     * White pixels are edges.
     */
-   public static MagickImage findBubbles(MagickImage image) throws Exception {
-      image = Filters.bw(image, 40).edgeImage(3);
+   public static MagickImage fillBubbles(MagickImage image) throws Exception {
+      Map<Integer, Blob> bubbles = getBubbles(image);
 
       Dimension dimensions = image.getDimension();
+      byte[] pixels = new byte[dimensions.width * dimensions.height * 3];
 
-      // Note: bw pixels pulls out three values for each pixel.
-      //  Therefore, visited only needs to be one third the size.
-      byte[] pixels = Filters.bwPixels(image);
-
-      // {blob start point (blob identifier) -> blob size}
-      Map<Integer, Blob> blobs = new HashMap<Integer, Blob>();
-      // TODO(eriq): May not need this because of Blob change.
-      // {pixel index -> blob identifier)}
-      Map<Integer, Integer> pixelLookup =
-         new HashMap<Integer, Integer>(pixels.length / 3);
-      getBlobs(dimensions.width, pixels, blobs, pixelLookup);
+      image.dispatchImage(0, 0,
+                          dimensions.width, dimensions.height,
+                          "RGB",
+                          pixels);
 
       // Fill the blobs.
-      fillBlobs(pixels, blobs);
-
-      //TEST
-      System.out.println("Num Blobs: " + blobs.size() + "\n");
-      for (Map.Entry<Integer, Blob> blobEntry : blobs.entrySet()) {
-         System.out.println(String.format("%d => %d (%f)",
-                                          blobEntry.getKey(),
-                                          blobEntry.getValue().size(),
-                                          blobEntry.getValue().density()));
-      }
+      fillBlobs(pixels, bubbles);
 
       MagickImage newImage = new MagickImage();
       newImage.constituteImage(dimensions.width, dimensions.height,
@@ -88,11 +83,8 @@ public class BubbleDetection {
     * Note that |pixels| is three times the length of the image because
     *  it has RGB.
     */
-   private static void getBlobs(int width, byte[] pixels,
-                                Map<Integer, Blob> blobs,
-                                Map<Integer, Integer> pixelLookup) {
-      blobs.clear();
-      pixelLookup.clear();
+   private static Map<Integer, Blob> getBlobs(int width, byte[] pixels) {
+      Map<Integer, Blob> blobs = new HashMap<Integer, Blob>();
 
       boolean[] visited = new boolean[pixels.length / 3];
       Queue<Integer> toVisit = new LinkedList<Integer>();
@@ -144,13 +136,11 @@ public class BubbleDetection {
                 !blob.isBorderBlob() &&
                 blob.density() >= DEFAULT_MIN_BLOB_DENSITY) {
                blobs.put(blob.getStart(), blob);
-
-               for (Integer blobComponent : blob.getPoints()) {
-                  pixelLookup.put(blobComponent, blob.getStart());
-               }
             }
          }
       }
+
+      return blobs;
    }
 
    // Endure that |index| is adjacent to |base|.

@@ -4,9 +4,11 @@ import com.eriqaugustine.ocr.Filters;
 
 import java.awt.Dimension;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import magick.DrawInfo;
 import magick.ImageInfo;
@@ -15,7 +17,7 @@ import magick.PaintMethod;
 import magick.PixelPacket;
 
 public class BubbleDetection {
-   public static final int DEFAULT_MIN_BLOB_SIZE = 1000;
+   public static final int DEFAULT_MIN_BLOB_SIZE = 2000;
 
    /**
     * Color all the text bubbles.
@@ -32,8 +34,11 @@ public class BubbleDetection {
       //  Therefore, visited only needs to be one third the size.
       byte[] pixels = Filters.bwPixels(image);
 
-      // {blob start point -> blob size}
-      Map<Integer, Integer> blobs = getBlobs(dimensions.width, pixels);
+      // {blob start point (blob identifier) -> blob size}
+      Map<Integer, Integer> blobs = new HashMap<Integer, Integer>();
+      // {pixel index -> blob identifier)}
+      Map<Integer, Integer> pixelLookup = new HashMap<Integer, Integer>();
+      getBlobs(dimensions.width, pixels, blobs, pixelLookup);
 
       // Fill the blobs.
       fillBlobs(pixels, blobs, dimensions.width);
@@ -101,7 +106,12 @@ public class BubbleDetection {
     * Note that |pixels| is three times the length of the image because
     *  it has RGB.
     */
-   private static Map<Integer, Integer> getBlobs(int width, byte[] pixels) {
+   private static void getBlobs(int width, byte[] pixels,
+                                Map<Integer, Integer> blobs,
+                                Map<Integer, Integer> pixelLookup) {
+      blobs.clear();
+      pixelLookup.clear();
+
       boolean[] visited = new boolean[pixels.length / 3];
       Queue<Integer> toVisit = new LinkedList<Integer>();
 
@@ -117,16 +127,18 @@ public class BubbleDetection {
          }
       }
 
-      // {blob start point -> blob size}
-      Map<Integer, Integer> blobs = new HashMap<Integer, Integer>();
+      Set<Integer> blobSet = new HashSet<Integer>();
 
       // Depth-first w.r.t. blobs.
       for (int i = 0; i < visited.length; i++) {
          if (!visited[i]) {
             int blobStart = i;
             int blobSize = 0;
+
             toVisit.add(new Integer(blobStart));
             visited[blobStart] = true;
+
+            blobSet.add(new Integer(blobStart));
 
             while (!toVisit.isEmpty()) {
                int index = toVisit.remove().intValue();
@@ -143,17 +155,37 @@ public class BubbleDetection {
 
                      // Mark as visited a little early so that it is not added multiple times.
                      visited[newIndex] = true;
+
+                     blobSet.add(new Integer(newIndex));
                   }
                }
             }
 
-            if (blobSize > DEFAULT_MIN_BLOB_SIZE) {
+            if (blobSize > DEFAULT_MIN_BLOB_SIZE &&
+                !isBorderBlob(blobSet, width, visited.length)) {
                blobs.put(blobStart, blobSize);
+
+               for (Integer blobComponent : blobSet) {
+                  pixelLookup.put(blobComponent, blobStart);
+               }
             }
+
+            blobSet.clear();
          }
       }
+   }
 
-      return blobs;
+   /**
+    * Check if the the blob represented by |blobSet| is the border blob
+    * (the blob the surrounds the initial borders of the image).
+    */
+   private static boolean isBorderBlob(Set<Integer> blobSet,
+                                       int width,
+                                       int length) {
+      return blobSet.contains(0) &&
+             blobSet.contains(length - 1) &&
+             blobSet.contains(width - 1) &&
+             blobSet.contains(length - width + 1);
    }
 
    // Endure that |index| is adjacent to |base|.

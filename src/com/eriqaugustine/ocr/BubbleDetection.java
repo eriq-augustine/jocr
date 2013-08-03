@@ -141,11 +141,12 @@ public class BubbleDetection {
             if (blob.size() > DEFAULT_MIN_BLOB_SIZE &&
                 !blob.isBorderBlob() &&
                 blob.density() >= DEFAULT_MIN_BLOB_DENSITY_1) {
-               blob.gemoetryAdjust();
+               blob.geometryAdjust(0.10);
 
                // Recheck the size after the geometry adjust.
                if (blob.size() > DEFAULT_MIN_BLOB_SIZE &&
                    blob.density() >= DEFAULT_MIN_BLOB_DENSITY_2) {
+                  blob.geometryAdjust(0.60);
                   blobs.put(blob.getId(), blob);
                }
             }

@@ -11,7 +11,7 @@ public class Blob {
    public static final double BLOB_COVERAGE = 0.05;
 
    // The necessary percentage of points on an edge during adjustments.
-   public static final double SIDE_COVERAGE = 0.10;
+   public static final double DEFAULT_SIDE_COVERAGE = 0.10;
 
    private static int nextId = 0;
 
@@ -76,8 +76,12 @@ public class Blob {
     * This is allowd to add and drop points without consulting the actual image.
     * As a result, blobs may not be disjoint.
     */
-   public void gemoetryAdjust() {
-      adjustBoundaries();
+   public void geometryAdjust(double sideCoverage) {
+      adjustBoundaries(sideCoverage);
+   }
+
+   public void geometryAdjust() {
+      geometryAdjust(DEFAULT_SIDE_COVERAGE);
    }
 
    /**
@@ -85,7 +89,7 @@ public class Blob {
     * We will do this by shrinking the circumscribing rectangle until
     *  each side has a significant amount of points on it.
     */
-   private void adjustBoundaries() {
+   private void adjustBoundaries(double sideCoverage) {
       // The sides must be fixed all at the same time, or it would affect
       //  the other sides.
       boolean leftDone = false;
@@ -117,7 +121,7 @@ public class Blob {
          }
 
          if (!upDone) {
-            if (adjustEdge(minRow, minRow, minCol, maxCol)) {
+            if (adjustEdge(minRow, minRow, minCol, maxCol, sideCoverage)) {
                minRow++;
             } else {
                upDone = true;
@@ -125,7 +129,7 @@ public class Blob {
          }
 
          if (!rightDone) {
-            if (adjustEdge(minRow, maxRow, maxCol, maxCol)) {
+            if (adjustEdge(minRow, maxRow, maxCol, maxCol, sideCoverage)) {
                maxCol--;
             } else {
                rightDone = true;
@@ -133,7 +137,7 @@ public class Blob {
          }
 
          if (!downDone) {
-            if (adjustEdge(maxRow, maxRow, minCol, maxCol)) {
+            if (adjustEdge(maxRow, maxRow, minCol, maxCol, sideCoverage)) {
                maxRow--;
             } else {
                downDone = true;
@@ -141,7 +145,7 @@ public class Blob {
          }
 
          if (!leftDone) {
-            if (adjustEdge(minRow, maxRow, minCol, minCol)) {
+            if (adjustEdge(minRow, maxRow, minCol, minCol, sideCoverage)) {
                minCol++;
             } else {
                leftDone = true;
@@ -155,7 +159,9 @@ public class Blob {
     * Wither minRow == maxRow || minCol == maxCol.
     * Return false if no adjustment was made.
     */
-   private boolean adjustEdge(int firstRow, int lastRow, int firstCol, int lastCol) {
+   private boolean adjustEdge(int firstRow, int lastRow,
+                              int firstCol, int lastCol,
+                              double sideCoverage) {
       assert(firstRow == lastRow || firstCol == lastCol);
 
       int length = (lastCol - firstCol) + (lastRow - firstRow) + 1;
@@ -171,7 +177,7 @@ public class Blob {
          }
       }
 
-      if (edgePoints.size() / (double)length >= SIDE_COVERAGE) {
+      if (edgePoints.size() / (double)length >= sideCoverage) {
          return false;
       } else {
          for (Integer edgePoint : edgePoints) {

@@ -1,8 +1,10 @@
 package com.eriqaugustine.ocr;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Blob {
@@ -67,7 +69,7 @@ public class Blob {
     * The density is percentage of the circumscribing rectangle covered by the blob.
     */
    public double density() {
-      return size() / (double)((maxCol - minCol + 1) * (maxRow - minRow + 1));
+      return size() / (double)(getBoundingSize());
    }
 
    /**
@@ -186,6 +188,59 @@ public class Blob {
       }
 
       return true;
+   }
+
+   /**
+    * Get the boundaries of the blob.
+    * The boundaries are defined by a map: {row : [start col, end col]}.
+    * Note: This is not a getter, this requires computation.
+    */
+   public Map<Integer, int[]> getBoundaries() {
+      Map<Integer, int[]> boundaries = new HashMap<Integer, int[]>();
+
+      for (Integer index : points) {
+         int row = Util.indexToRow(index, imageWidth);
+         int col = Util.indexToCol(index, imageWidth);
+
+         if (!boundaries.containsKey(row)) {
+            int[] bounds = {col, col};
+            boundaries.put(row, bounds);
+         } else if (col < boundaries.get(row)[0]) {
+            boundaries.get(row)[0] = col;
+         } else if (col > boundaries.get(row)[1]) {
+            boundaries.get(row)[1] = col;
+         }
+      }
+
+      return boundaries;
+   }
+
+   public int getBoundingWidth() {
+      return maxCol - minCol + 1;
+   }
+
+   public int getBoundingHeight() {
+      return maxRow - minRow + 1;
+   }
+
+   public int getBoundingSize() {
+      return getBoundingWidth() * getBoundingHeight();
+   }
+
+   public int getMinRow() {
+      return minRow;
+   }
+
+   public int getMaxRow() {
+      return maxRow;
+   }
+
+   public int getMinCol() {
+      return minCol;
+   }
+
+   public int getMaxCol() {
+      return maxCol;
    }
 
    public int size() {

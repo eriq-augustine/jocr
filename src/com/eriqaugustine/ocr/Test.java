@@ -20,6 +20,14 @@ public class Test {
       bubbles.setFileName(outDirectory + "/test01-bubbles.png");
       bubbles.writeImage(info);
 
+      int count = 0;
+      MagickImage[] bubbleImages = BubbleDetection.extractBubbles(image);
+      for (MagickImage bubbleImage : bubbleImages) {
+         bubbleImage.setFileName(
+            outDirectory + "/test02-bubbles-" + count++ + ".png");
+         bubbleImage.writeImage(info);
+      }
+
       /*
       MagickImage bw40 = Filters.bw(image, 40);
       bw40.setFileName(outDirectory + "/test01-bw40.png");

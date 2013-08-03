@@ -25,6 +25,9 @@ public class BubbleDetection {
    // Second pass.
    public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.70;
 
+   /**
+    * Get the raw blobs that represent the bubbles.
+    */
    public static Map<Integer, Blob> getBubbles(MagickImage image) throws Exception {
       image = Filters.bw(image, 40).edgeImage(3);
 
@@ -37,6 +40,58 @@ public class BubbleDetection {
       Map<Integer, Blob> blobs = getBlobs(dimensions.width, pixels);
 
       return blobs;
+   }
+
+   /**
+    * Extract the pixels for each bubble and convert them to an image.
+    */
+   public static MagickImage[] extractBubbles(MagickImage image) throws Exception {
+      Map<Integer, Blob> bubbles = getBubbles(image);
+
+      Dimension dimensions = image.getDimension();
+      byte[] pixels = new byte[dimensions.width * dimensions.height * 3];
+
+      image.dispatchImage(0, 0,
+                          dimensions.width, dimensions.height,
+                          "RGB",
+                          pixels);
+
+      MagickImage[] images = new MagickImage[bubbles.size()];
+
+      int count = 0;
+      for (Blob blob : bubbles.values()) {
+         byte[] blobPixels = new byte[blob.getBoundingSize() * 3];
+         Map<Integer, int[]> bounds = blob.getBoundaries();
+
+         int width = blob.getBoundingWidth();
+
+         for (int row = blob.getMinRow(); row <= blob.getMaxRow(); row++) {
+            for (int col = blob.getMinCol(); col <= blob.getMaxCol(); col++) {
+               int baseImageIndex = 3 * (row * dimensions.width + col);
+               int baseBlobIndex = 3 * ((row - blob.getMinRow()) * width + (col - blob.getMinCol()));
+
+               if (col < bounds.get(row)[0] || col > bounds.get(row)[1]) {
+                  blobPixels[baseBlobIndex + 0] = (byte)0xFF;
+                  blobPixels[baseBlobIndex + 1] = (byte)0xFF;
+                  blobPixels[baseBlobIndex + 2] = (byte)0xFF;
+               } else {
+                  blobPixels[baseBlobIndex + 0] = pixels[baseImageIndex + 0];
+                  blobPixels[baseBlobIndex + 1] = pixels[baseImageIndex + 1];
+                  blobPixels[baseBlobIndex + 2] = pixels[baseImageIndex + 2];
+               }
+            }
+         }
+
+         MagickImage blobImage = new MagickImage();
+         blobImage.constituteImage(blob.getBoundingWidth(),
+                                   blob.getBoundingHeight(),
+                                   "RGB",
+                                   blobPixels);
+
+         images[count++] = blobImage;
+      }
+
+      return images;
    }
 
    /**

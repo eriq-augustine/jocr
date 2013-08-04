@@ -1,6 +1,7 @@
 package com.eriqaugustine.ocr;
 
 import com.eriqaugustine.ocr.image.BubbleDetection;
+import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.Filters;
 import com.eriqaugustine.ocr.image.TextImage;
 import com.eriqaugustine.ocr.utils.FileUtils;
@@ -39,6 +40,17 @@ public class Test {
                   String.format("%s/test02-bubbles-%02d-gridTexts-%02d-%02d.png",
                                 outDirectory, count, row, col));
                gridTextImage.writeImage(info);
+
+               double[][] densityMap =
+                  CharacterImage.getDensityMap(gridTextImage, 3, 3);
+               System.out.println(row + ", " + col);
+               for (int i = 0; i < densityMap.length; i++) {
+                  System.out.print(" ");
+                  for (int j = 0; j < densityMap[i].length; j++) {
+                     System.out.print(String.format("  %6.4f", densityMap[i][j]));
+                  }
+                  System.out.println();
+               }
             }
          }
 

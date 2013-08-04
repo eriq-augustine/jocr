@@ -15,6 +15,40 @@ public class ImageUtils {
    public static final int DEFAULT_WHITE_THRESHOLD = 150;
 
    /**
+    * Get the density of a region of an image.
+    * Density is the number of non-white pixels over the size of the region.
+    * |pixels| must be a single channel.
+    */
+   public static double density(byte[] pixels, int imageWidth,
+                                int startRow, int numRows,
+                                int startCol, int numCols,
+                                int whiteThreshold) {
+      int nonWhite = 0;
+
+      for (int row = startRow; row < startRow + numRows; row++) {
+         for (int col = startCol; col < startCol + numCols; col++) {
+            int index = MathUtils.rowColToIndex(row, col, imageWidth);
+
+            if ((0xFF & pixels[index]) < whiteThreshold) {
+               nonWhite++;
+            }
+         }
+      }
+
+      return (double)nonWhite / (numRows * numCols);
+   }
+
+   public static double density(MagickImage image, int whiteThreshold) throws Exception {
+      Dimension dimensions = image.getDimension();
+      byte[] pixels = Filters.averageChannels(Filters.bwPixels(image, whiteThreshold), 3);
+
+      return density(pixels, dimensions.width,
+                     0, dimensions.width,
+                     0, dimensions.height,
+                     whiteThreshold);
+   }
+
+   /**
     * Shrink an image so that there no bordering whitespace.
     * If the image is all whitespace, then a zero size image will be returned.
     */

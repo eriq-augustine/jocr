@@ -10,11 +10,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import magick.DrawInfo;
-import magick.ImageInfo;
 import magick.MagickImage;
-import magick.PaintMethod;
-import magick.PixelPacket;
 
 public class BubbleDetection {
    public static final int DEFAULT_MIN_BLOB_SIZE = 2000;

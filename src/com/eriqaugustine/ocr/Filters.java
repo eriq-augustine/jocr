@@ -63,4 +63,19 @@ public class Filters {
    public static MagickImage bw(MagickImage image) throws Exception {
       return bw(image, DEFAULT_BW_THRESHOLD);
    }
+
+   public static byte[] averageChannels(byte[] multiChannels, int numChannels) {
+      assert(multiChannels.length % numChannels == 0);
+
+      byte[] singleChannel = new byte[multiChannels.length / numChannels];
+
+      for (int i = 0; i < singleChannel.length; i++) {
+         int baseIndex = i * numChannels;
+         singleChannel[i] = (byte)((0xFF & multiChannels[i * numChannels + 0] +
+                                    0xFF & multiChannels[i * numChannels + 1] +
+                                    0xFF & multiChannels[i * numChannels + 2]) / 3);
+      }
+
+      return singleChannel;
+   }
 }

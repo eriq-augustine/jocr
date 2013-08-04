@@ -10,6 +10,7 @@ public class Test {
    public static void main(String[] args) throws Exception {
       String outDirectory = Util.itterationDir("out", "blob");
       ImageInfo info = new ImageInfo("testImages/test.png");
+      // ImageInfo info = new ImageInfo("testImages/test2Text.png");
       // ImageInfo info = new ImageInfo("testImages/testSmall.png");
 
       MagickImage image = new MagickImage(info);
@@ -24,8 +25,20 @@ public class Test {
       MagickImage[] bubbleImages = BubbleDetection.extractBubbles(image);
       for (MagickImage bubbleImage : bubbleImages) {
          bubbleImage.setFileName(
-            outDirectory + "/test02-bubbles-" + count++ + ".png");
+            String.format("%s/test02-bubbles-%02d-0.png", outDirectory, count));
          bubbleImage.writeImage(info);
+
+         MagickImage[][] gridTextImages = TextImage.gridBreakup(bubbleImage);
+         for (int row = 0; row < gridTextImages.length; row++) {
+            for (int col = 0; col < gridTextImages[row].length; col++) {
+               gridTextImages[row][col].setFileName(
+                  String.format("%s/test02-bubbles-%02d-gridTexts-%02d-%02d.png",
+                                outDirectory, count, row, col));
+               gridTextImages[row][col].writeImage(info);
+            }
+         }
+
+         count++;
       }
 
       /*

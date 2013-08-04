@@ -1,15 +1,15 @@
-package com.eriqaugustine.ocr;
+package com.eriqaugustine.ocr.utils;
 
 import java.io.File;
 import java.io.FilenameFilter;
 
 /**
- * Just some general utils.
+ * Just some general utils for working with files.
  *
  * TODO(eriq): This assumes that all paths are on linux machines.
  *  Fix paths to be cross-platform.
  */
-public class Util {
+public class FileUtils {
    /**
     * Create the "next" directory and return the path.
     * This is meant for when a series of tests are run.
@@ -45,19 +45,5 @@ public class Util {
 
    public static String itterationDir(String baseDir) {
       return itterationDir(baseDir, "");
-   }
-
-   // Convert a 1D index to the row the index is on.
-   public static int indexToRow(int index, int width) {
-      return index / width;
-   }
-
-   // Convert a 1D index to the col the index is on.
-   public static int indexToCol(int index, int width) {
-      return index - (indexToRow(index, width) * width);
-   }
-
-   public static int rowColToIndex(int row, int col, int width) {
-      return row * width + col;
    }
 }

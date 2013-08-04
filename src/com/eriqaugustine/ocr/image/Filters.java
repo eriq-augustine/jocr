@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr;
+package com.eriqaugustine.ocr.image;
 
 import java.awt.Dimension;
 

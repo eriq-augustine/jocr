@@ -1,4 +1,6 @@
-package com.eriqaugustine.ocr;
+package com.eriqaugustine.ocr.image;
+
+import com.eriqaugustine.ocr.utils.MathUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +34,7 @@ public class Blob {
       id = nextId++;
       points = new HashSet<Integer>((int)(imageLength * BLOB_COVERAGE));
 
-      minRow = Util.indexToRow(imageLength - 1, imageWidth);
+      minRow = MathUtils.indexToRow(imageLength - 1, imageWidth);
       maxRow = 0;
       minCol = imageWidth - 1;
       maxCol = 0;
@@ -44,8 +46,8 @@ public class Blob {
    public void addPoint(int index) {
       points.add(index);
 
-      int row = Util.indexToRow(index, imageWidth);
-      int col = Util.indexToCol(index, imageWidth);
+      int row = MathUtils.indexToRow(index, imageWidth);
+      int col = MathUtils.indexToCol(index, imageWidth);
 
       if (row < minRow) {
          minRow = row;
@@ -171,7 +173,7 @@ public class Blob {
 
       for (int row = firstRow; row <= lastRow; row++) {
          for (int col = firstCol; col <= lastCol; col++) {
-            int index = Util.rowColToIndex(row, col, imageWidth);
+            int index = MathUtils.rowColToIndex(row, col, imageWidth);
 
             if (points.contains(index)) {
                edgePoints.add(index);
@@ -199,8 +201,8 @@ public class Blob {
       Map<Integer, int[]> boundaries = new HashMap<Integer, int[]>();
 
       for (Integer index : points) {
-         int row = Util.indexToRow(index, imageWidth);
-         int col = Util.indexToCol(index, imageWidth);
+         int row = MathUtils.indexToRow(index, imageWidth);
+         int col = MathUtils.indexToCol(index, imageWidth);
 
          if (!boundaries.containsKey(row)) {
             int[] bounds = {col, col};

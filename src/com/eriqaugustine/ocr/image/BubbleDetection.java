@@ -1,6 +1,6 @@
-package com.eriqaugustine.ocr;
+package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.Filters;
+import com.eriqaugustine.ocr.image.Filters;
 
 import java.awt.Dimension;
 import java.util.HashMap;

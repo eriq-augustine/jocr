@@ -1,4 +1,6 @@
-package com.eriqaugustine.ocr;
+package com.eriqaugustine.ocr.image;
+
+import com.eriqaugustine.ocr.utils.MathUtils;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
@@ -54,7 +56,7 @@ public class TextImage {
          boolean hasContent = false;
 
          for (int col = 0; col < width; col++) {
-            if (pixels[Util.rowColToIndex(row, col, width)] == 0) {
+            if (pixels[MathUtils.rowColToIndex(row, col, width)] == 0) {
                hasContent = true;
                break;
             }
@@ -79,7 +81,7 @@ public class TextImage {
          boolean hasContent = false;
 
          for (int row = 0; row < pixels.length / width; row++) {
-            if (pixels[Util.rowColToIndex(row, col, width)] == 0) {
+            if (pixels[MathUtils.rowColToIndex(row, col, width)] == 0) {
                hasContent = true;
                break;
             }

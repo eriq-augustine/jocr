@@ -1,14 +1,16 @@
 package com.eriqaugustine.ocr;
 
-import com.eriqaugustine.ocr.BubbleDetection;
-import com.eriqaugustine.ocr.Filters;
+import com.eriqaugustine.ocr.image.BubbleDetection;
+import com.eriqaugustine.ocr.image.Filters;
+import com.eriqaugustine.ocr.image.TextImage;
+import com.eriqaugustine.ocr.utils.FileUtils;
 
 import magick.ImageInfo;
 import magick.MagickImage;
 
 public class Test {
    public static void main(String[] args) throws Exception {
-      String outDirectory = Util.itterationDir("out", "blob");
+      String outDirectory = FileUtils.itterationDir("out", "blob");
       ImageInfo info = new ImageInfo("testImages/test.png");
       // ImageInfo info = new ImageInfo("testImages/test2Text.png");
       // ImageInfo info = new ImageInfo("testImages/testSmall.png");
@@ -31,10 +33,11 @@ public class Test {
          MagickImage[][] gridTextImages = TextImage.gridBreakup(bubbleImage);
          for (int row = 0; row < gridTextImages.length; row++) {
             for (int col = 0; col < gridTextImages[row].length; col++) {
-               gridTextImages[row][col].setFileName(
+               MagickImage gridTextImage = gridTextImages[row][col];
+               gridTextImage.setFileName(
                   String.format("%s/test02-bubbles-%02d-gridTexts-%02d-%02d.png",
                                 outDirectory, count, row, col));
-               gridTextImages[row][col].writeImage(info);
+               gridTextImage.writeImage(info);
             }
          }
 

@@ -4,6 +4,7 @@ import com.eriqaugustine.ocr.image.BubbleDetection;
 import com.eriqaugustine.ocr.image.Filters;
 import com.eriqaugustine.ocr.image.TextImage;
 import com.eriqaugustine.ocr.utils.FileUtils;
+import com.eriqaugustine.ocr.utils.ImageUtils;
 
 import magick.ImageInfo;
 import magick.MagickImage;
@@ -15,16 +16,16 @@ public class Test {
       // ImageInfo info = new ImageInfo("testImages/test2Text.png");
       // ImageInfo info = new ImageInfo("testImages/testSmall.png");
 
-      MagickImage image = new MagickImage(info);
-      image.setFileName(outDirectory + "/test00-base.png");
-      image.writeImage(info);
+      MagickImage baseImage = new MagickImage(info);
+      baseImage.setFileName(outDirectory + "/test00-base.png");
+      baseImage.writeImage(info);
 
-      MagickImage bubbles = BubbleDetection.fillBubbles(image);
+      MagickImage bubbles = BubbleDetection.fillBubbles(baseImage);
       bubbles.setFileName(outDirectory + "/test01-bubbles.png");
       bubbles.writeImage(info);
 
       int count = 0;
-      MagickImage[] bubbleImages = BubbleDetection.extractBubbles(image);
+      MagickImage[] bubbleImages = BubbleDetection.extractBubbles(baseImage);
       for (MagickImage bubbleImage : bubbleImages) {
          bubbleImage.setFileName(
             String.format("%s/test02-bubbles-%02d-0.png", outDirectory, count));
@@ -33,7 +34,7 @@ public class Test {
          MagickImage[][] gridTextImages = TextImage.gridBreakup(bubbleImage);
          for (int row = 0; row < gridTextImages.length; row++) {
             for (int col = 0; col < gridTextImages[row].length; col++) {
-               MagickImage gridTextImage = gridTextImages[row][col];
+               MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
                gridTextImage.setFileName(
                   String.format("%s/test02-bubbles-%02d-gridTexts-%02d-%02d.png",
                                 outDirectory, count, row, col));

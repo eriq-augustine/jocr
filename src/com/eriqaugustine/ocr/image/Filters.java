@@ -71,9 +71,9 @@ public class Filters {
 
       for (int i = 0; i < singleChannel.length; i++) {
          int baseIndex = i * numChannels;
-         singleChannel[i] = (byte)((0xFF & multiChannels[i * numChannels + 0] +
-                                    0xFF & multiChannels[i * numChannels + 1] +
-                                    0xFF & multiChannels[i * numChannels + 2]) / 3);
+         singleChannel[i] = (byte)(((0xFF & multiChannels[baseIndex + 0]) +
+                                    (0xFF & multiChannels[baseIndex + 1]) +
+                                    (0xFF & multiChannels[baseIndex + 2])) / 3);
       }
 
       return singleChannel;

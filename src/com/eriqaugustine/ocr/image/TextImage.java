@@ -19,6 +19,9 @@ public class TextImage {
     * fit in constant sized boxes.
     * Therefore, the image can be broken up into a grid and each position
     *  will represent a character, puncuation, or space.
+    * TODO(eriq): This can get in trouble for certian sets of characters.
+    *  For example, a row with nothing but 'ni's (no uncommon for a single column)
+    *  will split the 'ni' into two seperate characters.
     */
    public static MagickImage[][] gridBreakup(MagickImage image) throws Exception {
       Dimension dimensions = image.getDimension();

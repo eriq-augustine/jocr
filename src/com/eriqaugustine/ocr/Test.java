@@ -17,8 +17,49 @@ import java.awt.GraphicsEnvironment;
 
 public class Test {
    public static void main(String[] args) throws Exception {
-      fontGenTest();
+      //fontGenTest();
       //imageBreakdown();
+      densityComparisonTest();
+   }
+
+   public static void densityComparisonTest() throws Exception {
+      ImageInfo info = new ImageInfo("testImages/2Text.png");
+      MagickImage baseImage = new MagickImage(info);
+
+      double[][][] fontDensityMaps = CharacterImage.getTestingFontDensityMaps(3, 3);
+
+      MagickImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
+      for (int row = 0; row < gridTextImages.length; row++) {
+         for (int col = 0; col < gridTextImages[row].length; col++) {
+            MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
+
+            double[][] densityMap = CharacterImage.getDensityMap(gridTextImage, 3, 3);
+
+            if (densityMap == null) {
+               System.out.println(String.format("(%d, %d) -> <space>", row, col));
+            } else {
+               int guess = bestMatch(fontDensityMaps, densityMap);
+               System.out.println(String.format("(%d, %d) -> %c",
+                                                row, col, (char)(guess + (int)'あ')));
+            }
+         }
+      }
+   }
+
+   private static int bestMatch(double[][][] haystack, double[][] needle) {
+      int bestGuess = 0;
+      double bestDistance = Double.MAX_VALUE;
+
+      for (int i = 0; i < haystack.length; i++) {
+         double dist = CharacterImage.densityMapDistance(haystack[i], needle);
+
+         if (dist < bestDistance) {
+            bestGuess = i;
+            bestDistance = dist;
+         }
+      }
+
+      return bestGuess;
    }
 
    public static void fontGenTest() throws Exception {
@@ -83,6 +124,11 @@ public class Test {
 
                double[][] densityMap =
                   CharacterImage.getDensityMap(gridTextImage, 3, 3);
+
+               if (densityMap == null) {
+                  continue;
+               }
+
                System.out.println(row + ", " + col);
                for (int i = 0; i < densityMap.length; i++) {
                   System.out.print(" ");

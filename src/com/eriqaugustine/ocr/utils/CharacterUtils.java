@@ -1,0 +1,57 @@
+package com.eriqaugustine.ocr.utils;
+
+import magick.DrawInfo;
+import magick.ImageInfo;
+import magick.MagickImage;
+import magick.PixelPacket;
+
+/**
+ * Utilities for character-based operations.
+ */
+public class CharacterUtils {
+   public static final String DEFAULT_FONT_FAMILY = "IPAGothic";
+   public static final int DEFAULT_FONT_SIZE = 48;
+
+   /**
+    * Generate an image for |character|.
+    * The image will have a white backgrond with |character| in black.
+    */
+   public static MagickImage generateCharacter(char character,
+                                               boolean shrink,
+                                               int fontSize,
+                                               String fontFamily) throws Exception {
+      int sideLength = (fontSize / 50 + 2) * 50;
+
+      MagickImage image = new MagickImage();
+      byte[] pixels = new byte[sideLength * sideLength * 3];
+      for (int i = 0; i < pixels.length; i++) {
+         pixels[i] = (byte)0xFF;
+      }
+      image.constituteImage(sideLength, sideLength, "RGB", pixels);
+
+      ImageInfo drawInfo = new ImageInfo();
+      DrawInfo draw = new DrawInfo(drawInfo);
+
+      draw.setOpacity(0);
+      draw.setGeometry("+0+0");
+      draw.setGravity(magick.GravityType.CenterGravity);
+
+      draw.setFill(new PixelPacket(0, 0, 0, 0));
+      draw.setPointsize(fontSize);
+      draw.setFont(fontFamily);
+      draw.setText("" + character);
+
+      image.annotateImage(draw);
+
+      if (shrink) {
+         return ImageUtils.shrinkImage(image);
+      }
+
+      return image;
+   }
+
+   public static MagickImage generateCharacter(char character,
+                                               boolean shrink) throws Exception {
+      return generateCharacter(character, shrink, DEFAULT_FONT_SIZE, DEFAULT_FONT_FAMILY);
+   }
+}

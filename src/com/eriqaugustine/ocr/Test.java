@@ -4,6 +4,7 @@ import com.eriqaugustine.ocr.image.BubbleDetection;
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.Filters;
 import com.eriqaugustine.ocr.image.TextImage;
+import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.FileUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 
@@ -21,53 +22,33 @@ public class Test {
    }
 
    public static void fontGenTest() throws Exception {
-      /*
-      GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-      String[] fontFamilies = env.getAvailableFontFamilyNames();
-      for (String fontFamily : fontFamilies) {
-         System.out.println(fontFamily);
-      }
-      */
-      //TEST IPAGothic
+      String outDirectory = FileUtils.itterationDir("out", "fontGen");
 
       String hiragana = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん";
 
-/*
+      /*
       for (int i = 0; i < hiragana.length(); i++) {
          System.out.println(i + " -- " + hiragana.charAt(i) + " (" + (int)hiragana.charAt(i) + ")");
       }
+      */
+
+      MagickImage image = null;
 
       int current = (int)'あ';
       int count = 0;
       do {
-         System.err.println(count + " -- " + (char)current + " (" + current + ")");
+         // System.err.println(count + " -- " + (char)current + " (" + current + ")");
+
+         image = CharacterUtils.generateCharacter((char)current, false);
+         image.setFileName(String.format("%s/char-%03d-%c.png",
+                                         outDirectory,
+                                         count,
+                                         (char)current));
+         image.writeImage(new ImageInfo());
+
          count++;
          current++;
       } while ((char)(current -1) != 'ん');
-      */
-
-      MagickImage image = new MagickImage();
-      byte[] pixels = new byte[50 * 50 * 3];
-      for (int i = 0; i < pixels.length; i++) {
-         pixels[i] = (byte)0xFF;
-      }
-      image.constituteImage(50, 50, "RGB", pixels);
-
-      ImageInfo drawInfo = new ImageInfo();
-      DrawInfo draw = new DrawInfo(drawInfo);
-
-      draw.setOpacity(0);
-      draw.setGeometry("+0+0");
-      draw.setGravity(magick.GravityType.CenterGravity);
-
-      draw.setFill(new PixelPacket(0, 0, 0, 0));
-      draw.setPointsize(24);
-      draw.setFont("IPAGothic");
-      draw.setText("あ");
-
-      image.annotateImage(draw);
-      image.setFileName("あ.png");
-      image.writeImage(new ImageInfo());
    }
 
    public static void imageBreakdown() throws Exception {

@@ -72,9 +72,9 @@ public class Test {
 
    public static void imageBreakdown() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "blob");
-      ImageInfo info = new ImageInfo("testImages/test.png");
-      // ImageInfo info = new ImageInfo("testImages/test2Text.png");
-      // ImageInfo info = new ImageInfo("testImages/testSmall.png");
+      ImageInfo info = new ImageInfo("testImages/page.png");
+      // ImageInfo info = new ImageInfo("testImages/2Text.png");
+      // ImageInfo info = new ImageInfo("testImages/small.png");
 
       MagickImage baseImage = new MagickImage(info);
       baseImage.setFileName(outDirectory + "/test00-base.png");

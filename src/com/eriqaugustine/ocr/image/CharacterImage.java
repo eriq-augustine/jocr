@@ -86,31 +86,31 @@ public class CharacterImage {
    }
 
    /**
-    * A testing function to get a full hiragana font set.
+    * Generate an image for every character in the string.
     * The index of the entry represents the character associated with it.
-    * The set starts with 'あ' and ends with 'ん'.
     */
-   public static MagickImage[] getTestingFontSet() throws Exception {
-      MagickImage[] images = new MagickImage[(int)'ん' - (int)'あ' + 1];
+   public static MagickImage[] generateFontImages(String characters) throws Exception {
+      MagickImage[] images = new MagickImage[characters.length()];
 
-      int current = (int)'あ';
-      do {
-         images[current - (int)'あ'] = CharacterUtils.generateCharacter((char)current, true);
-         current++;
-      } while ((char)(current -1) != 'ん');
+      for (int i = 0; i < characters.length(); i++) {
+         images[i] = CharacterUtils.generateCharacter(characters.charAt(i),
+                                                      true);
+      }
 
       return images;
    }
 
    /**
-    * Get the density maps for the output of getTestingFontSet().
+    * Get the density maps for the output of generateFontImages().
     */
-   public static double[][][] getTestingFontDensityMaps(int mapRows, int mapCols) throws Exception {
-      MagickImage[] characters = getTestingFontSet();
-      double[][][] maps = new double[characters.length][][];
+   public static double[][][] getFontDensityMaps(String characters,
+                                                 int mapRows,
+                                                 int mapCols) throws Exception {
+      MagickImage[] characterImages = generateFontImages(characters);
+      double[][][] maps = new double[characterImages.length][][];
 
-      for (int i = 0; i < characters.length; i++) {
-         maps[i] = getDensityMap(characters[i], mapRows, mapCols);
+      for (int i = 0; i < characterImages.length; i++) {
+         maps[i] = getDensityMap(characterImages[i], mapRows, mapCols);
       }
 
       return maps;

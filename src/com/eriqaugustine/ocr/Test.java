@@ -16,6 +16,9 @@ import magick.PixelPacket;
 import java.awt.GraphicsEnvironment;
 
 public class Test {
+   public static final String HIRAGANA = "あいうえおかがきぎくぐけげこごさざしじすずせぜそぞただちぢつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもやゆよらりるれろわゐゑをん";
+   public static final String KATAKANA = "アイウエオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモヤユヨラリルレロワヰヱヲン";
+
    public static void main(String[] args) throws Exception {
       //fontGenTest();
       //imageBreakdown();
@@ -23,10 +26,13 @@ public class Test {
    }
 
    public static void densityComparisonTest() throws Exception {
+      String alphabet = HIRAGANA + KATAKANA;
+
       ImageInfo info = new ImageInfo("testImages/2Text.png");
       MagickImage baseImage = new MagickImage(info);
 
-      double[][][] fontDensityMaps = CharacterImage.getTestingFontDensityMaps(3, 3);
+      double[][][] fontDensityMaps =
+         CharacterImage.getFontDensityMaps(alphabet, 3, 3);
 
       MagickImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
       for (int row = 0; row < gridTextImages.length; row++) {
@@ -40,7 +46,7 @@ public class Test {
             } else {
                int guess = bestMatch(fontDensityMaps, densityMap);
                System.out.println(String.format("(%d, %d) -> %c",
-                                                row, col, (char)(guess + (int)'あ')));
+                                                row, col, alphabet.charAt(guess)));
             }
          }
       }
@@ -64,14 +70,6 @@ public class Test {
 
    public static void fontGenTest() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "fontGen");
-
-      String hiragana = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん";
-
-      /*
-      for (int i = 0; i < hiragana.length(); i++) {
-         System.out.println(i + " -- " + hiragana.charAt(i) + " (" + (int)hiragana.charAt(i) + ")");
-      }
-      */
 
       MagickImage image = null;
 

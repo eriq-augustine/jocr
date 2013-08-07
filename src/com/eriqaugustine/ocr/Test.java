@@ -32,14 +32,14 @@ public class Test {
       MagickImage baseImage = new MagickImage(info);
 
       double[][][] fontDensityMaps =
-         CharacterImage.getFontDensityMaps(alphabet, 3, 3);
+         CharacterImage.getFontDensityMaps(alphabet, 4, 4);
 
       MagickImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
       for (int row = 0; row < gridTextImages.length; row++) {
          for (int col = 0; col < gridTextImages[row].length; col++) {
             MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
 
-            double[][] densityMap = CharacterImage.getDensityMap(gridTextImage, 3, 3);
+            double[][] densityMap = CharacterImage.getDensityMap(gridTextImage, 4, 4);
 
             if (densityMap == null) {
                System.out.println(String.format("(%d, %d) -> <space>", row, col));

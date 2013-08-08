@@ -15,6 +15,50 @@ public class ImageUtils {
    public static final int DEFAULT_WHITE_THRESHOLD = 150;
 
    /**
+    * Character to use when converting an image to ascii.
+    * Each character gets an equal range.
+    */
+   public static final char[] ASCII_PLACEHOLDERS =
+      {'@', '#', '*', '.', ' '};
+
+   /**
+    * Create an ascii representation of an image.
+    */
+   public static String asciiImage(byte[] pixels, int imageWidth, int numChannels) {
+      if (numChannels > 1) {
+         pixels = Filters.averageChannels(pixels, numChannels);
+      }
+
+      String rtn = "";
+      // Make sure to use num values, not max value.
+      double conversionRatio = 256.0 / ASCII_PLACEHOLDERS.length;
+
+      for (int row = 0; row < pixels.length / imageWidth; row++) {
+         for (int col = 0; col < imageWidth; col++) {
+            int index = MathUtils.rowColToIndex(row, col, imageWidth);
+            rtn += ASCII_PLACEHOLDERS[(int)((0xFF & pixels[index]) / conversionRatio)];
+         }
+         rtn += "\n";
+      }
+
+      return rtn;
+   }
+
+   /**
+    * Create an ascii representation of an image.
+    * This one assumes points instead of pixels.
+    */
+   public static String asciiImage(boolean[] points, int imageWidth) {
+      byte[] pixels = new byte[points.length];
+
+      for (int i = 0; i < points.length; i++) {
+         pixels[i] = points[i] ? 0 : (byte)0xFF;
+      }
+
+      return asciiImage(pixels, imageWidth, 1);
+   }
+
+   /**
     * Get the density of a region of an image.
     * Density is the number of non-white pixels over the size of the region.
     * |pixels| must be a single channel.

@@ -22,7 +22,24 @@ public class Test {
    public static void main(String[] args) throws Exception {
       //fontGenTest();
       //imageBreakdown();
-      densityComparisonTest();
+      //densityComparisonTest();
+      strokeComparisonTest();
+   }
+
+   public static void strokeComparisonTest() throws Exception {
+      String alphabet = HIRAGANA + KATAKANA;
+
+      ImageInfo info = new ImageInfo("testImages/1Text.png");
+      MagickImage baseImage = new MagickImage(info);
+
+      MagickImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
+      for (int row = 0; row < gridTextImages.length; row++) {
+         for (int col = 0; col < gridTextImages[row].length; col++) {
+            MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
+
+            CharacterImage.getStrokes(gridTextImage);
+         }
+      }
    }
 
    public static void densityComparisonTest() throws Exception {

@@ -2,3 +2,6 @@ log/*
 bin/*
 *.swp
 out/*
+test.txt
+test.out
+test.err

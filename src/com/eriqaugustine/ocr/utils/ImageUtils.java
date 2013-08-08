@@ -49,13 +49,17 @@ public class ImageUtils {
     * This one assumes points instead of pixels.
     */
    public static String asciiImage(boolean[] points, int imageWidth) {
-      byte[] pixels = new byte[points.length];
+      return asciiImage(discreteToPixels(points), imageWidth, 1);
+   }
 
-      for (int i = 0; i < points.length; i++) {
-         pixels[i] = points[i] ? 0 : (byte)0xFF;
+   public static byte[] discreteToPixels(boolean[] discrete) {
+      byte[] pixels = new byte[discrete.length];
+
+      for (int i = 0; i < discrete.length; i++) {
+         pixels[i] = discrete[i] ? 0 : (byte)0xFF;
       }
 
-      return asciiImage(pixels, imageWidth, 1);
+      return pixels;
    }
 
    /**

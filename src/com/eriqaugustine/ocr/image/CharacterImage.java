@@ -25,10 +25,63 @@ public class CharacterImage {
       byte[] pixels = Filters.averageChannels(Filters.bwPixels(image, 200), 3);
       System.out.println(ImageUtils.asciiImage(pixels, dimensions.width, 1) + "\n");
 
+      /*
       boolean[] points = discretizeLines(pixels, dimensions.width);
       System.out.println(ImageUtils.asciiImage(points, dimensions.width / DEFAULT_POINT_SIZE) + "\n");
+      */
+
+      boolean[] outline = getOutline(pixels, dimensions.width);
+      System.out.println(ImageUtils.asciiImage(outline, dimensions.width) + "\n");
 
       // TODO(eriq).
+   }
+
+   /**
+    * Get the outlines for an image, only border pixels willbe shown.
+    * |pixels| is assumed to be bw.
+    */
+   public static boolean[] getOutline(byte[] pixels, int imageWidth) {
+      boolean[] outline = new boolean[pixels.length];
+      int[][] neighborOffsets = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
+
+      for (int row = 0; row < pixels.length / imageWidth; row++) {
+         for (int col = 0; col < imageWidth; col++) {
+            int index = MathUtils.rowColToIndex(row, col, imageWidth);
+            boolean border = false;
+
+            // Only consider occupied pixels.
+            if ((pixels[index] & 0xFF) == 0xFF) {
+               continue;
+            }
+
+            // Any pixel touching an edge is automatically a border.
+            if (row == 0 || row == pixels.length / imageWidth - 1 ||
+                col == 0 || col == imageWidth - 1) {
+               border = true;
+            } else {
+               for (int[] neighborOffset : neighborOffsets) {
+                  int newRow = row + neighborOffset[0];
+                  int newCol = col + neighborOffset[1];
+                  int newIndex = MathUtils.rowColToIndex(newRow, newCol, imageWidth);
+
+                  // Not enough to check index bounds because it could be on vertical edge.
+                  // If the pixel touches any whitespace, it is a border.
+                  if (newRow >= 0 && newRow < pixels.length / imageWidth &&
+                      newCol >= 0 && newCol < imageWidth &&
+                      (pixels[newIndex] & 0xFF) == 0xFF) {
+                     border = true;
+                     break;
+                  }
+               }
+            }
+
+            if (border) {
+               outline[index] = true;
+            }
+         }
+      }
+
+      return outline;
    }
 
    /**

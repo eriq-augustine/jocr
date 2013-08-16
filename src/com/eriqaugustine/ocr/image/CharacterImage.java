@@ -25,15 +25,56 @@ public class CharacterImage {
       byte[] pixels = Filters.averageChannels(Filters.bwPixels(image, 200), 3);
       System.out.println(ImageUtils.asciiImage(pixels, dimensions.width, 1) + "\n");
 
-      /*
       boolean[] points = discretizeLines(pixels, dimensions.width);
       System.out.println(ImageUtils.asciiImage(points, dimensions.width / DEFAULT_POINT_SIZE) + "\n");
-      */
 
+      /*
       boolean[] outline = getOutline(pixels, dimensions.width);
       System.out.println(ImageUtils.asciiImage(outline, dimensions.width) + "\n");
+      */
+
+      /*
+      boolean[] points = boxizeLines(pixels, dimensions.width, 2, 1);
+      System.out.println(ImageUtils.asciiImage(points, dimensions.width) + "\n");
+      */
 
       // TODO(eriq).
+   }
+
+   /**
+    * Does the same as discretizeLines(), except the resulting image is the same size.
+    */
+   public static boolean[] boxizeLines(byte[] pixels, int imageWidth,
+                                       int pointSize, double pointDensity) {
+      boolean[] points = new boolean[pixels.length];
+
+      for (int row = 0; row < pixels.length / imageWidth; row++) {
+         for (int col = 0; col < imageWidth; col++) {
+            int pixelCount = 0;
+
+            for (int pointRowOffset = 0; pointRowOffset < pointSize; pointRowOffset++) {
+               for (int pointColOffset = 0; pointColOffset < pointSize; pointColOffset++) {
+                  int index = MathUtils.rowColToIndex(row + pointRowOffset,
+                                                      col + pointColOffset,
+                                                      imageWidth);
+
+                  if (index < pixels.length && pixels[index] == 0) {
+                     pixelCount++;
+                  }
+               }
+            }
+
+            if (pixelCount / (double)(pointSize * pointSize) >= pointDensity) {
+               points[MathUtils.rowColToIndex(row, col, imageWidth)] = true;
+            }
+         }
+      }
+
+      return points;
+   }
+
+   public static boolean[] boxizeLines(byte[] pixels, int imageWidth) {
+      return boxizeLines(pixels, imageWidth, DEFAULT_POINT_SIZE, DEFAULT_POINT_DENSITY);
    }
 
    /**
@@ -89,6 +130,8 @@ public class CharacterImage {
     * A point can be a single pixel, or a box of pixels.
     * Assumes that |pixels| is bw.
     * |pointSize| is the length of one of the sides of the box.
+    * The resulting image will be
+    * (|imageWidth| / |pointSize|) x (|pixels|.length / |imageWidth| / |pointSize|)
     */
    public static boolean[] discretizeLines(byte[] pixels, int imageWidth,
                                            int pointSize, double pointDensity) {

@@ -31,10 +31,10 @@ public class Blob {
    private final int imageLength;
 
    public Blob(int imageLength, int imageWidth) {
-      super(imageLength, imageWidth, BLOB_COVERAGE);
+      this(imageLength, imageWidth, BLOB_COVERAGE);
    }
 
-   public Blob(int imageLength, int imageWidth, double blobcoverage) {
+   public Blob(int imageLength, int imageWidth, double blobCoverage) {
       assert(blobCoverage <= 1);
 
       id = nextId++;

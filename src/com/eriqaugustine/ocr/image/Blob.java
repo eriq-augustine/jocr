@@ -31,8 +31,14 @@ public class Blob {
    private final int imageLength;
 
    public Blob(int imageLength, int imageWidth) {
+      super(imageLength, imageWidth, BLOB_COVERAGE);
+   }
+
+   public Blob(int imageLength, int imageWidth, double blobcoverage) {
+      assert(blobCoverage <= 1);
+
       id = nextId++;
-      points = new HashSet<Integer>((int)(imageLength * BLOB_COVERAGE));
+      points = new HashSet<Integer>((int)(imageLength * blobCoverage));
 
       minRow = MathUtils.indexToRow(imageLength - 1, imageWidth);
       maxRow = 0;

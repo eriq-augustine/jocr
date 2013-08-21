@@ -38,6 +38,9 @@ public class Test {
             MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
 
             CharacterImage.getStrokes(gridTextImage);
+
+            //TEST
+            System.exit(0);
          }
       }
    }

@@ -46,25 +46,28 @@ public class CharacterImage {
       System.out.println(ImageUtils.asciiImage(points, dimensions.width) + "\n");
       */
 
-      List<List<int[]>> hSlices = horizontalCharacterSlices(pixels, dimensions.width);
+      Slice[] hSlices = horizontalCharacterSlices(pixels, dimensions.width);
       System.err.println("Horizontal Slices:");
-      for (int row = 0; row < hSlices.size(); row++) {
-         for (int slice = 0; slice < hSlices.get(row).size(); slice++) {
+      for (Slice slice : hSlices) {
+         for (SlicePiece slicePiece : slice.pieces) {
             System.err.print(String.format("   [%d, %d]",
-                                           hSlices.get(row).get(slice)[0],
-                                           hSlices.get(row).get(slice)[1]));
+                                           slicePiece.start,
+                                           slicePiece.end));
          }
          System.err.println();
       }
       System.err.println();
 
-      List<List<int[]>> lines = slicesToLines(hSlices);
+      List<Line> lines = slicesToLines(hSlices, true);
       System.err.println("Vertical Lines:");
       for (int i = 0; i < lines.size(); i++) {
          System.err.println("   Line: " + i);
+         System.err.println(String.format("   Start: %d, End: %d",
+                                          lines.get(i).start,
+                                          lines.get(i).end));
 
-         for (int[] bounds : lines.get(i)) {
-            System.err.println(String.format("      [%d, %d]", bounds[0], bounds[1]));
+         for (SlicePiece piece : lines.get(i).pieces) {
+            System.err.println(String.format("      [%d, %d]", piece.start, piece.end));
          }
       }
 
@@ -85,38 +88,40 @@ public class CharacterImage {
       // TODO(eriq).
    }
 
-   public static List<List<int[]>> slicesToLines(List<List<int[]>> slices) {
-      return slicesToLines(slices, DEFAULT_OVERLAP_PERCENT);
+   public static List<Line> slicesToLines(Slice[] slices,
+                                          boolean horizontalSlices) {
+      return slicesToLines(slices, horizontalSlices, DEFAULT_OVERLAP_PERCENT);
    }
 
-   public static List<List<int[]>> slicesToLines(List<List<int[]>> slices, double overlapPercent) {
-      List<List<int[]>> lines = new ArrayList<List<int[]>>();
-
-      Set<Integer> usedLineParts = new HashSet<Integer>();
+   public static List<Line> slicesToLines(Slice[] slices,
+                                          boolean horizontalSlice,
+                                          double overlapPercent) {
+      List<Line> lines = new ArrayList<Line>();
 
       // Lines that are not yet complete.
       // A line becomes complete either at the end, or when it was not used in a slice.
-      List<List<int[]>> lineParts = new ArrayList<List<int[]>>();
+      List<Line> lineParts = new ArrayList<Line>();
+
+      // The index of the line parts that have been unsed.
+      Set<Integer> usedLineParts = new HashSet<Integer>();
 
       // The line parts that were added in the current slice.
       // These are NOT parts that were appended to.
-      List<List<int[]>> newLineParts = new ArrayList<List<int[]>>();
+      List<Line> newLineParts = new ArrayList<Line>();
 
-      for (int i = 0; i < slices.size(); i++) {
-         for (int[] bounds : slices.get(i)) {
+      for (int i = 0; i < slices.length; i++) {
+         for (SlicePiece slicePiece : slices[i].pieces) {
             if (i == 0) {
-               List<int[]> newLine = new ArrayList<int[]>();
-               newLine.add(bounds);
-               newLineParts.add(newLine);
+               newLineParts.add(new Line(i, !horizontalSlice, slicePiece));
             } else {
                boolean append = false;
 
                for (int linePartIndex = 0; linePartIndex < lineParts.size(); linePartIndex++) {
-                  List<int[]> linePart = lineParts.get(linePartIndex);
+                  Line linePart = lineParts.get(linePartIndex);
 
-                  if (absoluteOverlapPercent(bounds, linePart.get(linePart.size() - 1)) >=
-                      overlapPercent) {
-                     linePart.add(bounds);
+                  if (absoluteOverlapPercent(slicePiece,
+                                             linePart.getLastPiece()) >= overlapPercent) {
+                     linePart.add(slicePiece, i);
                      usedLineParts.add(new Integer(linePartIndex));
                      append = true;
                      break;
@@ -124,9 +129,7 @@ public class CharacterImage {
                }
 
                if (!append) {
-                  List<int[]> newLine = new ArrayList<int[]>();
-                  newLine.add(bounds);
-                  newLineParts.add(newLine);
+                  newLineParts.add(new Line(i, !horizontalSlice, slicePiece));
                }
             }
          }
@@ -155,6 +158,10 @@ public class CharacterImage {
       return lines;
    }
 
+   private static double absoluteOverlapPercent(SlicePiece a, SlicePiece b) {
+      return absoluteOverlapPercent(a.bounds(), b.bounds());
+   }
+
    /**
     * Given two bounds ([start, end]), give the absolute percentage that they overlap.
     * For the ratio, the larger of the two bounds will be used.
@@ -173,30 +180,26 @@ public class CharacterImage {
       return (double)count / Math.max(a[1] - a[0] + 1, b[1] - b[0] + 1);
    }
 
-   /**
-    * Take an image of a character, and slice that image horizontally.
-    * Return an array of indexes that represent the start and end of a section
-    * of the character in that row (slice).
-    * The return would be a List<int[]>[] (to keep with the convention that known sizes
-    * are arrays and not lists), but java generic array creation blocks that.
-    */
-   public static List<List<int[]>> horizontalCharacterSlices(byte[] pixels, int imageWidth) {
+   public static Slice[] horizontalCharacterSlices(byte[] pixels, int imageWidth) {
       return characterSlices(pixels, imageWidth, true);
    }
 
-   public static List<List<int[]>> verticalCharacterSlices(byte[] pixels, int imageWidth) {
+   public static Slice[] verticalCharacterSlices(byte[] pixels, int imageWidth) {
       return characterSlices(pixels, imageWidth, false);
    }
 
-   private static List<List<int[]>> characterSlices(byte[] pixels, int imageWidth,
-                                                    boolean horizontal) {
-      List<List<int[]>> bounds = new ArrayList<List<int[]>>();
+   /**
+    * Take an image of a character, and slice that image horizontally or vertically.
+    */
+   private static Slice[] characterSlices(byte[] pixels, int imageWidth,
+                                          boolean horizontal) {
+      Slice[] slices = new Slice[pixels.length / imageWidth];
 
       int outerEnd = horizontal ? pixels.length / imageWidth : imageWidth;
       int innerEnd = horizontal ? imageWidth : pixels.length / imageWidth;
 
       for (int i = 0; i < outerEnd; i++) {
-         bounds.add(new ArrayList<int[]>());
+         slices[i] = new Slice(horizontal);
 
          int boundStart = -1;
          for (int j = 0; j < innerEnd; j++) {
@@ -206,17 +209,69 @@ public class CharacterImage {
             if ((0xFF & pixels[index]) == 0 && boundStart == -1) {
                boundStart = j;
             } else if ((0xFF & pixels[index]) != 0 && boundStart != -1) {
-               bounds.get(i).add(new int[]{boundStart, j - 1});
+               slices[i].pieces.add(new SlicePiece(boundStart, j - 1));
                boundStart = -1;
             }
          }
 
          if (boundStart != -1) {
-            bounds.get(i).add(new int[]{boundStart, innerEnd - 1});
+            slices[i].pieces.add(new SlicePiece(boundStart, innerEnd - 1));
          }
       }
 
-      return bounds;
+      return slices;
+   }
+
+   public static class Line {
+      public List<SlicePiece> pieces;
+      public boolean horizontal;
+
+      public int start;
+      public int end;
+
+      public Line(int start, boolean horizontal, SlicePiece startPiece) {
+         this.start = start;
+         this.end = start;
+
+         this.horizontal = horizontal;
+
+         pieces = new ArrayList<SlicePiece>();
+         pieces.add(startPiece);
+      }
+
+      // HACK(eriq): This is sloppy handling of the index.
+      public void add(SlicePiece piece, int index) {
+         pieces.add(piece);
+         end = index;
+      }
+
+      public SlicePiece getLastPiece() {
+         return pieces.get(pieces.size() - 1);
+      }
+   }
+
+   public static class Slice {
+      public List<SlicePiece> pieces;
+      public boolean horizontal;
+
+      public Slice(boolean horizontal) {
+         this.horizontal = horizontal;
+         pieces = new ArrayList<SlicePiece>();
+      }
+   }
+
+   public static class SlicePiece {
+      public int start;
+      public int end;
+
+      public SlicePiece(int start, int end) {
+         this.start = start;
+         this.end = end;
+      }
+
+      public int[] bounds() {
+         return new int[]{start, end};
+      }
    }
 
    /**

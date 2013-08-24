@@ -181,51 +181,38 @@ public class CharacterImage {
     * are arrays and not lists), but java generic array creation blocks that.
     */
    public static List<List<int[]>> horizontalCharacterSlices(byte[] pixels, int imageWidth) {
-      List<List<int[]>> bounds = new ArrayList<List<int[]>>();
-
-      for (int row = 0; row < pixels.length / imageWidth; row++) {
-         bounds.add(new ArrayList<int[]>());
-
-         int boundStart = -1;
-         for (int col = 0; col < imageWidth; col++) {
-            int index = MathUtils.rowColToIndex(row, col, imageWidth);
-
-            if ((0xFF & pixels[index]) == 0 && boundStart == -1) {
-               boundStart = col;
-            } else if ((0xFF & pixels[index]) != 0 && boundStart != -1) {
-               bounds.get(row).add(new int[]{boundStart, col - 1});
-               boundStart = -1;
-            }
-         }
-
-         if (boundStart != -1) {
-            bounds.get(row).add(new int[]{boundStart, imageWidth - 1});
-         }
-      }
-
-      return bounds;
+      return characterSlices(pixels, imageWidth, true);
    }
 
    public static List<List<int[]>> verticalCharacterSlices(byte[] pixels, int imageWidth) {
+      return characterSlices(pixels, imageWidth, false);
+   }
+
+   private static List<List<int[]>> characterSlices(byte[] pixels, int imageWidth,
+                                                    boolean horizontal) {
       List<List<int[]>> bounds = new ArrayList<List<int[]>>();
 
-      for (int col = 0; col < imageWidth; col++) {
+      int outerEnd = horizontal ? pixels.length / imageWidth : imageWidth;
+      int innerEnd = horizontal ? imageWidth : pixels.length / imageWidth;
+
+      for (int i = 0; i < outerEnd; i++) {
          bounds.add(new ArrayList<int[]>());
 
          int boundStart = -1;
-         for (int row = 0; row < pixels.length / imageWidth; row++) {
-            int index = MathUtils.rowColToIndex(row, col, imageWidth);
+         for (int j = 0; j < innerEnd; j++) {
+            int index = horizontal ? MathUtils.rowColToIndex(i, j, imageWidth) :
+                                     MathUtils.rowColToIndex(j, i, imageWidth);
 
             if ((0xFF & pixels[index]) == 0 && boundStart == -1) {
-               boundStart = row;
+               boundStart = j;
             } else if ((0xFF & pixels[index]) != 0 && boundStart != -1) {
-               bounds.get(col).add(new int[]{boundStart, row - 1});
+               bounds.get(i).add(new int[]{boundStart, j - 1});
                boundStart = -1;
             }
          }
 
          if (boundStart != -1) {
-            bounds.get(col).add(new int[]{boundStart, pixels.length / imageWidth - 1});
+            bounds.get(i).add(new int[]{boundStart, innerEnd - 1});
          }
       }
 

@@ -14,12 +14,22 @@ import magick.MagickImage;
 
 /**
  * Namespace for images that contain a single character.
+ * TODO(eriq): All of the horizontal boolean buisness is confusing and error-prone
+ *  (see getLines() and most called functions from there).
  */
 public class CharacterImage {
-   public static final int DEFAULT_POINT_SIZE = 2;
-   public static final double DEFAULT_POINT_DENSITY = 0.75;
+   private static final int DEFAULT_POINT_SIZE = 2;
+   private static final double DEFAULT_POINT_DENSITY = 0.75;
 
    private static final double DEFAULT_OVERLAP_PERCENT = 0.50;
+
+   private static final int DEFAULT_MIN_LINE_SLICES = 3;
+
+   /**
+    * A line must cover at least this percentage of slices ine its respective direction to not
+    * be pruned.
+    */
+   private static final double DEFAULT_LINE_SLICE_PERCENTAGE = 0.10;
 
    /**
     * Break up the character into strokes.
@@ -46,50 +56,72 @@ public class CharacterImage {
       System.out.println(ImageUtils.asciiImage(points, dimensions.width) + "\n");
       */
 
-      Slice[] hSlices = horizontalCharacterSlices(pixels, dimensions.width);
-      System.err.println("Horizontal Slices:");
-      for (Slice slice : hSlices) {
-         for (SlicePiece slicePiece : slice.pieces) {
-            System.err.print(String.format("   [%d, %d]",
-                                           slicePiece.start,
-                                           slicePiece.end));
-         }
-         System.err.println();
-      }
-      System.err.println();
+      List<Line> vLines = getLines(pixels, dimensions.width, false);
+      pruneLines(vLines, (int)(dimensions.height * DEFAULT_LINE_SLICE_PERCENTAGE));
 
-      List<Line> lines = slicesToLines(hSlices, true);
+      List<Line> hLines = getLines(pixels, dimensions.width, true);
+      pruneLines(hLines, (int)(dimensions.width * DEFAULT_LINE_SLICE_PERCENTAGE));
+
+         /*
       System.err.println("Vertical Lines:");
-      for (int i = 0; i < lines.size(); i++) {
+      for (int i = 0; i < vLines.size(); i++) {
          System.err.println("   Line: " + i);
          System.err.println(String.format("   Start: %d, End: %d",
-                                          lines.get(i).start,
-                                          lines.get(i).end));
+                                          vLines.get(i).start,
+                                          vLines.get(i).end));
 
-         for (SlicePiece piece : lines.get(i).pieces) {
+         for (SlicePiece piece : vLines.get(i).pieces) {
+            System.err.println(String.format("      [%d, %d]", piece.start, piece.end));
+         }
+      }
+      */
+      System.err.println("Horizontal Lines:");
+      for (int i = 0; i < hLines.size(); i++) {
+         System.err.println("   Line: " + i);
+         System.err.println(String.format("   Start: %d, End: %d",
+                                          hLines.get(i).start,
+                                          hLines.get(i).end));
+
+         for (SlicePiece piece : hLines.get(i).pieces) {
             System.err.println(String.format("      [%d, %d]", piece.start, piece.end));
          }
       }
 
-      /*
-      List<List<int[]>> vSlices = verticalCharacterSlices(pixels, dimensions.width);
-      System.err.println("Vertical Slices:");
-      for (int row = 0; row < vSlices.size(); row++) {
-         for (int slice = 0; slice < vSlices.get(row).size(); slice++) {
-            System.err.print(String.format("   [%d, %d]",
-                                           vSlices.get(row).get(slice)[0],
-                                           vSlices.get(row).get(slice)[1]));
-         }
-         System.err.println();
-      }
-      System.err.println();
-      */
-
       // TODO(eriq).
    }
 
-   public static List<Line> slicesToLines(Slice[] slices,
-                                          boolean horizontalSlices) {
+   /**
+    * Prune invalid lines from a list of lines.
+    * Rules:
+    *  - Lines must cover at least |minSlices|.
+    */
+   private static void pruneLines(List<Line> lines, int minSlices) {
+      List<Integer> toRemove = new ArrayList<Integer>();
+
+      for (int i = 0; i < lines.size(); i++) {
+         Line line = lines.get(i);
+
+         if (line.pieces.size() < minSlices) {
+            toRemove.add(new Integer(i));
+         }
+      }
+
+      for (int removeIndex = toRemove.size() - 1; removeIndex >= 0; removeIndex--) {
+         lines.remove(toRemove.get(removeIndex).intValue());
+      }
+   }
+
+   private static void pruneLines(List<Line> lines) {
+      pruneLines(lines, DEFAULT_MIN_LINE_SLICES);
+   }
+
+   public static List<Line> getLines(byte[] pixels, int imageWidth, boolean horizontalLines) {
+      // Note: Need to make vertical slices to get horizontal lines and visa-versa.
+      Slice[] slices = characterSlices(pixels, imageWidth, !horizontalLines);
+      return slicesToLines(slices, !horizontalLines);
+   }
+
+   public static List<Line> slicesToLines(Slice[] slices, boolean horizontalSlices) {
       return slicesToLines(slices, horizontalSlices, DEFAULT_OVERLAP_PERCENT);
    }
 
@@ -180,23 +212,15 @@ public class CharacterImage {
       return (double)count / Math.max(a[1] - a[0] + 1, b[1] - b[0] + 1);
    }
 
-   public static Slice[] horizontalCharacterSlices(byte[] pixels, int imageWidth) {
-      return characterSlices(pixels, imageWidth, true);
-   }
-
-   public static Slice[] verticalCharacterSlices(byte[] pixels, int imageWidth) {
-      return characterSlices(pixels, imageWidth, false);
-   }
-
    /**
     * Take an image of a character, and slice that image horizontally or vertically.
     */
    private static Slice[] characterSlices(byte[] pixels, int imageWidth,
                                           boolean horizontal) {
-      Slice[] slices = new Slice[pixels.length / imageWidth];
-
       int outerEnd = horizontal ? pixels.length / imageWidth : imageWidth;
       int innerEnd = horizontal ? imageWidth : pixels.length / imageWidth;
+
+      Slice[] slices = new Slice[outerEnd];
 
       for (int i = 0; i < outerEnd; i++) {
          slices[i] = new Slice(horizontal);
@@ -220,58 +244,6 @@ public class CharacterImage {
       }
 
       return slices;
-   }
-
-   public static class Line {
-      public List<SlicePiece> pieces;
-      public boolean horizontal;
-
-      public int start;
-      public int end;
-
-      public Line(int start, boolean horizontal, SlicePiece startPiece) {
-         this.start = start;
-         this.end = start;
-
-         this.horizontal = horizontal;
-
-         pieces = new ArrayList<SlicePiece>();
-         pieces.add(startPiece);
-      }
-
-      // HACK(eriq): This is sloppy handling of the index.
-      public void add(SlicePiece piece, int index) {
-         pieces.add(piece);
-         end = index;
-      }
-
-      public SlicePiece getLastPiece() {
-         return pieces.get(pieces.size() - 1);
-      }
-   }
-
-   public static class Slice {
-      public List<SlicePiece> pieces;
-      public boolean horizontal;
-
-      public Slice(boolean horizontal) {
-         this.horizontal = horizontal;
-         pieces = new ArrayList<SlicePiece>();
-      }
-   }
-
-   public static class SlicePiece {
-      public int start;
-      public int end;
-
-      public SlicePiece(int start, int end) {
-         this.start = start;
-         this.end = end;
-      }
-
-      public int[] bounds() {
-         return new int[]{start, end};
-      }
    }
 
    /**
@@ -493,5 +465,57 @@ public class CharacterImage {
       }
 
       return maps;
+   }
+
+   public static class Line {
+      public List<SlicePiece> pieces;
+      public boolean horizontal;
+
+      public int start;
+      public int end;
+
+      public Line(int start, boolean horizontal, SlicePiece startPiece) {
+         this.start = start;
+         this.end = start;
+
+         this.horizontal = horizontal;
+
+         pieces = new ArrayList<SlicePiece>();
+         pieces.add(startPiece);
+      }
+
+      // HACK(eriq): This is sloppy handling of the index.
+      public void add(SlicePiece piece, int index) {
+         pieces.add(piece);
+         end = index;
+      }
+
+      public SlicePiece getLastPiece() {
+         return pieces.get(pieces.size() - 1);
+      }
+   }
+
+   public static class Slice {
+      public List<SlicePiece> pieces;
+      public boolean horizontal;
+
+      public Slice(boolean horizontal) {
+         this.horizontal = horizontal;
+         pieces = new ArrayList<SlicePiece>();
+      }
+   }
+
+   public static class SlicePiece {
+      public int start;
+      public int end;
+
+      public SlicePiece(int start, int end) {
+         this.start = start;
+         this.end = end;
+      }
+
+      public int[] bounds() {
+         return new int[]{start, end};
+      }
    }
 }

@@ -58,11 +58,12 @@ public class CharacterImage {
 
       List<Line> vLines = getLines(pixels, dimensions.width, false);
       pruneLines(vLines, (int)(dimensions.height * DEFAULT_LINE_SLICE_PERCENTAGE));
+      singlePathLines(vLines);
 
       List<Line> hLines = getLines(pixels, dimensions.width, true);
       pruneLines(hLines, (int)(dimensions.width * DEFAULT_LINE_SLICE_PERCENTAGE));
+      singlePathLines(hLines);
 
-         /*
       System.err.println("Vertical Lines:");
       for (int i = 0; i < vLines.size(); i++) {
          System.err.println("   Line: " + i);
@@ -74,7 +75,7 @@ public class CharacterImage {
             System.err.println(String.format("      [%d, %d]", piece.start, piece.end));
          }
       }
-      */
+
       System.err.println("Horizontal Lines:");
       for (int i = 0; i < hLines.size(); i++) {
          System.err.println("   Line: " + i);
@@ -88,6 +89,12 @@ public class CharacterImage {
       }
 
       // TODO(eriq).
+   }
+
+   private static void singlePathLines(List<Line> lines) {
+      for (Line line : lines) {
+         line.singlePath();
+      }
    }
 
    /**
@@ -493,6 +500,30 @@ public class CharacterImage {
       public SlicePiece getLastPiece() {
          return pieces.get(pieces.size() - 1);
       }
+
+      /**
+       * Thin the Line and ensure that there is only a single wide path
+       *  on the line.
+       * Thin all even slices, and then use the odd slices as bridges.
+       */
+      public void singlePath() {
+         // First thin each even piece.
+         for (int i = 0; i < pieces.size(); i += 2) {
+            pieces.get(i).thin();
+         }
+
+         for (int i = 1; i < pieces.size(); i += 2) {
+            if (i == pieces.size() - 1) {
+               pieces.get(i).thin();
+               pieces.get(i).extend(pieces.get(i - 1).start);
+            } else {
+               pieces.get(i).start = Math.min(pieces.get(i - 1).start,
+                                              pieces.get(i + 1).start);
+               pieces.get(i).end = Math.max(pieces.get(i - 1).start,
+                                            pieces.get(i + 1).start);
+            }
+         }
+      }
    }
 
    public static class Slice {
@@ -516,6 +547,23 @@ public class CharacterImage {
 
       public int[] bounds() {
          return new int[]{start, end};
+      }
+
+      /**
+       * Thin the piece to a single point.
+       */
+      public void thin() {
+         int point = start + ((end - start) / 2);
+         start = point;
+         end = point;
+      }
+
+      public void extend(int index) {
+         if (index < start) {
+            start = index;
+         } else if (index > end) {
+            end = index;
+         }
       }
    }
 }

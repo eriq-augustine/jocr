@@ -39,7 +39,7 @@ public class CharacterImage {
       Dimension dimensions = image.getDimension();
 
       byte[] pixels = Filters.averageChannels(Filters.bwPixels(image, 200), 3);
-      System.out.println(ImageUtils.asciiImage(pixels, dimensions.width, 1) + "\n");
+      System.out.println(ImageUtils.asciiImage(pixels, dimensions.width, 1) + "\n-\n");
 
       /*
       boolean[] points = discretizeLines(pixels, dimensions.width);
@@ -60,9 +60,17 @@ public class CharacterImage {
       pruneLines(vLines, (int)(dimensions.height * DEFAULT_LINE_SLICE_PERCENTAGE));
       singlePathLines(vLines);
 
+      byte[] imageLines = ImageUtils.blankPixels(pixels.length);
+      drawLines(vLines, imageLines, dimensions.width);
+      System.out.println(ImageUtils.asciiImage(imageLines, dimensions.width, 1) + "\n-\n");
+
       List<Line> hLines = getLines(pixels, dimensions.width, true);
       pruneLines(hLines, (int)(dimensions.width * DEFAULT_LINE_SLICE_PERCENTAGE));
       singlePathLines(hLines);
+
+      imageLines = ImageUtils.blankPixels(pixels.length);
+      drawLines(hLines, imageLines, dimensions.width);
+      System.out.println(ImageUtils.asciiImage(imageLines, dimensions.width, 1) + "\n-\n");
 
       System.err.println("Vertical Lines:");
       for (int i = 0; i < vLines.size(); i++) {
@@ -88,7 +96,28 @@ public class CharacterImage {
          }
       }
 
+      //TEST
+      imageLines = ImageUtils.blankPixels(pixels.length);
+      drawLines(vLines, imageLines, dimensions.width);
+      drawLines(hLines, imageLines, dimensions.width);
+      System.out.println(ImageUtils.asciiImage(imageLines, dimensions.width, 1) + "\n-\n");
       // TODO(eriq).
+   }
+
+   private static void drawLines(List<Line> lines, byte[] image, int imageWidth) {
+      for (Line line : lines) {
+         for (int i = 0; i < line.pieces.size(); i++) {
+            SlicePiece piece = line.pieces.get(i);
+
+            for (int j = piece.start; j <= piece.end; j++) {
+               int row = line.horizontal ? j : line.start + i;
+               int col = line.horizontal ? line.start + i : j;
+
+               int index = MathUtils.rowColToIndex(row, col, imageWidth);
+               image[index] = 0;
+            }
+         }
+      }
    }
 
    private static void singlePathLines(List<Line> lines) {

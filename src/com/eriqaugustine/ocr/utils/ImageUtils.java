@@ -22,6 +22,19 @@ public class ImageUtils {
       {'@', '#', '*', '.', ' '};
 
    /**
+    * Make an empty white image.
+    */
+   public static byte[] blankPixels(int imageLength) {
+      byte[] rtn = new byte[imageLength];
+
+      for (int i = 0; i < imageLength; i++) {
+         rtn[i] = (byte)0xFF;
+      }
+
+      return rtn;
+   }
+
+   /**
     * Create an ascii representation of an image.
     */
    public static String asciiImage(byte[] pixels, int imageWidth, int numChannels) {

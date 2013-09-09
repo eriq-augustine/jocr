@@ -8,6 +8,7 @@
    <path id="project.classpath">
       <pathelement location="bin"/>
       <pathelement location="lib/jmagick-6.4.0.jar"/>
+      <pathelement location="lib/weka.jar"/>
    </path>
 
    <target name="init">
@@ -24,11 +25,13 @@
       <delete dir="bin"/>
    </target>
 
-   <target depends="build-project" name="build"/>
+   <target depends="build-subprojects,build-project" name="build"/>
+
+   <target name="build-subprojects"/>
 
    <target depends="init" name="build-project">
       <echo message="${ant.project.name}: ${ant.file}"/>
-      <javac encoding="UTF-8" debug="true" debuglevel="${debuglevel}" includeantruntime="false" destdir="bin" source="${source}" target="${target}">
+      <javac debug="true" debuglevel="${debuglevel}" includeantruntime="false" destdir="bin" source="${source}" target="${target}">
          <src path="src"/>
          <classpath refid="project.classpath"/>
          <compilerarg value="-Xlint"/>
@@ -41,10 +44,70 @@
          <fileset dir="src">
          </fileset>
       </copy>
-      <jar destfile="${ant.project.name}.jar" basedir="bin" compress="true" />
+      <jar destfile="${ant.project.name}.jar" basedir="bin" compress="true">
+         <zipgroupfileset dir="lib" includes="*.jar"/>
+      </jar>
    </target>
 
    <target name="bin-jar" description="Package into JAR excluding source" depends="clean,build">
-      <jar destfile="${ant.project.name}.jar" basedir="bin" compress="true" />
+      <jar destfile="${ant.project.name}.jar" basedir="bin" compress="true">
+         <zipgroupfileset dir="lib" includes="*.jar"/>
+      </jar>
    </target>
+
+   <!--
+   <target name="test" depends="build" description="Run all the JUnit tests.">
+      <echo message="Running all tests." />
+      <junit showoutput="true" printsummary="yes" fork="yes">
+         <formatter type="brief" usefile="false"/>
+         <classpath refid="project.classpath"/>
+         <batchtest fork="yes">
+            <fileset dir="test">
+               <include name="**/*JTest.java"/>
+            </fileset>
+         </batchtest>
+      </junit>
+   </target>
+
+   <target name="ensure-test-name" unless="test">
+      <fail message="You must run this target with -Dtest=TestName"/>
+   </target>
+
+   <target name="runtest" description="Runs the test you specify on the command line with -Dtest=" depends="build, ensure-test-name">
+      <junit showoutput="true" printsummary="yes" fork="yes">
+         <classpath refid="project.classpath" />
+         <formatter type="brief" usefile="false"/>
+         <batchtest fork="yes">
+            <fileset dir="test">
+               <include name="**/${test}.java"/>
+            </fileset>
+         </batchtest>
+      </junit>
+   </target>
+   -->
+
+   <!-- checkstyle -->
+   <taskdef resource="checkstyletask.properties" classpath="./tools/checkstyle-5.6-all.jar" />
+   <target name="checkstyle" description="Check some style">
+      <checkstyle config="tools/google_style.xml">
+         <fileset dir="src/com/eriqaugustine" includes="**/*.java" />
+         <formatter type="plain"/>
+      </checkstyle>
+   </target>
+   <target name="style" depends="checkstyle" />
+
+   <!-- lint4j -->
+   <taskdef name="lint4j" classname="com.jutils.lint4j.ant.Lint4jAntTask">
+      <classpath>
+         <pathelement location="tools/lint4j.jar" />
+      </classpath>
+   </taskdef>
+
+   <target name="lint" description="Lint check.">
+      <lint4j sourcepath="src" packages="com.eriqaugustine.*" level="2">
+         <classpath refid="project.classpath"/>
+      </lint4j>
+   </target>
+
+   <target name="lint4j" depends="lint" />
 </project>

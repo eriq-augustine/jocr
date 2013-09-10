@@ -22,10 +22,10 @@ public class Test {
 
    public static void main(String[] args) throws Exception {
       //singleFontGenTest();
-      multiFontGenTest();
+      //multiFontGenTest();
       //imageBreakdown();
       //densityComparisonTest();
-      //strokeComparisonTest();
+      strokeComparisonTest();
    }
 
    public static void strokeComparisonTest() throws Exception {
@@ -37,7 +37,8 @@ public class Test {
       PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(HIRAGANA),
                                                HIRAGANA);
 
-      ImageInfo info = new ImageInfo("testImages/1Text.png");
+      //ImageInfo info = new ImageInfo("testImages/1Text.png");
+      ImageInfo info = new ImageInfo("testImages/hiragana.png");
       MagickImage baseImage = new MagickImage(info);
 
       MagickImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
@@ -45,8 +46,10 @@ public class Test {
          for (int col = 0; col < gridTextImages[row].length; col++) {
             MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
 
+            System.out.println(ImageUtils.asciiImage(gridTextImage) + "\n-\n");
+
             //TEST
-            CharacterImage.getStrokes(gridTextImage);
+            //CharacterImage.getStrokes(gridTextImage);
             System.out.println("Classify (" + row + ", " + col + "): " +
                                classy.classify(gridTextImage));
          }

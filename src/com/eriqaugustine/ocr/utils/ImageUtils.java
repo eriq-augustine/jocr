@@ -70,6 +70,18 @@ public class ImageUtils {
       return asciiImage(discreteToPixels(points), imageWidth, 1);
    }
 
+   public static String asciiImage(MagickImage image) throws Exception {
+      Dimension dimensions = image.getDimension();
+      byte[] pixels = new byte[dimensions.width * dimensions.height * 3];
+
+      image.dispatchImage(0, 0,
+                          dimensions.width, dimensions.height,
+                          "RGB",
+                          pixels);
+
+      return asciiImage(pixels, dimensions.width, 3);
+   }
+
    public static byte[] discreteToPixels(boolean[] discrete) {
       byte[] pixels = new byte[discrete.length];
 

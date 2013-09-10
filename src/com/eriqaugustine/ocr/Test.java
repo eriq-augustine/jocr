@@ -21,10 +21,11 @@ public class Test {
    public static final String KATAKANA = "アイウエオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモヤユヨラリルレロワヰヱヲン";
 
    public static void main(String[] args) throws Exception {
-      //fontGenTest();
+      //singleFontGenTest();
+      multiFontGenTest();
       //imageBreakdown();
       //densityComparisonTest();
-      strokeComparisonTest();
+      //strokeComparisonTest();
    }
 
    public static void strokeComparisonTest() throws Exception {
@@ -95,7 +96,7 @@ public class Test {
       return bestGuess;
    }
 
-   public static void fontGenTest() throws Exception {
+   public static void singleFontGenTest() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "fontGen");
 
       MagickImage image = null;
@@ -105,7 +106,7 @@ public class Test {
       do {
          // System.err.println(count + " -- " + (char)current + " (" + current + ")");
 
-         image = CharacterUtils.generateCharacter((char)current, false);
+         image = CharacterUtils.generateCharacter((char)current, true);
          image.setFileName(String.format("%s/char-%03d-%c.png",
                                          outDirectory,
                                          count,
@@ -114,10 +115,35 @@ public class Test {
 
          count++;
          current++;
-
-         //TEST
-         break;
       } while ((char)(current -1) != 'ん');
+   }
+
+   public static void multiFontGenTest() throws Exception {
+      String outDirectory = FileUtils.itterationDir("out", "multiFontGen");
+
+      MagickImage image = null;
+
+      for (String fontFamily : CharacterUtils.FONTS) {
+         for (int i = 0; i < HIRAGANA.length(); i++) {
+            // System.err.println(count + " -- " + (char)current + " (" + current + ")");
+            //TEST
+            char character = 'ど';
+            // char character = HIRAGANA.charAt(i);
+
+            image = CharacterUtils.generateCharacter(character, true,
+                                                     CharacterUtils.DEFAULT_FONT_SIZE,
+                                                     fontFamily);
+            image.setFileName(String.format("%s/char-%s-%03d-%c.png",
+                                            outDirectory,
+                                            fontFamily,
+                                            i,
+                                            character));
+            image.writeImage(new ImageInfo());
+
+            //TEST
+            break;
+         }
+      }
    }
 
    public static void imageBreakdown() throws Exception {

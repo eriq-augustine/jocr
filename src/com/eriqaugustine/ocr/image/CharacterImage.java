@@ -1,5 +1,6 @@
 package com.eriqaugustine.ocr.image;
 
+import com.eriqaugustine.ocr.classification.PDCFeature;
 import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
@@ -41,6 +42,22 @@ public class CharacterImage {
       byte[] pixels = Filters.averageChannels(Filters.bwPixels(image, 200), 3);
       System.out.println(ImageUtils.asciiImage(pixels, dimensions.width, 1) + "\n-\n");
 
+      System.out.println("----------");
+      boolean[] discretePixels = Filters.discretizePixels(image, 200);
+      PDCFeature[] pdcFeatures = PDC.pdc(discretePixels, dimensions.width);
+      for (int row = 0; row < dimensions.height; row++) {
+         for (int col = 0; col < dimensions.width; col++) {
+            int index = MathUtils.rowColToIndex(row, col, dimensions.width);
+            if (pdcFeatures[index].empty()) {
+               System.out.print(" ");
+            } else {
+               System.out.print("*");
+               System.err.println(pdcFeatures[index]);
+            }
+         }
+         System.out.println();
+      }
+
       /*
       boolean[] points = discretizeLines(pixels, dimensions.width);
       System.out.println(ImageUtils.asciiImage(points, dimensions.width / DEFAULT_POINT_SIZE) + "\n");
@@ -56,6 +73,7 @@ public class CharacterImage {
       System.out.println(ImageUtils.asciiImage(points, dimensions.width) + "\n");
       */
 
+      /*
       List<Line> vLines = getLines(pixels, dimensions.width, false);
       pruneLines(vLines, (int)(dimensions.height * DEFAULT_LINE_SLICE_PERCENTAGE));
       singlePathLines(vLines);
@@ -101,7 +119,7 @@ public class CharacterImage {
       drawLines(vLines, imageLines, dimensions.width);
       drawLines(hLines, imageLines, dimensions.width);
       System.out.println(ImageUtils.asciiImage(imageLines, dimensions.width, 1) + "\n-\n");
-      // TODO(eriq).
+      */
    }
 
    private static void drawLines(List<Line> lines, byte[] image, int imageWidth) {

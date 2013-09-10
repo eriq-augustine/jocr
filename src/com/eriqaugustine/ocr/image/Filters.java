@@ -44,6 +44,26 @@ public class Filters {
    }
 
    /**
+    * Works just like bwPixels, except it retuns a boolean[].
+    * Returned array will be a single channel.
+    ( In the resulting image, true means that there is black there.
+    */
+   public static boolean[] discretizePixels(MagickImage image, int threshold) throws Exception {
+      byte[] bw = averageChannels(bwPixels(image, threshold), 3);
+      boolean[] rtn = new boolean[bw.length];
+
+      for (int i = 0; i < bw.length; i++) {
+         rtn[i] = bw[i] == 0;
+      }
+
+      return rtn;
+   }
+
+   public static boolean[] discretizePixels(MagickImage image) throws Exception {
+      return discretizePixels(image, DEFAULT_BW_THRESHOLD);
+   }
+
+   /**
     * Take an image and make it only black and white.
     * This filter doesn't mess around, no greys.
     * Only true black and true white.

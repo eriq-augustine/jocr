@@ -1,5 +1,6 @@
 package com.eriqaugustine.ocr;
 
+import com.eriqaugustine.ocr.classification.PDCClassifier;
 import com.eriqaugustine.ocr.image.BubbleDetection;
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.Filters;
@@ -28,6 +29,9 @@ public class Test {
 
    public static void strokeComparisonTest() throws Exception {
       String alphabet = HIRAGANA + KATAKANA;
+
+      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
+                                               alphabet);
 
       ImageInfo info = new ImageInfo("testImages/1Text.png");
       MagickImage baseImage = new MagickImage(info);

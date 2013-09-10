@@ -21,4 +21,9 @@ public class MathUtils {
    public static int rowColToIndex(int row, int col, int width) {
       return row * width + col;
    }
+
+   public static boolean inBounds(int row, int col, int width, int length) {
+      return row >= 0 && row < length / width &&
+             col >= 0 && col < width;
+   }
 }

@@ -1,6 +1,7 @@
 package com.eriqaugustine.ocr.image;
 
 import com.eriqaugustine.ocr.classification.PDCFeature;
+import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
 import magick.MagickImage;
@@ -13,6 +14,10 @@ import java.util.List;
  * See papers in articels.
  */
 public final class PDC {
+   //TEST
+   //private static final int SCALE_SIZE = 64;
+   private static final int SCALE_SIZE = 32;
+
    /**
     * The deltas [row, col] for the different directions available to PDC.
     * Starts at 12 and moves clockwise by 1:30.
@@ -43,6 +48,9 @@ public final class PDC {
     * TODO(eriq): Multiple scanning directions.
     */
    public static PDCFeature[] pdc(boolean[] image, int imageWidth) {
+      // TODO(eriq): Be more flexible about sizes
+      assert(imageWidth == SCALE_SIZE && image.length / imageWidth == SCALE_SIZE);
+
       PDCFeature[] features = new PDCFeature[image.length];
       for (int i = 0; i < image.length; i++) {
          features[i] = new PDCFeature();
@@ -59,7 +67,8 @@ public final class PDC {
    }
 
    public static PDCFeature[] pdc(MagickImage image) throws Exception {
-      boolean[] discretePixels = Filters.discretizePixels(image, 200);
+      boolean[] discretePixels =
+            Filters.discretizePixels(ImageUtils.scaleImage(image, SCALE_SIZE, SCALE_SIZE), 200);
       return pdc(discretePixels, image.getDimension().width);
    }
 

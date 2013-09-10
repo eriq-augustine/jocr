@@ -21,6 +21,11 @@ public class ImageUtils {
    public static final char[] ASCII_PLACEHOLDERS =
       {'@', '#', '*', '.', ' '};
 
+   public static MagickImage scaleImage(MagickImage image, int newCols, int newRows)
+         throws Exception {
+      return image.scaleImage(newCols, newRows);
+   }
+
    /**
     * Make an empty white image.
     */

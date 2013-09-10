@@ -1,6 +1,7 @@
 package com.eriqaugustine.ocr.classification;
 
 import com.eriqaugustine.ocr.image.PDC;
+import com.eriqaugustine.ocr.utils.MathUtils;
 
 /**
  * A single PDC (DC) instance.
@@ -26,7 +27,13 @@ public class PDCFeature {
    }
 
    public boolean empty() {
-      return contributivity == null;
+      for (double part : contributivity) {
+         if (!MathUtils.doubleEquals(part, 0, 0.00001)) {
+            return false;
+         }
+      }
+
+      return true;
    }
 
    public int length() {

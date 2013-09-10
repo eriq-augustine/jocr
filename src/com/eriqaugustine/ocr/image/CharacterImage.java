@@ -52,7 +52,6 @@ public class CharacterImage {
                System.out.print(" ");
             } else {
                System.out.print("*");
-               System.err.println(pdcFeatures[index]);
             }
          }
          System.out.println();

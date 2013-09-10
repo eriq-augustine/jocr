@@ -40,8 +40,6 @@ public class PDCClassifier {
 
       numFeatures = trainingDocuments.get(0).length;
 
-      featureAttributes = getFeatureAttributes();
-
       Set<String> seenCharacters = new HashSet<String>();
       for (String seenCharacter : trainingCharacters) {
          seenCharacters.add(seenCharacter);
@@ -52,24 +50,38 @@ public class PDCClassifier {
          possibleCharacters.addElement(seenCharacter);
       }
 
+      featureAttributes = getFeatureAttributes(possibleCharacters);
+
       Instances trainingSet = prepTraining(trainingDocuments, trainingCharacters);
       classifier = new SMO();
       // TODO(eriq): This can throw.
       classifier.buildClassifier(trainingSet);
    }
 
+   public String classify(MagickImage image) throws Exception {
+      return this.classify(PDC.pdc(image));
+   }
+
    public String classify(PDCFeature[] features) {
+      assert(numFeatures == features.length);
+
       try {
          Instance instance = prepUnclassed(features);
          int prediction = (int)classifier.classifyInstance(instance);
          return instance.classAttribute().value(prediction);
       } catch (Exception ex) {
+         System.err.println("ERROR: " + ex);
+         ex.printStackTrace(System.err);
          return null;
       }
    }
 
+   // TODO(eriq): Probably better to classify multiple documents at once.
    private Instance prepUnclassed(PDCFeature[] features) {
       assert(features.length == numFeatures);
+
+      Instances instances = new Instances("Unclassified", featureAttributes, 1);
+      instances.setClassIndex(0);
 
       // Note that the first spot is reserved for the class value;
       Instance instance = new Instance(featureAttributes.size());
@@ -81,7 +93,9 @@ public class PDCClassifier {
          }
       }
 
-      return instance;
+      instances.add(instance);
+
+      return instances.instance(0);
    }
 
    private Instances prepTraining(List<PDCFeature[]> trainingDocuments,
@@ -94,8 +108,6 @@ public class PDCClassifier {
       for (int i = 0; i < trainingDocuments.size(); i++) {
          Instance instance = prepUnclassed(trainingDocuments.get(i));
          // Set the class value.
-         //TEST
-         // instance.setValue(0, trainingCharacters.get(i));
          instance.setValue((Attribute)featureAttributes.elementAt(0), trainingCharacters.get(i));
 
          trainingSet.add(instance);
@@ -104,10 +116,11 @@ public class PDCClassifier {
       return trainingSet;
    }
 
-   private FastVector getFeatureAttributes() {
+   private FastVector getFeatureAttributes(FastVector possibleClasses) {
       FastVector features = new FastVector(1 + numFeatures);
 
-      features.addElement(new Attribute("document_class", possibleCharacters));
+      // Must be done 
+      features.addElement(new Attribute("document_class", possibleClasses));
       for (int i = 0; i < numFeatures; i++) {
          for (int j = 0; j < PDC.PDC_DIRECTION_DELTAS.length; j++) {
             features.addElement(new Attribute("POINT_" + i + "_DC_" + j));

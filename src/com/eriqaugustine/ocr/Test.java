@@ -30,8 +30,11 @@ public class Test {
    public static void strokeComparisonTest() throws Exception {
       String alphabet = HIRAGANA + KATAKANA;
 
-      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-                                               alphabet);
+      //TEST
+      //PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
+      //                                         alphabet);
+      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(HIRAGANA),
+                                               HIRAGANA);
 
       ImageInfo info = new ImageInfo("testImages/1Text.png");
       MagickImage baseImage = new MagickImage(info);
@@ -41,10 +44,10 @@ public class Test {
          for (int col = 0; col < gridTextImages[row].length; col++) {
             MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
 
-            CharacterImage.getStrokes(gridTextImage);
-
             //TEST
-            System.exit(0);
+            CharacterImage.getStrokes(gridTextImage);
+            System.out.println("Classify (" + row + ", " + col + "): " +
+                               classy.classify(gridTextImage));
          }
       }
    }

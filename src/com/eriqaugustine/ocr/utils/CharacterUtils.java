@@ -10,7 +10,7 @@ import magick.PixelPacket;
  */
 public class CharacterUtils {
    public static final String DEFAULT_FONT_FAMILY = "IPAGothic";
-   public static final int DEFAULT_FONT_SIZE = 48;
+   public static final int DEFAULT_FONT_SIZE = 64;
 
    /**
     * Generate an image for |character|.

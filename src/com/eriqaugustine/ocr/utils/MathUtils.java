@@ -4,6 +4,8 @@ package com.eriqaugustine.ocr.utils;
  * Math utilities.
  */
 public class MathUtils {
+   private static double DEFAULT_EPSILON = 0.0001;
+
    /**
     * Convert a 1D index to the row the index is on.
     */
@@ -25,5 +27,13 @@ public class MathUtils {
    public static boolean inBounds(int row, int col, int width, int length) {
       return row >= 0 && row < length / width &&
              col >= 0 && col < width;
+   }
+
+   public static boolean doubleEquals(double a, double b, double epsilon) {
+      return Math.abs(a - b) <= epsilon;
+   }
+
+   public static boolean doubleEquals(double a, double b) {
+      return doubleEquals(a, b, DEFAULT_EPSILON);
    }
 }

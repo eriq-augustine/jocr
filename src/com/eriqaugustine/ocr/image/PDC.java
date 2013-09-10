@@ -7,7 +7,9 @@ import com.eriqaugustine.ocr.utils.MathUtils;
 import magick.MagickImage;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A class to handle the functionality for PDC (Peripheral Direction Contributivities).
@@ -43,9 +45,8 @@ public final class PDC {
     * Run PDC on an image.
     * |image| must be already be binary.
     * TODO(eriq): Normalize image size.
-    * TODO(eriq): Multiple layers.
     * TODO(eriq): Group vectors into bins.
-    * TODO(eriq): Multiple scanning directions.
+    * TODO(eriq): Diagnal scans.
     */
    public static PDCFeature[] pdc(boolean[] image, int imageWidth) {
       // TODO(eriq): Be more flexible about sizes
@@ -56,7 +57,21 @@ public final class PDC {
          features[i] = new PDCFeature();
       }
 
-      List<Integer> peripherals = horizontalScan(image, imageWidth, 0, 1);
+      Set<Integer> peripherals = new HashSet<Integer>();
+      // Layers
+      for (int i = 0; i < 3; i++) {
+         // Horizontal LTR
+         peripherals.addAll(scan(image, imageWidth, i, true, true));
+
+         // Horizontal RTL
+         peripherals.addAll(scan(image, imageWidth, i, true, false));
+
+         // Vertial Down
+         peripherals.addAll(scan(image, imageWidth, i, false, true));
+
+         // Vertical Up
+         peripherals.addAll(scan(image, imageWidth, i, false, false));
+      }
 
       for (Integer peripheral : peripherals) {
          double[] contributivity = dc(image, imageWidth, peripheral.intValue());
@@ -123,20 +138,64 @@ public final class PDC {
 
    /**
     * Scan a direction and get all of the peripheral (edge) points.
-    * TODO(eriq): Allow for layer selection.
+    * |layerNumber| is the number of solid bodies to pass through before the final
+    * peripheral edge. 0 means that it will pass through no bodies.
     * TODO(eriq): Abstract to allow vertical and maybe diagnal scans.
     */
-   private static List<Integer> horizontalScan(boolean[] image, int imageWidth,
-                                               int startCol, int colDelta) {
+   private static List<Integer> scan(boolean[] image,
+                                     int imageWidth,
+                                     int layerNumber,
+                                     boolean horizontal,
+                                     boolean forward) {
+      assert(layerNumber >= 0);
+
+      // The end points should be out of bounds.
+      int outerStart, outerEnd, outerDelta;
+      int innerStart, innerEnd, innerDelta;
+
+      // TODO(eriq): I hate these damn horizontal tricks.
+      if (horizontal) {
+         // row
+         outerStart = 0;
+         outerEnd = image.length / imageWidth;
+         outerDelta = 1;
+
+         // col
+         innerStart = forward ? 0 : imageWidth - 1;
+         innerEnd = forward ? imageWidth : -1;
+         innerDelta = forward ? 1 : -1;
+      } else {
+         // col
+         outerStart = 0;
+         outerEnd = imageWidth;
+         outerDelta = 1;
+
+         // row
+         innerStart = forward ? 0 : image.length / imageWidth - 1;
+         innerEnd = forward ? image.length / imageWidth : -1;
+         innerDelta = forward ? 1 : -1;
+      }
+
       List<Integer> peripherals = new ArrayList<Integer>();
 
-      for (int row = 0; row < image.length / imageWidth; row++) {
-         for (int col = startCol; col >= 0 && col < imageWidth; col += colDelta) {
-            int index = MathUtils.rowColToIndex(row, col, imageWidth);
+      for (int outer = outerStart; outer != outerEnd; outer += outerDelta) {
+         int currentLayerCount = 0;
+         boolean inBody = false;
 
-            if (image[index]) {
-               peripherals.add(new Integer(index));
-               break;
+         for (int inner = innerStart; inner != innerEnd; inner += innerDelta) {
+            int index = horizontal ? MathUtils.rowColToIndex(outer, inner, imageWidth) :
+                                     MathUtils.rowColToIndex(inner, outer, imageWidth);
+
+            if (image[index] && !inBody) {
+               inBody = true;
+
+               if (currentLayerCount == layerNumber) {
+                  peripherals.add(new Integer(index));
+                  break;
+               }
+            } else if (!image[index] && inBody) {
+               inBody = false;
+               currentLayerCount++;
             }
          }
       }

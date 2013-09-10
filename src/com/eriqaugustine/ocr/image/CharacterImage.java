@@ -43,11 +43,13 @@ public class CharacterImage {
       System.out.println(ImageUtils.asciiImage(pixels, dimensions.width, 1) + "\n-\n");
 
       System.out.println("----------");
-      boolean[] discretePixels = Filters.discretizePixels(image, 200);
-      PDCFeature[] pdcFeatures = PDC.pdc(discretePixels, dimensions.width);
-      for (int row = 0; row < dimensions.height; row++) {
-         for (int col = 0; col < dimensions.width; col++) {
-            int index = MathUtils.rowColToIndex(row, col, dimensions.width);
+      //TEST
+      // boolean[] discretePixels = Filters.discretizePixels(image, 200);
+      // PDCFeature[] pdcFeatures = PDC.pdc(discretePixels, dimensions.width);
+      PDCFeature[] pdcFeatures = PDC.pdc(image);
+      for (int row = 0; row < PDC.SCALE_SIZE; row++) {
+         for (int col = 0; col < PDC.SCALE_SIZE; col++) {
+            int index = MathUtils.rowColToIndex(row, col, PDC.SCALE_SIZE);
             if (pdcFeatures[index].empty()) {
                System.out.print(" ");
             } else {

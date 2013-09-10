@@ -17,8 +17,10 @@ import java.util.Set;
  */
 public final class PDC {
    //TEST
-   //private static final int SCALE_SIZE = 64;
-   private static final int SCALE_SIZE = 32;
+   public static final int SCALE_SIZE = 64;
+   //public static final int SCALE_SIZE = 32;
+
+   private static final int NUM_LAYERS = 3;
 
    /**
     * The deltas [row, col] for the different directions available to PDC.
@@ -59,7 +61,7 @@ public final class PDC {
 
       Set<Integer> peripherals = new HashSet<Integer>();
       // Layers
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < NUM_LAYERS; i++) {
          // Horizontal LTR
          peripherals.addAll(scan(image, imageWidth, i, true, true));
 
@@ -84,13 +86,27 @@ public final class PDC {
    public static PDCFeature[] pdc(MagickImage image) throws Exception {
       boolean[] discretePixels =
             Filters.discretizePixels(ImageUtils.scaleImage(image, SCALE_SIZE, SCALE_SIZE), 200);
-      return pdc(discretePixels, image.getDimension().width);
+      return pdc(discretePixels, SCALE_SIZE);
    }
 
    public static List<PDCFeature[]> pdc(MagickImage[] images) throws Exception {
       List<PDCFeature[]> rtn = new ArrayList<PDCFeature[]>(images.length);
       for (MagickImage image : images) {
          rtn.add(pdc(image));
+      }
+      return rtn;
+   }
+
+   //TEST
+   public static List<PDCFeature[]> pdc(MagickImage[] images, List<String> characters) throws Exception {
+      List<PDCFeature[]> rtn = new ArrayList<PDCFeature[]>(images.length);
+      for (int i = 0; i < images.length; i++) {
+         System.err.println("Character: " + characters.get(i));
+         System.out.println("Character: " + characters.get(i));
+         System.out.println("^^^^^ pre-scale ^^^^^^");
+         System.out.println(ImageUtils.asciiImage(Filters.discretizePixels(images[i], 200), images[i].getDimension().width));
+         System.out.println("vvvvvvvvvvvvvvvvvvvvvv");
+         rtn.add(pdc(images[i]));
       }
       return rtn;
    }

@@ -10,7 +10,9 @@ import magick.PixelPacket;
  */
 public class CharacterUtils {
    public static final String DEFAULT_FONT_FAMILY = "IPAGothic";
-   public static final int DEFAULT_FONT_SIZE = 64;
+   //TEST
+   //public static final int DEFAULT_FONT_SIZE = 64;
+   public static final int DEFAULT_FONT_SIZE = 128;
 
    /**
     * Generate an image for |character|.
@@ -20,7 +22,7 @@ public class CharacterUtils {
                                                boolean shrink,
                                                int fontSize,
                                                String fontFamily) throws Exception {
-      int sideLength = (fontSize / 50 + 2) * 50;
+      int sideLength = fontSize;
 
       MagickImage image = new MagickImage();
       byte[] pixels = new byte[sideLength * sideLength * 3];

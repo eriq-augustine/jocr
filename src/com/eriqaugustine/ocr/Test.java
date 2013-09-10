@@ -114,6 +114,9 @@ public class Test {
 
          count++;
          current++;
+
+         //TEST
+         break;
       } while ((char)(current -1) != 'ん');
    }
 

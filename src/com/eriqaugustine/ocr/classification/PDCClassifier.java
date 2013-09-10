@@ -31,7 +31,12 @@ public class PDCClassifier {
 
    public PDCClassifier(MagickImage[] characterImages,
                         String characters) throws Exception {
+      //TEST
       this(PDC.pdc(characterImages), StringUtils.charSplit(characters));
+      /*
+      this(PDC.pdc(characterImages, StringUtils.charSplit(characters)),
+           StringUtils.charSplit(characters));
+           */
    }
 
    public PDCClassifier(List<PDCFeature[]> trainingDocuments,
@@ -119,7 +124,6 @@ public class PDCClassifier {
    private FastVector getFeatureAttributes(FastVector possibleClasses) {
       FastVector features = new FastVector(1 + numFeatures);
 
-      // Must be done 
       features.addElement(new Attribute("document_class", possibleClasses));
       for (int i = 0; i < numFeatures; i++) {
          for (int j = 0; j < PDC.PDC_DIRECTION_DELTAS.length; j++) {

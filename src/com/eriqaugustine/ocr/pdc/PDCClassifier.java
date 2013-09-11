@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.classification;
+package com.eriqaugustine.ocr.pdc;
 
 import com.eriqaugustine.ocr.image.PDC;
 import com.eriqaugustine.ocr.utils.StringUtils;

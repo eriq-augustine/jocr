@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.classification.PDCFeature;
+import com.eriqaugustine.ocr.pdc.PDCFeature;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 

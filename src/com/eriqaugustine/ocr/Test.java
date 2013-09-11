@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr;
 
-import com.eriqaugustine.ocr.classification.PDCClassifier;
+import com.eriqaugustine.ocr.pdc.PDCClassifier;
 import com.eriqaugustine.ocr.image.BubbleDetection;
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.Filters;

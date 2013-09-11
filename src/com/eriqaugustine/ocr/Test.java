@@ -25,7 +25,8 @@ public class Test {
       //multiFontGenTest();
       //imageBreakdown();
       //densityComparisonTest();
-      strokeComparisonTest();
+      //strokeComparisonTest();
+      pdcTest();
    }
 
    public static void strokeComparisonTest() throws Exception {
@@ -54,6 +55,44 @@ public class Test {
                                classy.classify(gridTextImage));
          }
       }
+   }
+
+   public static void pdcTest() throws Exception {
+      String alphabet = HIRAGANA;
+
+      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet), alphabet);
+
+      // Not exactly hiragana.
+      String characters = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやわゆんよらりるれろ";
+
+      ImageInfo info = new ImageInfo("testImages/partHiragana.png");
+      MagickImage baseImage = new MagickImage(info);
+
+      int count = 0;
+      int hits = 0;
+
+      MagickImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
+      for (int row = 0; row < gridTextImages.length; row++) {
+         for (int col = 0; col < gridTextImages[row].length; col++) {
+            MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
+
+            // System.out.println(ImageUtils.asciiImage(gridTextImage) + "\n-\n");
+
+            String prediction = classy.classify(gridTextImage);
+            System.out.println(String.format("Classify (%d, %d)[%s]: %s",
+                                             row, col,
+                                             "" + characters.charAt(count),
+                                             prediction));
+
+            if (prediction.equals("" + characters.charAt(count))) {
+               hits++;
+            }
+
+            count++;
+         }
+      }
+
+      System.err.println("Hits: " + hits + " / " + count + " (" + ((double)hits / count) + ")");
    }
 
    public static void densityComparisonTest() throws Exception {

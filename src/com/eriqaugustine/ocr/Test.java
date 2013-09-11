@@ -49,36 +49,7 @@ public class Test {
       //multiFontGenTest();
       //imageBreakdown();
       //densityComparisonTest();
-      //strokeComparisonTest();
       pdcTest();
-   }
-
-   public static void strokeComparisonTest() throws Exception {
-      String alphabet = HIRAGANA + KATAKANA;
-
-      //TEST
-      //PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-      //                                         alphabet, false);
-      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(HIRAGANA),
-                                               HIRAGANA);
-
-      //ImageInfo info = new ImageInfo("testImages/1Text.png");
-      ImageInfo info = new ImageInfo("testImages/hiragana.png");
-      MagickImage baseImage = new MagickImage(info);
-
-      MagickImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
-      for (int row = 0; row < gridTextImages.length; row++) {
-         for (int col = 0; col < gridTextImages[row].length; col++) {
-            MagickImage gridTextImage = ImageUtils.shrinkImage(gridTextImages[row][col]);
-
-            System.out.println(ImageUtils.asciiImage(gridTextImage) + "\n-\n");
-
-            //TEST
-            //CharacterImage.getStrokes(gridTextImage);
-            System.out.println("Classify (" + row + ", " + col + "): " +
-                               classy.classify(gridTextImage));
-         }
-      }
    }
 
    public static void pdcTest() throws Exception {

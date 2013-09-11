@@ -2,6 +2,9 @@ package com.eriqaugustine.ocr.utils;
 
 import java.util.List;
 
+/**
+ * Utils for Lists and Arrays.
+ */
 public class ListUtils {
    public static <T> void append(List<T> list, T[] toAdd) {
       for (T toAddElement : toAdd) {

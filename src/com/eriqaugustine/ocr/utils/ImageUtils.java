@@ -1,12 +1,11 @@
 package com.eriqaugustine.ocr.utils;
 
 import com.eriqaugustine.ocr.image.Filters;
-import com.eriqaugustine.ocr.utils.MathUtils;
+
+import magick.MagickImage;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
-
-import magick.MagickImage;
 
 /**
  * Some utilities for images.
@@ -158,7 +157,9 @@ public class ImageUtils {
       for (int row = minRow; row <= maxRow; row++) {
          for (int col = minCol; col <= maxCol; col++) {
             int baseFullIndex = MathUtils.rowColToIndex(row, col, dimensions.width) * 3;
-            int baseShrinkIndex = MathUtils.rowColToIndex(row - minRow, col - minCol, maxCol - minCol + 1) * 3;
+            int baseShrinkIndex = MathUtils.rowColToIndex(row - minRow,
+                                                          col - minCol,
+                                                          maxCol - minCol + 1) * 3;
 
             newPixels[baseShrinkIndex + 0] = pixels[baseFullIndex + 0];
             newPixels[baseShrinkIndex + 1] = pixels[baseFullIndex + 1];

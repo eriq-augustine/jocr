@@ -1,9 +1,12 @@
 package com.eriqaugustine.ocr.image;
 
-import java.awt.Dimension;
-
 import magick.MagickImage;
 
+import java.awt.Dimension;
+
+/**
+ * Filters to run on images.
+ */
 public class Filters {
    public static final int DEFAULT_BW_THRESHOLD = 150;
 

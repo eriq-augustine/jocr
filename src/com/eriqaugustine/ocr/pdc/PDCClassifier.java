@@ -8,8 +8,8 @@ import weka.classifiers.Classifier;
 import weka.classifiers.functions.SMO;
 import weka.core.Attribute;
 import weka.core.FastVector;
-import weka.core.Instances;
 import weka.core.Instance;
+import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.HashSet;

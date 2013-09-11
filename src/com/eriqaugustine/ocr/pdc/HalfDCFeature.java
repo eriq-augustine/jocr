@@ -1,7 +1,9 @@
 package com.eriqaugustine.ocr.pdc;
 
-import com.eriqaugustine.ocr.pdc.PDC;
-
+/**
+ * A DC where all co-linear dimensions are combined.
+ * Eg. 12:00 and 6:00 are combined in one.
+ */
 public class HalfDCFeature extends DCFeature {
    public HalfDCFeature(double[] contributivity) {
       super(contributivity);

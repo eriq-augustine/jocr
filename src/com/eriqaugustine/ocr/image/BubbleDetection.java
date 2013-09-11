@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.image.Filters;
+import magick.MagickImage;
 
 import java.awt.Dimension;
 import java.util.HashMap;
@@ -10,8 +10,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import magick.MagickImage;
-
+/**
+ * A static class for detecting callouts (speech bubbles).
+ */
 public class BubbleDetection {
    public static final int DEFAULT_MIN_BLOB_SIZE = 2000;
 
@@ -64,7 +65,8 @@ public class BubbleDetection {
          for (int row = blob.getMinRow(); row <= blob.getMaxRow(); row++) {
             for (int col = blob.getMinCol(); col <= blob.getMaxCol(); col++) {
                int baseImageIndex = 3 * (row * dimensions.width + col);
-               int baseBlobIndex = 3 * ((row - blob.getMinRow()) * width + (col - blob.getMinCol()));
+               int baseBlobIndex = 3 *
+                                   ((row - blob.getMinRow()) * width + (col - blob.getMinCol()));
 
                if (col < bounds.get(row)[0] || col > bounds.get(row)[1]) {
                   blobPixels[baseBlobIndex + 0] = (byte)0xFF;

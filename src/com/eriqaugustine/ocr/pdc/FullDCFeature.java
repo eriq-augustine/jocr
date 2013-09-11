@@ -1,7 +1,8 @@
 package com.eriqaugustine.ocr.pdc;
 
-import com.eriqaugustine.ocr.pdc.PDC;
-
+/**
+ * A DC featuring all eight dimensions.
+ */
 public class FullDCFeature extends DCFeature {
    public FullDCFeature(double[] contributivity) {
       super(contributivity);

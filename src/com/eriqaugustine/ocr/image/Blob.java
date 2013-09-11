@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * A Blob is a collection of connected pixels.
+ * This usually means a body of adjacent black pixels.
+ */
 public class Blob {
    // The assumed percentage of the image that is consumed by a single blob.
    // Will be used in the initial size of the blob's set.

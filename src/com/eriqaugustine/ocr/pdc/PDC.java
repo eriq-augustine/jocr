@@ -1,8 +1,8 @@
 package com.eriqaugustine.ocr.pdc;
 
 import com.eriqaugustine.ocr.image.Filters;
-import com.eriqaugustine.ocr.utils.ListUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
+import com.eriqaugustine.ocr.utils.ListUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
 import magick.MagickImage;

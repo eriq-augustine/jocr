@@ -2,8 +2,8 @@ package com.eriqaugustine.ocr.pdc;
 
 import magick.MagickImage;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Contains all the information necessary after a PDC analysis of an image.

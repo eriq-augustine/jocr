@@ -4,13 +4,13 @@ import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
+import magick.MagickImage;
+
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import magick.MagickImage;
 
 /**
  * Namespace for images that contain a single character.
@@ -34,7 +34,8 @@ public class CharacterImage {
    /**
     * Break up the character into strokes.
     */
-   // TODO: Return strokes.
+   // TODO(eriq): Return strokes.
+   //  Update, this is probably no longer relavant because of PDC.
    public static void getStrokes(MagickImage image) throws Exception {
       Dimension dimensions = image.getDimension();
 
@@ -43,7 +44,8 @@ public class CharacterImage {
 
       /*
       boolean[] points = discretizeLines(pixels, dimensions.width);
-      System.out.println(ImageUtils.asciiImage(points, dimensions.width / DEFAULT_POINT_SIZE) + "\n");
+      System.out.println(ImageUtils.asciiImage(points,
+                                               dimensions.width / DEFAULT_POINT_SIZE) + "\n");
       */
 
       /*
@@ -504,6 +506,10 @@ public class CharacterImage {
       return maps;
    }
 
+   /**
+    * A connected line of pixels.
+    * This is esentially a specialized Blob.
+    */
    public static class Line {
       public List<SlicePiece> pieces;
       public boolean horizontal;
@@ -556,6 +562,9 @@ public class CharacterImage {
       }
    }
 
+   /**
+    * A single horizontal or vertical slice.
+    */
    public static class Slice {
       public List<SlicePiece> pieces;
       public boolean horizontal;
@@ -566,6 +575,9 @@ public class CharacterImage {
       }
    }
 
+   /**
+    * A piece of a slice denoting the start and end of pixels.
+    */
    public static class SlicePiece {
       public int start;
       public int end;

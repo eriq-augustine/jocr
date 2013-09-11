@@ -4,7 +4,7 @@ package com.eriqaugustine.ocr.utils;
  * Math utilities.
  */
 public class MathUtils {
-   private static double DEFAULT_EPSILON = 0.0001;
+   private static final double DEFAULT_EPSILON = 0.0001;
 
    /**
     * Convert a 1D index to the row the index is on.

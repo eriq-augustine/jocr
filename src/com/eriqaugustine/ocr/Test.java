@@ -1,10 +1,10 @@
 package com.eriqaugustine.ocr;
 
-import com.eriqaugustine.ocr.pdc.PDCClassifier;
 import com.eriqaugustine.ocr.image.BubbleDetection;
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.Filters;
 import com.eriqaugustine.ocr.image.TextImage;
+import com.eriqaugustine.ocr.pdc.PDCClassifier;
 import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.FileUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
@@ -16,9 +16,31 @@ import magick.PixelPacket;
 
 import java.awt.GraphicsEnvironment;
 
+/**
+ * A general testing driver.
+ */
 public class Test {
-   public static final String HIRAGANA = "あいうえおかがきぎくぐけげこごさざしじすずせぜそぞただちぢつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもやゆよらりるれろわゐゑをん";
-   public static final String KATAKANA = "アイウエオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモヤユヨラリルレロワヰヱヲン";
+   public static final String HIRAGANA = "あいうえお" +
+                                         "かがきぎくぐけげこご" +
+                                         "さざしじすずせぜそぞ" +
+                                         "ただちぢつづてでとど" +
+                                         "なにぬねの" +
+                                         "はばぱひびぴふぶぷへべぺほぼぽ" +
+                                         "まみむめも" +
+                                         "やゆよ" +
+                                         "らりるれろ" +
+                                         "わゐゑをん";
+
+   public static final String KATAKANA = "アイウエオ" +
+                                         "カガキギクグケゲコゴ" +
+                                         "サザシジスズセゼソゾ" +
+                                         "タダチヂツヅテデトド" +
+                                         "ナニヌネノ" +
+                                         "ハバパヒビピフブプヘベペホボポ" +
+                                         "マミムメモ" +
+                                         "ヤユヨ" +
+                                         "ラリルレロ" +
+                                         "ワヰヱヲン";
 
    public static void main(String[] args) throws Exception {
       //singleFontGenTest();
@@ -60,11 +82,13 @@ public class Test {
    public static void pdcTest() throws Exception {
       String alphabet = HIRAGANA;
 
-      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet), alphabet, false);
-      // PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet), alphabet, true);
+      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
+                                               alphabet, false);
+                                               // alphabet, true);
 
       // Not exactly hiragana.
-      String characters = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやわゆんよらりるれろ";
+      String characters = "あいうえおかきくけこさしすせそたちつてとなにぬねの" +
+                          "はひふへほまみむめもやわゆんよらりるれろ";
 
       ImageInfo info = new ImageInfo("testImages/partHiragana.png");
       MagickImage baseImage = new MagickImage(info);
@@ -158,7 +182,7 @@ public class Test {
 
          count++;
          current++;
-      } while ((char)(current -1) != 'ん');
+      } while ((char)(current - 1) != 'ん');
    }
 
    public static void multiFontGenTest() throws Exception {

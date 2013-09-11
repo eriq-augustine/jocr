@@ -34,9 +34,9 @@ public class Test {
 
       //TEST
       //PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-      //                                         alphabet);
+      //                                         alphabet, false);
       PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(HIRAGANA),
-                                               HIRAGANA);
+                                               HIRAGANA, false);
 
       //ImageInfo info = new ImageInfo("testImages/1Text.png");
       ImageInfo info = new ImageInfo("testImages/hiragana.png");
@@ -60,7 +60,8 @@ public class Test {
    public static void pdcTest() throws Exception {
       String alphabet = HIRAGANA;
 
-      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet), alphabet);
+      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet), alphabet, false);
+      // PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet), alphabet, true);
 
       // Not exactly hiragana.
       String characters = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやわゆんよらりるれろ";

@@ -184,8 +184,9 @@ public class PDCInfo {
          }
          normalizationFactor = Math.sqrt(normalizationFactor);
 
-         for (int directionIndex = 0; directionIndex < lengths[i].length; directionIndex++) {
-            contributivity[directionIndex] /= normalizationFactor;
+         for (int contributivityIndex = 0; contributivityIndex < contributivity.length;
+              contributivityIndex++) {
+            contributivity[contributivityIndex] /= normalizationFactor;
          }
 
          halfPDCs[i] = new HalfDCFeature(contributivity);

@@ -25,19 +25,27 @@ public class PDCClassifier {
    private FastVector possibleCharacters;
 
    private final int numDCs;
+   private final boolean combineDirections;
 
    private FastVector featureAttributes;
 
+   /**
+    * |combineDirections| will merge DCs that are on the same line.
+    * This will half the features.
+    */
    public PDCClassifier(MagickImage[] characterImages,
-                        String characters) throws Exception {
-      this(PDC.pdc(characterImages), StringUtils.charSplitArray(characters));
+                        String characters,
+                        boolean combineDirections) throws Exception {
+      this(PDC.pdc(characterImages), StringUtils.charSplitArray(characters), combineDirections);
    }
 
    public PDCClassifier(PDCInfo[] trainingDocuments,
-                        String[] trainingCharacters) throws Exception {
+                        String[] trainingCharacters,
+                        boolean combineDirections) throws Exception {
       assert(trainingDocuments.length > 0);
 
       numDCs = trainingDocuments[0].numPoints();
+      this.combineDirections = combineDirections;
 
       Set<String> seenCharacters = new HashSet<String>();
       for (String seenCharacter : trainingCharacters) {
@@ -82,7 +90,12 @@ public class PDCClassifier {
       Instances instances = new Instances("Unclassified", featureAttributes, 1);
       instances.setClassIndex(0);
 
-      double[] features = info.fullPDCDimensions();
+      double[] features = null;
+      if (combineDirections) {
+         features = info.halfPDCDimensions();
+      } else {
+         features = info.fullPDCDimensions();
+      }
 
       // Note that the first spot is reserved for the class value;
       Instance instance = new Instance(featureAttributes.size());
@@ -116,9 +129,12 @@ public class PDCClassifier {
    private FastVector getFeatureAttributes(FastVector possibleClasses) {
       FastVector features = new FastVector(1 + numDCs * PDC.PDC_DIRECTION_DELTAS.length);
 
+      int numDimensions = combineDirections ? PDC.PDC_DIRECTION_DELTAS.length / 2 :
+                                              PDC.PDC_DIRECTION_DELTAS.length;
+
       features.addElement(new Attribute("document_class", possibleClasses));
       for (int i = 0; i < numDCs; i++) {
-         for (int j = 0; j < PDC.PDC_DIRECTION_DELTAS.length; j++) {
+         for (int j = 0; j < numDimensions; j++) {
             features.addElement(new Attribute("POINT_" + i + "_DC_" + j));
          }
       }

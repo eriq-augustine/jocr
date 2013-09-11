@@ -25,27 +25,45 @@ public class PDCClassifier {
    private FastVector possibleCharacters;
 
    private final int numDCs;
+   private final int groupSize;
    private final boolean combineDirections;
 
    private FastVector featureAttributes;
 
+   private static final int DEFAULT_GROUP_SIZE = 1;
+   private static final boolean DEFAULT_COMBINE_DIRECTIONS = false;
+
+   public PDCClassifier(MagickImage[] characterImages,
+                        String characters) throws Exception {
+      this(PDC.pdc(characterImages), StringUtils.charSplitArray(characters),
+           DEFAULT_COMBINE_DIRECTIONS, DEFAULT_GROUP_SIZE);
+   }
+
    /**
     * |combineDirections| will merge DCs that are on the same line.
-    * This will half the features.
+    *  This will half the features.
+    * |groupSize| is the size of groups of DCs in the same scanning set.
+    * This is meant to reduce the number of features and mitigate noise.
+    * A |groupSize| of 1 means no groping will occur.
     */
    public PDCClassifier(MagickImage[] characterImages,
                         String characters,
-                        boolean combineDirections) throws Exception {
-      this(PDC.pdc(characterImages), StringUtils.charSplitArray(characters), combineDirections);
+                        boolean combineDirections,
+                        int groupSize) throws Exception {
+      this(PDC.pdc(characterImages), StringUtils.charSplitArray(characters),
+           combineDirections, groupSize);
    }
 
    public PDCClassifier(PDCInfo[] trainingDocuments,
                         String[] trainingCharacters,
-                        boolean combineDirections) throws Exception {
+                        boolean combineDirections,
+                        int groupSize) throws Exception {
       assert(trainingDocuments.length > 0);
+      assert(groupSize > 0 && trainingDocuments[0].numPoints() % groupSize == 0);
 
       numDCs = trainingDocuments[0].numPoints();
       this.combineDirections = combineDirections;
+      this.groupSize = groupSize;
 
       Set<String> seenCharacters = new HashSet<String>();
       for (String seenCharacter : trainingCharacters) {
@@ -70,7 +88,7 @@ public class PDCClassifier {
    }
 
    public String classify(PDCInfo info) {
-      assert(numDCs == info.numPoints());
+      assert(info.numPoints() == numDCs);
 
       try {
          Instance instance = prepUnclassed(info);
@@ -92,9 +110,17 @@ public class PDCClassifier {
 
       double[] features = null;
       if (combineDirections) {
-         features = info.halfPDCDimensions();
+         if (groupSize > 1) {
+            features = info.halfGroupedDimensions(groupSize);
+         } else {
+            features = info.halfPDCDimensions();
+         }
       } else {
-         features = info.fullPDCDimensions();
+         if (groupSize > 1) {
+            features = info.fullGroupedDimensions(groupSize);
+         } else {
+            features = info.fullPDCDimensions();
+         }
       }
 
       // Note that the first spot is reserved for the class value;
@@ -127,15 +153,16 @@ public class PDCClassifier {
    }
 
    private FastVector getFeatureAttributes(FastVector possibleClasses) {
-      FastVector features = new FastVector(1 + numDCs * PDC.PDC_DIRECTION_DELTAS.length);
+      FastVector features =
+            new FastVector(1 + (numDCs / groupSize) * PDC.PDC_DIRECTION_DELTAS.length);
 
       int numDimensions = combineDirections ? PDC.PDC_DIRECTION_DELTAS.length / 2 :
                                               PDC.PDC_DIRECTION_DELTAS.length;
 
       features.addElement(new Attribute("document_class", possibleClasses));
-      for (int i = 0; i < numDCs; i++) {
+      for (int i = 0; i < numDCs / groupSize; i++) {
          for (int j = 0; j < numDimensions; j++) {
-            features.addElement(new Attribute("POINT_" + i + "_DC_" + j));
+            features.addElement(new Attribute("GROUP_" + i + "_DC_" + j));
          }
       }
 

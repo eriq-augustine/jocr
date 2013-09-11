@@ -1,5 +1,7 @@
 package com.eriqaugustine.ocr.utils;
 
+import java.util.Arrays;
+
 /**
  * Math utilities.
  */
@@ -35,5 +37,50 @@ public class MathUtils {
 
    public static boolean doubleEquals(double a, double b) {
       return doubleEquals(a, b, DEFAULT_EPSILON);
+   }
+
+   /**
+    * |vals| is const.
+    */
+   public static double mean(double[] vals) {
+      if (vals.length == 0) {
+         return Double.NaN;
+      }
+
+      double sum = 0;
+      for (double val : vals) {
+         sum += val;
+      }
+      return sum / vals.length;
+   }
+
+   /**
+    * |vals| is const.
+    */
+   public static double median(double[] vals) {
+      if (vals.length == 0) {
+         return Double.NaN;
+      }
+
+      double[] copy = Arrays.copyOf(vals, vals.length);
+      return nonConstMedian(copy);
+   }
+
+   /**
+    * Use if you don't care if |vals| is altered.
+    * Guarenteed to be faster than median().
+    */
+   public static double nonConstMedian(double[] vals) {
+      if (vals.length == 0) {
+         return Double.NaN;
+      }
+
+      Arrays.sort(vals);
+
+      if (vals.length % 2 == 1) {
+         return vals[vals.length / 2];
+      } else {
+         return (vals[vals.length / 2] + vals[vals.length / 2 - 1]) / 2;
+      }
    }
 }

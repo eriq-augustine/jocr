@@ -23,8 +23,6 @@ public class CharacterUtils {
    };
 
 
-   //TEST
-   //public static final int DEFAULT_FONT_SIZE = 64;
    public static final int DEFAULT_FONT_SIZE = 128;
 
    /**

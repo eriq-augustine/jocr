@@ -17,9 +17,7 @@ import java.util.Set;
  * See papers in articels.
  */
 public final class PDC {
-   //TEST
    public static final int SCALE_SIZE = 64;
-   //public static final int SCALE_SIZE = 32;
 
    private static final int NUM_LAYERS = 3;
 

@@ -1,7 +1,11 @@
 package com.eriqaugustine.ocr.pdc;
 
+import com.eriqaugustine.ocr.utils.MathUtils;
+
+import magick.MagickImage;
 import magick.MagickImage;
 
+import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +21,9 @@ public class PDCInfo {
    private final int[][] lengths;
    private final int[] peripherals;
 
+   private Dimension baseDimensions;
+   private Dimension scaleDimensions;
+
    private DCFeature[] fullPDCs;
    private DCFeature[] halfPDCs;
 
@@ -27,12 +34,16 @@ public class PDCInfo {
     */
    public PDCInfo(MagickImage baseImage, MagickImage scaleImage,
                   int numLayers,
-                  int[][] lengths, int[] peripherals) {
+                  int[][] lengths, int[] peripherals) throws Exception {
       this.baseImage = baseImage;
       this.scaleImage = scaleImage;
       this.numLayers = numLayers;
       this.lengths = lengths;
       this.peripherals = peripherals;
+
+      // Get these early so we can avoid exceptions later.
+      baseDimensions = baseImage.getDimension();
+      scaleDimensions = scaleImage.getDimension();
 
       fullPDCs = null;
       halfPDCs = null;
@@ -40,6 +51,58 @@ public class PDCInfo {
 
    public int numPoints() {
       return lengths.length;
+   }
+
+   /**
+    * Like fullPDCDimensions(), except that the scanning row/cols will be grouped in groups
+    * of |groupSize| points.
+    * The average of the group will be emitted to represent that group.
+    * This will reduce the feature set and help handle noise.
+    */
+   // TODO(eriq): Don't throw. Get dimensions in constructor.
+   public double[] fullGroupedDimensions(int groupSize) {
+      assert(scaleDimensions.width % groupSize == 0);
+      return averageDimensions(fullPDCDimensions(), groupSize, PDC.PDC_DIRECTION_DELTAS.length);
+   }
+
+   public double[] halfGroupedDimensions(int groupSize) {
+      assert(scaleDimensions.width % groupSize == 0);
+      return averageDimensions(halfPDCDimensions(),
+                               groupSize,
+                               PDC.PDC_DIRECTION_DELTAS.length / 2);
+   }
+
+   /**
+    * Done correctly, the layers will not need to be considered.
+    * |groupSize| and |numDinsions| should handle it.
+    */
+   private double[] averageDimensions(double[] base, int groupSize, int numDimensions) {
+      double[] rtn = new double[base.length / groupSize];
+      double[] workingGroup = new double[groupSize];
+
+      int count = 0;
+      for (int groupIndex = 0; groupIndex < base.length / groupSize;
+           groupIndex += groupSize * numDimensions) {
+         for (int dimensionOffset = 0; dimensionOffset < numDimensions; dimensionOffset++) {
+            for (int groupMemberOffset = 0; groupMemberOffset < groupSize; groupMemberOffset++) {
+               workingGroup[groupMemberOffset] = base[groupIndex + dimensionOffset +
+                                                      groupMemberOffset * numDimensions];
+            }
+
+            rtn[count] = average(workingGroup);
+            count++;
+         }
+      }
+
+      return rtn;
+   }
+
+   /**
+    * Choose some averaging function.
+    */
+   private double average(double[] vals) {
+      return MathUtils.mean(vals);
+      // return MathUtils.median(vals);
    }
 
    /**

@@ -4,7 +4,9 @@ import com.eriqaugustine.ocr.image.BubbleDetection;
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.Filters;
 import com.eriqaugustine.ocr.image.TextImage;
+import com.eriqaugustine.ocr.pdc.PDC;
 import com.eriqaugustine.ocr.pdc.PDCClassifier;
+import com.eriqaugustine.ocr.pdc.PDCInfo;
 import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.FileUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
@@ -58,7 +60,7 @@ public class Test {
       //PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
       //                                         alphabet, false);
       PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(HIRAGANA),
-                                               HIRAGANA, false);
+                                               HIRAGANA);
 
       //ImageInfo info = new ImageInfo("testImages/1Text.png");
       ImageInfo info = new ImageInfo("testImages/hiragana.png");
@@ -83,7 +85,7 @@ public class Test {
       String alphabet = HIRAGANA;
 
       PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-                                               alphabet, false);
+                                               alphabet, false, 1);
                                                // alphabet, true);
 
       // Not exactly hiragana.
@@ -193,9 +195,7 @@ public class Test {
       for (String fontFamily : CharacterUtils.FONTS) {
          for (int i = 0; i < HIRAGANA.length(); i++) {
             // System.err.println(count + " -- " + (char)current + " (" + current + ")");
-            //TEST
-            char character = 'ど';
-            // char character = HIRAGANA.charAt(i);
+            char character = HIRAGANA.charAt(i);
 
             image = CharacterUtils.generateCharacter(character, true,
                                                      CharacterUtils.DEFAULT_FONT_SIZE,
@@ -206,9 +206,6 @@ public class Test {
                                             i,
                                             character));
             image.writeImage(new ImageInfo());
-
-            //TEST
-            break;
          }
       }
    }

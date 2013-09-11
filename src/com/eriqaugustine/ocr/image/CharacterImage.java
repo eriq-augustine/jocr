@@ -99,7 +99,6 @@ public class CharacterImage {
          }
       }
 
-      //TEST
       imageLines = ImageUtils.blankPixels(pixels.length);
       drawLines(vLines, imageLines, dimensions.width);
       drawLines(hLines, imageLines, dimensions.width);

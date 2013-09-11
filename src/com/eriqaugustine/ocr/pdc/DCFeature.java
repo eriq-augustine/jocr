@@ -1,40 +1,31 @@
 package com.eriqaugustine.ocr.pdc;
 
-import com.eriqaugustine.ocr.image.PDC;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
 /**
- * A single PDC (DC) instance.
+ * A single DC (Directional Contributivity) feature instance.
  */
-public class PDCFeature {
+public abstract class DCFeature {
    private double[] contributivity;
 
    /**
-    * Make an empty PDCFeature (no directional influence).
+    * Make an empty DCFeature (no directional influence).
     */
-   public PDCFeature() {
-      contributivity = new double[PDC.PDC_DIRECTION_DELTAS.length];
+   public DCFeature() {
+      contributivity = new double[0];
    }
 
    /**
-    * Make a PDCFeature with real contents.
+    * Make a DCFeature with real contents.
     */
-   public PDCFeature(double[] contributivity) {
+   public DCFeature(double[] contributivity) {
       this.contributivity = new double[contributivity.length];
       for (int i = 0; i < contributivity.length; i++) {
          this.contributivity[i] = contributivity[i];
       }
    }
 
-   public boolean empty() {
-      for (double part : contributivity) {
-         if (!MathUtils.doubleEquals(part, 0, 0.00001)) {
-            return false;
-         }
-      }
-
-      return true;
-   }
+   public abstract boolean empty();
 
    public int length() {
       return contributivity.length;
@@ -44,19 +35,20 @@ public class PDCFeature {
     * Will throw if out of bounds.
     */
    public double getValue(int index) {
+      assert(index >= 0 && index < contributivity.length);
+
       return contributivity[index];
    }
 
-   /**
-    * TODO(eriq): The directions cardinality should not be hardcoded.
-    */
    public String toString() {
-      String rtn = "[";
+      if (empty()) {
+         return "[empty]";
+      }
 
+      String rtn = "[";
       for (double part : contributivity) {
          rtn += String.format("%5.3f, ", part);
       }
-
       return rtn.replaceFirst(", $", "]");
    }
 }

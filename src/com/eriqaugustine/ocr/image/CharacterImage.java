@@ -1,6 +1,5 @@
 package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.pdc.PDCFeature;
 import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
@@ -41,23 +40,6 @@ public class CharacterImage {
 
       byte[] pixels = Filters.averageChannels(Filters.bwPixels(image, 200), 3);
       System.out.println(ImageUtils.asciiImage(pixels, dimensions.width, 1) + "\n-\n");
-
-      System.out.println("----------");
-      //TEST
-      // boolean[] discretePixels = Filters.discretizePixels(image, 200);
-      // PDCFeature[] pdcFeatures = PDC.pdc(discretePixels, dimensions.width);
-      PDCFeature[] pdcFeatures = PDC.pdc(image);
-      for (int row = 0; row < PDC.SCALE_SIZE; row++) {
-         for (int col = 0; col < PDC.SCALE_SIZE; col++) {
-            int index = MathUtils.rowColToIndex(row, col, PDC.SCALE_SIZE);
-            if (pdcFeatures[index].empty()) {
-               System.out.print(" ");
-            } else {
-               System.out.print("*");
-            }
-         }
-         System.out.println();
-      }
 
       /*
       boolean[] points = discretizeLines(pixels, dimensions.width);

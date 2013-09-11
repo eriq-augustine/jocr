@@ -18,4 +18,13 @@ public class StringUtils {
 
       return rtn;
    }
+
+   public static String[] charSplitArray(String str) {
+      String[] rtn = new String[str.length()];
+      for (int i = 0; i < str.length(); i++) {
+         rtn[i] = "" + str.charAt(i);
+      }
+
+      return rtn;
+   }
 }

@@ -1,6 +1,7 @@
-package com.eriqaugustine.ocr.image;
+package com.eriqaugustine.ocr.pdc;
 
-import com.eriqaugustine.ocr.pdc.PDCFeature;
+import com.eriqaugustine.ocr.image.Filters;
+import com.eriqaugustine.ocr.utils.ListUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
@@ -46,82 +47,65 @@ public final class PDC {
    /**
     * Run PDC on an image.
     * |image| must be already be binary.
-    * TODO(eriq): Normalize image size.
     * TODO(eriq): Group vectors into bins.
     * TODO(eriq): Diagnal scans.
     */
-   public static PDCFeature[] pdc(boolean[] image, int imageWidth) {
-      // TODO(eriq): Be more flexible about sizes
-      assert(imageWidth == SCALE_SIZE && image.length / imageWidth == SCALE_SIZE);
+   public static PDCInfo pdc(MagickImage baseImage) throws Exception {
+      MagickImage scaleImage = ImageUtils.scaleImage(baseImage, SCALE_SIZE, SCALE_SIZE);
+      boolean[] discretePixels = Filters.discretizePixels(scaleImage);
 
-      PDCFeature[] features = new PDCFeature[image.length];
-      for (int i = 0; i < image.length; i++) {
-         features[i] = new PDCFeature();
-      }
+      List<Integer> peripherals = new ArrayList<Integer>(SCALE_SIZE *
+                                                         4 /* scan directions */ *
+                                                         NUM_LAYERS);
 
-      Set<Integer> peripherals = new HashSet<Integer>();
       // Layers
       for (int i = 0; i < NUM_LAYERS; i++) {
          // Horizontal LTR
-         peripherals.addAll(scan(image, imageWidth, i, true, true));
+         ListUtils.append(peripherals, scan(discretePixels, SCALE_SIZE, i, true, true));
 
          // Horizontal RTL
-         peripherals.addAll(scan(image, imageWidth, i, true, false));
+         ListUtils.append(peripherals, scan(discretePixels, SCALE_SIZE, i, true, false));
 
          // Vertial Down
-         peripherals.addAll(scan(image, imageWidth, i, false, true));
+         ListUtils.append(peripherals, scan(discretePixels, SCALE_SIZE, i, false, true));
 
          // Vertical Up
-         peripherals.addAll(scan(image, imageWidth, i, false, false));
+         ListUtils.append(peripherals, scan(discretePixels, SCALE_SIZE, i, false, false));
       }
 
-      for (Integer peripheral : peripherals) {
-         double[] contributivity = dc(image, imageWidth, peripheral.intValue());
-         features[peripheral.intValue()] = new PDCFeature(contributivity);
+      assert(peripherals.size() == (SCALE_SIZE * 4 /* scan directions */ * NUM_LAYERS));
+      int[][] lengths = new int[peripherals.size()][];
+
+      for (int i = 0; i < peripherals.size(); i++) {
+         if (peripherals.get(i).intValue() == -1) {
+            lengths[i] = null;
+         } else {
+            lengths[i] = dcLengths(discretePixels, SCALE_SIZE, peripherals.get(i).intValue());
+         }
       }
 
-      return features;
+      return new PDCInfo(baseImage, scaleImage,
+                         NUM_LAYERS,
+                         lengths, ListUtils.toIntArray(peripherals));
    }
 
-   public static PDCFeature[] pdc(MagickImage image) throws Exception {
-      boolean[] discretePixels =
-            Filters.discretizePixels(ImageUtils.scaleImage(image, SCALE_SIZE, SCALE_SIZE), 200);
-      return pdc(discretePixels, SCALE_SIZE);
-   }
-
-   public static List<PDCFeature[]> pdc(MagickImage[] images) throws Exception {
-      List<PDCFeature[]> rtn = new ArrayList<PDCFeature[]>(images.length);
-      for (MagickImage image : images) {
-         rtn.add(pdc(image));
-      }
-      return rtn;
-   }
-
-   //TEST
-   public static List<PDCFeature[]> pdc(MagickImage[] images, List<String> characters) throws Exception {
-      List<PDCFeature[]> rtn = new ArrayList<PDCFeature[]>(images.length);
+   public static PDCInfo[] pdc(MagickImage[] images) throws Exception {
+      PDCInfo[] rtn = new PDCInfo[images.length];
       for (int i = 0; i < images.length; i++) {
-         System.err.println("Character: " + characters.get(i));
-         System.out.println("Character: " + characters.get(i));
-         System.out.println("^^^^^ pre-scale ^^^^^^");
-         System.out.println(ImageUtils.asciiImage(Filters.discretizePixels(images[i], 200), images[i].getDimension().width));
-         System.out.println("vvvvvvvvvvvvvvvvvvvvvv");
-         rtn.add(pdc(images[i]));
+         rtn[i] = pdc(images[i]);
       }
       return rtn;
    }
 
    /**
-    * Get the DC (Direction Contributivity) of a point.
+    * Get the lengths that are the core components in the DC.
     */
-   private static double[] dc(boolean[] image, int imageWidth, int point) {
-      double[] contributivity = new double[PDC_DIRECTION_DELTAS.length];
-      double normalizationFactor = 0;
+   private static int[] dcLengths(boolean[] image, int imageWidth, int point) {
+      int[] lengths = new int[PDC_DIRECTION_DELTAS.length];
 
       int baseRow = MathUtils.indexToRow(point, imageWidth);
       int baseCol = MathUtils.indexToCol(point, imageWidth);
 
-      // First, get all the contributivity lengths.
       for (int delta = 0; delta < PDC_DIRECTION_DELTAS.length; delta++) {
          int length = 0;
 
@@ -134,40 +118,31 @@ public final class PDC {
             col += PDC_DIRECTION_DELTAS[delta][1];
          }
 
-         contributivity[delta] = length;
-         normalizationFactor += length * length;
+         lengths[delta] = length;
       }
 
-      // Normalize the vector.
-      normalizationFactor = Math.sqrt(normalizationFactor);
-      for (int i = 0; i < contributivity.length; i++) {
-         // TODO(eriq): Another way to handle this?
-         if (normalizationFactor == 0) {
-            contributivity[i] = 0;
-         } else {
-            contributivity[i] = contributivity[i] / normalizationFactor;
-         }
-      }
-
-      return contributivity;
+      return lengths;
    }
 
    /**
     * Scan a direction and get all of the peripheral (edge) points.
     * |layerNumber| is the number of solid bodies to pass through before the final
     * peripheral edge. 0 means that it will pass through no bodies.
+    * There will be a result for EVERY row/col that is scanned.
+    * If a row/col has no peripheral point, then a -1 will be the result.
     * TODO(eriq): Abstract to allow vertical and maybe diagnal scans.
     */
-   private static List<Integer> scan(boolean[] image,
-                                     int imageWidth,
-                                     int layerNumber,
-                                     boolean horizontal,
-                                     boolean forward) {
+   private static int[] scan(boolean[] image,
+                             int imageWidth,
+                             int layerNumber,
+                             boolean horizontal,
+                             boolean forward) {
       assert(layerNumber >= 0);
 
       // The end points should be out of bounds.
       int outerStart, outerEnd, outerDelta;
       int innerStart, innerEnd, innerDelta;
+      int[] peripherals;
 
       // TODO(eriq): I hate these damn horizontal tricks.
       if (horizontal) {
@@ -192,11 +167,12 @@ public final class PDC {
          innerDelta = forward ? 1 : -1;
       }
 
-      List<Integer> peripherals = new ArrayList<Integer>();
+      peripherals = new int[outerEnd];
 
       for (int outer = outerStart; outer != outerEnd; outer += outerDelta) {
          int currentLayerCount = 0;
          boolean inBody = false;
+         boolean found = false;
 
          for (int inner = innerStart; inner != innerEnd; inner += innerDelta) {
             int index = horizontal ? MathUtils.rowColToIndex(outer, inner, imageWidth) :
@@ -206,13 +182,18 @@ public final class PDC {
                inBody = true;
 
                if (currentLayerCount == layerNumber) {
-                  peripherals.add(new Integer(index));
+                  peripherals[outer] = index;
+                  found = true;
                   break;
                }
             } else if (!image[index] && inBody) {
                inBody = false;
                currentLayerCount++;
             }
+         }
+
+         if (!found) {
+            peripherals[outer] = -1;
          }
       }
 

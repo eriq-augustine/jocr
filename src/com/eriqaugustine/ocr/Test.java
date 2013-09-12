@@ -51,8 +51,8 @@ public class Test {
       //imageBreakdown();
       //densityComparisonTest();
       //pdcTest();
-      //gridBreakupTest();
-      characterBreakupTest();
+      gridBreakupTest();
+      //characterBreakupTest();
    }
 
    public static void characterBreakupTest() throws Exception {
@@ -67,9 +67,9 @@ public class Test {
 
       // ImageInfo info = new ImageInfo("testImages/2Text.png");
       // ImageInfo info = new ImageInfo("testImages/1Text.png");
-      // ImageInfo info = new ImageInfo("testImages/partHiragana.png");
+      ImageInfo info = new ImageInfo("testImages/partHiragana.png");
       // ImageInfo info = new ImageInfo("testImages/2ColVertical.png");
-      ImageInfo info = new ImageInfo("testImages/2ColVerticalMissing.png");
+      // ImageInfo info = new ImageInfo("testImages/2ColVerticalMissing.png");
       MagickImage baseImage = new MagickImage(info);
 
       List<MagickImage> characterImages = TextImage.characterBreakup(baseImage);
@@ -93,11 +93,14 @@ public class Test {
 
       String outDirectory = FileUtils.itterationDir("out", "gridBreakup");
 
+      /*
       PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
                                                alphabet, false, 1);
+      */
 
-      ImageInfo info = new ImageInfo("testImages/2Text.png");
-      // ImageInfo info = new ImageInfo("testImages/1Text.png");
+      // ImageInfo info = new ImageInfo("testImages/partHiragana.png");
+      // ImageInfo info = new ImageInfo("testImages/2Text.png");
+      ImageInfo info = new ImageInfo("testImages/1Text.png");
       // ImageInfo info = new ImageInfo("testImages/hiragana.png");
       MagickImage baseImage = new MagickImage(info);
 
@@ -112,8 +115,10 @@ public class Test {
                                                     col));
             gridTextImage.writeImage(new ImageInfo());
 
+            /*
             String prediction = classy.classify(gridTextImage);
             System.err.println(String.format("(%d, %d): %s", row, col, prediction));
+            */
          }
       }
    }

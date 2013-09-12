@@ -221,11 +221,11 @@ public class TextImage {
 
    // TODO(eriq): This can get in trouble with a small number of stripes.
    private static List<int[]> normalizeStripes(List<int[]> stripes) {
-      stripes = widenStripes(stripes);
+      // Note(eriq): Widening the stripes hurt the first and last line too much.
+      // stripes = widenStripes(stripes);
 
       double[] widths = stripeWidths(stripes);
       double average = MathUtils.median(widths);
-
 
       List<int[]> newStripes = new ArrayList<int[]>();
       int stripeStart = -1;

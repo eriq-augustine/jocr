@@ -26,6 +26,17 @@ public class ImageUtils {
    }
 
    /**
+    * Make an empty image.
+    * Right now 1x1 images are "empty".
+    * TODO(eriq): Get a better represetation for an empty image.
+    */
+   public static MagickImage emptyImage() throws Exception {
+      MagickImage rtn = new MagickImage();
+      rtn.constituteImage(1, 1, "R", new byte[]{(byte)0xFF});
+      return rtn;
+   }
+
+   /**
     * Make an empty white image.
     */
    public static byte[] blankPixels(int imageLength) {

@@ -17,6 +17,7 @@ import magick.MagickImage;
 import magick.PixelPacket;
 
 import java.awt.GraphicsEnvironment;
+import java.util.List;
 
 /**
  * A general testing driver.
@@ -50,7 +51,41 @@ public class Test {
       //imageBreakdown();
       //densityComparisonTest();
       //pdcTest();
-      gridBreakupTest();
+      //gridBreakupTest();
+      characterBreakupTest();
+   }
+
+   public static void characterBreakupTest() throws Exception {
+      String alphabet = " " + HIRAGANA + KATAKANA;
+
+      String outDirectory = FileUtils.itterationDir("out", "characterBreakup");
+
+      /*
+      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
+                                               alphabet, false, 1);
+      */
+
+      // ImageInfo info = new ImageInfo("testImages/2Text.png");
+      // ImageInfo info = new ImageInfo("testImages/1Text.png");
+      // ImageInfo info = new ImageInfo("testImages/partHiragana.png");
+      // ImageInfo info = new ImageInfo("testImages/2ColVertical.png");
+      ImageInfo info = new ImageInfo("testImages/2ColVerticalMissing.png");
+      MagickImage baseImage = new MagickImage(info);
+
+      List<MagickImage> characterImages = TextImage.characterBreakup(baseImage);
+      for (int i = 0; i < characterImages.size(); i++) {
+         MagickImage characterImage = characterImages.get(i);
+
+         characterImage.setFileName(String.format("%s/char-%02d.png",
+                                                  outDirectory,
+                                                  i));
+         characterImage.writeImage(new ImageInfo());
+
+         /*
+         String prediction = classy.classify(gridTextImage);
+         System.err.println(String.format("(%d, %d): %s", row, col, prediction));
+         */
+      }
    }
 
    public static void gridBreakupTest() throws Exception {

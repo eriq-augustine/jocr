@@ -16,6 +16,169 @@ import java.util.List;
 public class TextImage {
    private static final double STRIPE_VARIANCE = 0.20;
 
+   private enum Direction {
+      LTR,
+      DOWN
+   };
+
+   /**
+    * Break up an image (using gridBreakup()), try to figure out a direction, and
+    * then string then images together into a single ordered list.
+    */
+   @SuppressWarnings("fallthrough")
+   public static List<MagickImage> characterBreakup(MagickImage image) throws Exception {
+      MagickImage[][] gridImages = gridBreakup(image);
+
+      List<MagickImage> rtn = new ArrayList<MagickImage>();
+
+      if (gridImages.length == 0) {
+         return rtn;
+      }
+
+      Direction direction = findDirection(gridImages);
+
+      switch (direction) {
+         case LTR:
+            for (int row = 0; row < gridImages.length; row++) {
+               for (int col = 0; col < gridImages[row].length; col++) {
+                  rtn.add(gridImages[row][col]);
+               }
+
+               // Add in a space.
+               rtn.add(ImageUtils.emptyImage());
+            }
+            break;
+         default:
+            System.err.println("Unknown text direction: " + direction.name() + "." +
+                               " Using vertical.");
+         case DOWN:
+            // Remember: Vertical is RTL.
+            for (int col = gridImages[0].length - 1; col >= 0; col--) {
+               for (int row = 0; row < gridImages.length; row++) {
+                  rtn.add(gridImages[row][col]);
+               }
+
+               // Add in a space.
+               rtn.add(ImageUtils.emptyImage());
+            }
+            break;
+      }
+
+      return rtn;
+   }
+
+   /**
+    * Find the reading direction of a grid of text.
+    * The idea behind this is simple: go down each reading direction (LTR and DOWN),
+    * the direction with the least breaks (spaces) is the reading direction.
+    * Trailing spaces are ok.
+    * If there are no breaks (spaces), then pick the direction with the longest line
+    * (row for LTR, column for DOWN).
+    * LTR's baseline is the left column.
+    * DOWN's baseline is the top row.
+    */
+   private static Direction findDirection(MagickImage[][] characterGrid) throws Exception {
+      if (characterGrid.length == 0) {
+         return Direction.LTR;
+      }
+
+      // LTR
+      int fullLTRLines = getLTRFullLines(characterGrid);
+
+      // DOWN
+      int fullDownLines = getDownFullLines(characterGrid);
+
+      if (MathUtils.doubleEquals((double)fullLTRLines / characterGrid.length,
+                                 (double)fullDownLines / characterGrid[0].length)) {
+         // Go with whichever direction has the longest line.
+         // No need to check all the lines, just the overall size.
+         if (characterGrid.length > characterGrid[0].length) {
+            return Direction.DOWN;
+         }
+
+         return Direction.LTR;
+      }
+
+      if ((double)fullDownLines / characterGrid[0].length >
+          (double)fullLTRLines / characterGrid.length) {
+         return Direction.DOWN;
+      }
+
+      return Direction.LTR;
+   }
+
+   private static int getLTRFullLines(MagickImage[][] characterGrid) throws Exception {
+      int fullLines = 0;
+      for (int row = 0; row < characterGrid.length; row++) {
+         if (characterGrid[row].length == 0 || emptyCharacter(characterGrid[row][0])) {
+            continue;
+         }
+
+         boolean fullLine = true;
+         boolean seenSpace = false;
+         for (int col = 0; col < characterGrid[row].length; col++) {
+            if (emptyCharacter(characterGrid[row][col])) {
+               seenSpace = true;
+            } else {
+               // A non-empty character after a break.
+               if (seenSpace) {
+                  fullLine = false;
+                  break;
+               }
+            }
+         }
+
+         if (fullLine) {
+            fullLines++;
+         }
+      }
+
+      return fullLines;
+   }
+
+   /**
+    * The grid better be a rectangle (... so a grid).
+    */
+   private static int getDownFullLines(MagickImage[][] characterGrid) throws Exception {
+      assert(characterGrid.length > 0);
+
+      int fullLines = 0;
+      for (int col = 0; col < characterGrid[0].length; col++) {
+         if (emptyCharacter(characterGrid[0][col])) {
+            continue;
+         }
+
+         boolean fullLine = true;
+         boolean seenSpace = false;
+         for (int row = 0; row < characterGrid.length; row++) {
+            if (emptyCharacter(characterGrid[row][col])) {
+               seenSpace = true;
+            } else {
+               // A non-empty character after a break.
+               if (seenSpace) {
+                  fullLine = false;
+                  break;
+               }
+            }
+         }
+
+         if (fullLine) {
+            fullLines++;
+         }
+      }
+
+      return fullLines;
+   }
+
+   /**
+    * Return true if the given image represents a space.
+    * This will be after a gridBreakup(), therefore just check the size.
+    * TODO(eriq): Right now 1x1 images are empty, find a better representation.
+    */
+   private static boolean emptyCharacter(MagickImage image) throws Exception {
+      return image.getDimension().width == 1;
+   }
+
    /**
     * Break an image apart in characters based off of the idea that
     * Japanese characters (whether horozontal or vertical) always

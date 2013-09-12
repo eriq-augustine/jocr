@@ -49,7 +49,38 @@ public class Test {
       //multiFontGenTest();
       //imageBreakdown();
       //densityComparisonTest();
-      pdcTest();
+      //pdcTest();
+      gridBreakupTest();
+   }
+
+   public static void gridBreakupTest() throws Exception {
+      String alphabet = " " + HIRAGANA + KATAKANA;
+
+      String outDirectory = FileUtils.itterationDir("out", "gridBreakup");
+
+      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
+                                               alphabet, false, 1);
+
+      ImageInfo info = new ImageInfo("testImages/2Text.png");
+      // ImageInfo info = new ImageInfo("testImages/1Text.png");
+      // ImageInfo info = new ImageInfo("testImages/hiragana.png");
+      MagickImage baseImage = new MagickImage(info);
+
+      MagickImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
+      for (int row = 0; row < gridTextImages.length; row++) {
+         for (int col = 0; col < gridTextImages[row].length; col++) {
+            MagickImage gridTextImage = gridTextImages[row][col];
+
+            gridTextImage.setFileName(String.format("%s/block-%02d-%02d.png",
+                                                    outDirectory,
+                                                    row,
+                                                    col));
+            gridTextImage.writeImage(new ImageInfo());
+
+            String prediction = classy.classify(gridTextImage);
+            System.err.println(String.format("(%d, %d): %s", row, col, prediction));
+         }
+      }
    }
 
    public static void pdcTest() throws Exception {

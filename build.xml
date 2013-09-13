@@ -15,6 +15,7 @@
       <pathelement location="lib/commons-io-2.4.jar" />
       <pathelement location="lib/commons-lang3-3.1.jar" />
       <pathelement location="lib/commons-lang-2.6.jar" />
+      <pathelement location="lib/json.jar" />
 
       <!-- Google Stuff -->
       <!-- TEST

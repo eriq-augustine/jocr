@@ -37,6 +37,14 @@ public class ImageUtils {
    }
 
    /**
+    * Return true if the given image is empty, usually representing a space.
+    * TODO(eriq): Right now 1x1 images are empty, find a better representation.
+    */
+   public static boolean isEmptyImage(MagickImage image) throws Exception {
+      return image.getDimension().width == 1;
+   }
+
+   /**
     * Make an empty white image.
     */
    public static byte[] blankPixels(int imageLength) {

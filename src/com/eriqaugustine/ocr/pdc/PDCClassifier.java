@@ -1,5 +1,6 @@
 package com.eriqaugustine.ocr.pdc;
 
+import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.StringUtils;
 
 import magick.MagickImage;
@@ -84,6 +85,11 @@ public class PDCClassifier {
    }
 
    public String classify(MagickImage image) throws Exception {
+      // First, check for an empty images (space).
+      if (ImageUtils.isEmptyImage(image)) {
+         return " ";
+      }
+
       return this.classify(PDC.pdc(image));
    }
 

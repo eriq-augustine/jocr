@@ -51,8 +51,54 @@ public class Test {
       //imageBreakdown();
       //densityComparisonTest();
       //pdcTest();
-      gridBreakupTest();
+      //gridBreakupTest();
       //characterBreakupTest();
+      translateTest();
+   }
+
+   public static void translateTest() throws Exception {
+      String alphabet = HIRAGANA + KATAKANA;
+
+      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
+                                               //  alphabet, false, 1);
+                                               alphabet, true, 1);
+
+      // Not exactly hiragana.
+      String characters = "アンタにこのセンスは わからないわ     ";
+
+      ImageInfo info = new ImageInfo("testImages/hiraganaKatakanaCallout.png");
+      MagickImage baseImage = new MagickImage(info);
+
+      int count = 0;
+      int hits = 0;
+
+      List<MagickImage> characterImages = TextImage.characterBreakup(baseImage);
+
+      for (int i = 0; i < characterImages.size(); i++) {
+         MagickImage image = characterImages.get(i);
+
+         /*
+         if (ImageUtils.isEmptyImage(image)) {
+            System.out.println("<empty>\n-\n");
+         } else {
+            System.out.println(ImageUtils.asciiImage(image) + "\n-\n");
+         }
+         */
+
+         String prediction = classy.classify(image);
+         System.out.println(String.format("Classify (%d)[%s]: %s",
+                                          i,
+                                          "" + characters.charAt(count),
+                                          prediction));
+
+         if (prediction.equals("" + characters.charAt(count))) {
+            hits++;
+         }
+
+         count++;
+      }
+
+      System.err.println("Hits: " + hits + " / " + count + " (" + ((double)hits / count) + ")");
    }
 
    public static void characterBreakupTest() throws Exception {
@@ -127,8 +173,8 @@ public class Test {
       String alphabet = HIRAGANA;
 
       PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-                                               alphabet, false, 1);
-                                               // alphabet, true);
+                                               //  alphabet, false, 1);
+                                               alphabet, true, 1);
 
       // Not exactly hiragana.
       String characters = "あいうえおかきくけこさしすせそたちつてとなにぬねの" +

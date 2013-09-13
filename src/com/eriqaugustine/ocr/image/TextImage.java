@@ -14,7 +14,7 @@ import java.util.List;
  * Namespace for images that only contain text.
  */
 public class TextImage {
-   private static final double STRIPE_VARIANCE = 0.20;
+   private static final double STRIPE_VARIANCE = 0.35;
 
    private enum Direction {
       LTR,
@@ -110,14 +110,14 @@ public class TextImage {
    private static int getLTRFullLines(MagickImage[][] characterGrid) throws Exception {
       int fullLines = 0;
       for (int row = 0; row < characterGrid.length; row++) {
-         if (characterGrid[row].length == 0 || emptyCharacter(characterGrid[row][0])) {
+         if (characterGrid[row].length == 0 || ImageUtils.isEmptyImage(characterGrid[row][0])) {
             continue;
          }
 
          boolean fullLine = true;
          boolean seenSpace = false;
          for (int col = 0; col < characterGrid[row].length; col++) {
-            if (emptyCharacter(characterGrid[row][col])) {
+            if (ImageUtils.isEmptyImage(characterGrid[row][col])) {
                seenSpace = true;
             } else {
                // A non-empty character after a break.
@@ -144,14 +144,14 @@ public class TextImage {
 
       int fullLines = 0;
       for (int col = 0; col < characterGrid[0].length; col++) {
-         if (emptyCharacter(characterGrid[0][col])) {
+         if (ImageUtils.isEmptyImage(characterGrid[0][col])) {
             continue;
          }
 
          boolean fullLine = true;
          boolean seenSpace = false;
          for (int row = 0; row < characterGrid.length; row++) {
-            if (emptyCharacter(characterGrid[row][col])) {
+            if (ImageUtils.isEmptyImage(characterGrid[row][col])) {
                seenSpace = true;
             } else {
                // A non-empty character after a break.
@@ -168,15 +168,6 @@ public class TextImage {
       }
 
       return fullLines;
-   }
-
-   /**
-    * Return true if the given image represents a space.
-    * This will be after a gridBreakup(), therefore just check the size.
-    * TODO(eriq): Right now 1x1 images are empty, find a better representation.
-    */
-   private static boolean emptyCharacter(MagickImage image) throws Exception {
-      return image.getDimension().width == 1;
    }
 
    /**
@@ -226,6 +217,12 @@ public class TextImage {
 
       double[] widths = stripeWidths(stripes);
       double average = MathUtils.median(widths);
+
+      //TEST
+      System.err.println("Average Width: " + average);
+      for (double width : widths) {
+         System.err.println("   " + width);
+      }
 
       List<int[]> newStripes = new ArrayList<int[]>();
       int stripeStart = -1;

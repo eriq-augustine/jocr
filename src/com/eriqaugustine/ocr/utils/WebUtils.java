@@ -58,7 +58,7 @@ public class WebUtils {
       return fetchPageAsString(address, true);
    }
 
-   public static String fetchPageAsString(String address, boolean cache) { 
+   public static String fetchPageAsString(String address, boolean cache) {
       return fetchPageImpl(address, cache);
    }
 

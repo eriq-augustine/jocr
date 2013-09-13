@@ -11,10 +11,12 @@
       <pathelement location="lib/weka.jar"/>
 
       <pathelement location="lib/commons-codec-1.8.jar" />
+      <pathelement location="lib/commons-collections-3.1.jar" />
       <pathelement location="lib/commons-configuration-1.6.jar" />
       <pathelement location="lib/commons-io-2.4.jar" />
       <pathelement location="lib/commons-lang3-3.1.jar" />
       <pathelement location="lib/commons-lang-2.6.jar" />
+      <pathelement location="lib/commons-logging-1.1.1.jar" />
       <pathelement location="lib/json.jar" />
 
       <!-- Google Stuff -->

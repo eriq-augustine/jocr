@@ -16,6 +16,21 @@ public class Translator {
 
    private static final String BASE_URL = "https://www.googleapis.com/language/translate/v2";
 
+   /**
+    * A testing main.
+    */
+   public static void main(String[] args) {
+      String toTranslate = "こんにちは世界";
+      String fromLang = "ja";
+      String toLang = "en";
+
+      Translator trans = new Translator(fromLang, toLang);
+      String res = trans.translate(toTranslate);
+
+      System.out.println("Base:  " + toTranslate);
+      System.out.println("Trans: " + res);
+   }
+
    public Translator(String fromLanguage, String targetLanguage) {
       assert(Props.has("GOOGLE_API_KEY"));
 

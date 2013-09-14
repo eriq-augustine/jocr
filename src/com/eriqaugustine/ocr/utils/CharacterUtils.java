@@ -12,16 +12,6 @@ import java.awt.GraphicsEnvironment;
  */
 public class CharacterUtils {
    public static final String DEFAULT_FONT_FAMILY = "IPAGothic";
-   public static final String[] FONTS = new String[]{
-      // "Baekmuk Batang",
-      // "Bitstream Vera Serif",
-      "IPAGothic",
-      "IPAMincho",
-      "NanumMyeongjo",
-      // "Nimbus Roman No9 L",
-      // "Tinos"
-   };
-
 
    public static final int DEFAULT_FONT_SIZE = 128;
 
@@ -66,10 +56,5 @@ public class CharacterUtils {
    public static MagickImage generateCharacter(char character,
                                                boolean shrink) throws Exception {
       return generateCharacter(character, shrink, DEFAULT_FONT_SIZE, DEFAULT_FONT_FAMILY);
-   }
-
-   public static String[] getAvailableFonts() {
-      GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-      return env.getAvailableFontFamilyNames();
    }
 }

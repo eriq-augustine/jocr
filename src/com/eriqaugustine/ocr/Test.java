@@ -9,6 +9,7 @@ import com.eriqaugustine.ocr.pdc.PDCClassifier;
 import com.eriqaugustine.ocr.pdc.PDCInfo;
 import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.FileUtils;
+import com.eriqaugustine.ocr.utils.FontUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 
 import magick.DrawInfo;
@@ -47,13 +48,13 @@ public class Test {
 
    public static void main(String[] args) throws Exception {
       //singleFontGenTest();
-      //multiFontGenTest();
+      multiFontGenTest();
       //imageBreakdown();
       //densityComparisonTest();
       //pdcTest();
       //gridBreakupTest();
       //characterBreakupTest();
-      translateTest();
+      //translateTest();
    }
 
    public static void translateTest() throws Exception {
@@ -277,13 +278,17 @@ public class Test {
 
    public static void multiFontGenTest() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "multiFontGen");
+      String alphabet = HIRAGANA;
 
       MagickImage image = null;
 
-      for (String fontFamily : CharacterUtils.FONTS) {
-         for (int i = 0; i < HIRAGANA.length(); i++) {
+      //TEST
+      alphabet = "タ";
+
+      for (String fontFamily : FontUtils.FONTS) {
+         for (int i = 0; i < alphabet.length(); i++) {
             // System.err.println(count + " -- " + (char)current + " (" + current + ")");
-            char character = HIRAGANA.charAt(i);
+            char character = alphabet.charAt(i);
 
             image = CharacterUtils.generateCharacter(character, true,
                                                      CharacterUtils.DEFAULT_FONT_SIZE,

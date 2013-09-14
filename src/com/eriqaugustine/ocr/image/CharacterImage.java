@@ -404,11 +404,17 @@ public class CharacterImage {
     * The index of the entry represents the character associated with it.
     */
    public static MagickImage[] generateFontImages(String characters) throws Exception {
+      return generateFontImages(characters, CharacterUtils.DEFAULT_FONT_FAMILY);
+   }
+
+   public static MagickImage[] generateFontImages(String characters,
+                                                  String font) throws Exception {
       MagickImage[] images = new MagickImage[characters.length()];
 
       for (int i = 0; i < characters.length(); i++) {
          images[i] = CharacterUtils.generateCharacter(characters.charAt(i),
-                                                      true);
+                                                      true,
+                                                      font);
       }
 
       return images;

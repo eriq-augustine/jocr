@@ -37,31 +37,25 @@ public class TextImage {
 
       Direction direction = findDirection(gridImages);
 
-      switch (direction) {
-         case LTR:
+      if (direction == Direction.LTR) {
+         for (int row = 0; row < gridImages.length; row++) {
+            for (int col = 0; col < gridImages[row].length; col++) {
+               rtn.add(gridImages[row][col]);
+            }
+
+            // Add in a space.
+            rtn.add(ImageUtils.emptyImage());
+         }
+      } else {
+         // Remember: Vertical is RTL.
+         for (int col = gridImages[0].length - 1; col >= 0; col--) {
             for (int row = 0; row < gridImages.length; row++) {
-               for (int col = 0; col < gridImages[row].length; col++) {
-                  rtn.add(gridImages[row][col]);
-               }
-
-               // Add in a space.
-               rtn.add(ImageUtils.emptyImage());
+               rtn.add(gridImages[row][col]);
             }
-            break;
-         default:
-            System.err.println("Unknown text direction: " + direction.name() + "." +
-                               " Using vertical.");
-         case DOWN:
-            // Remember: Vertical is RTL.
-            for (int col = gridImages[0].length - 1; col >= 0; col--) {
-               for (int row = 0; row < gridImages.length; row++) {
-                  rtn.add(gridImages[row][col]);
-               }
 
-               // Add in a space.
-               rtn.add(ImageUtils.emptyImage());
-            }
-            break;
+            // Add in a space.
+            rtn.add(ImageUtils.emptyImage());
+         }
       }
 
       return rtn;
@@ -218,11 +212,12 @@ public class TextImage {
       double[] widths = stripeWidths(stripes);
       double average = MathUtils.median(widths);
 
-      //TEST
+      /*
       System.err.println("Average Width: " + average);
       for (double width : widths) {
          System.err.println("   " + width);
       }
+      */
 
       List<int[]> newStripes = new ArrayList<int[]>();
       int stripeStart = -1;

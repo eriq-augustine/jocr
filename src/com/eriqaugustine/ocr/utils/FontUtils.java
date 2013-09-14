@@ -3,6 +3,8 @@ package com.eriqaugustine.ocr.utils;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -10,45 +12,88 @@ import java.util.Set;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
+/**
+ * Some utilities for dealing with fonts.
+ * Note that both True Type Fonts (TTF) and Open Type Fonts (OTF) can be loaded with
+ * Font.TRUETYPE_FONT.
+ */
 public class FontUtils {
    public static final int DEFAULT_FONT_SIZE = 24;
 
    public static final String[] FONTS = new String[]{
       "Baekmuk Batang",
-      "Bitstream Vera Serif",
       "IPAGothic",
       "IPAMincho",
       "NanumMyeongjo",
+      "RyuminStd-Bold-KO",
+      "RyuminStd-Heavy-KO",
+      "MidashiMinPr5-MA31",
    };
 
    public static void main(String[] args) {
-      /*
       String text = "アンタにこのセンスは わからないわ";
 
+      /*
       for (String font : FONTS) {
          showFontDialog(String.format("%s:\n%s", font, text), font);
       }
       */
 
-      //getFontName("fonts/DFMimP5_0.ttf");
-      //getFontName("fonts/DFMimP5_0.ttf");
-      getFontName("/home/eriq/jocr/fonts/A-OTF-MidashiMinPr5-MA31.ttf");
+      String[] fontPaths = getLocalFontPaths();
+      for (String fontPath : fontPaths) {
+         System.out.println(fontPath);
+
+         String fontName = getFontName(fontPath);
+         registerFont(fontPath);
+         showFontDialog(text, fontName);
+      }
    }
 
-   public static void getFontName(String fontPath) {
-      Set<String> initialFonts = new HashSet<String>(Arrays.asList(getAvailableFonts()));
-      if (!registerFont(fontPath)) {
-         System.out.println("Unable to register font: " + fontPath);
-         return;
+   /**
+    * Register all the project's local fonts.
+    */
+   public static void registerLocalFonts() {
+      String[] fontPaths = getLocalFontPaths();
+      for (String fontPath : fontPaths) {
+         registerFont(fontPath);
       }
-      Set<String> newFonts = new HashSet<String>(Arrays.asList(getAvailableFonts()));
+   }
 
-      newFonts.removeAll(initialFonts);
+   /**
+    * Get the fonts installed in the project's font directory.
+    * Currently, only ttf and otf fonts are accepted.
+    */
+   public static String[] getLocalFontPaths() {
+      String fontDirName = Props.getString("FONT_DIR", "fonts");
+      File fontDir = new File(fontDirName);
 
-      System.out.println("New Fonts:");
-      for (String font : newFonts) {
-         System.out.println("   " + font);
+      String[] fontFiles = fontDir.list(new FilenameFilter() {
+         public boolean accept(File dir, String name) {
+            String lName = name.toLowerCase();
+            return lName.endsWith(".ttf") || lName.endsWith(".otf");
+         }
+      });
+
+      for (int i = 0; i < fontFiles.length; i++) {
+         File fontFile = new File(fontDirName + File.separator + fontFiles[i]);
+         fontFiles[i] = fontFile.getAbsolutePath();
       }
+
+      return fontFiles;
+   }
+
+   public static String getFontName(String fontPath) {
+      String fontName = null;
+
+      try {
+         Font font = Font.createFont(Font.TRUETYPE_FONT, new File(fontPath));
+         fontName = font.getName();
+      } catch (Exception ex) {
+         System.err.println("Unable to create font.");
+         ex.printStackTrace(System.err);
+      }
+
+      return fontName;
    }
 
    public static void showFontDialog(String str, String fontName) {
@@ -65,10 +110,6 @@ public class FontUtils {
 
    public static boolean registerFont(String fontPath) {
       try {
-         //TEST
-         File file = new File(fontPath);
-         System.out.println("Exists: " + file.exists());
-
          GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
          return ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File(fontPath)));
       } catch (Exception ex) {

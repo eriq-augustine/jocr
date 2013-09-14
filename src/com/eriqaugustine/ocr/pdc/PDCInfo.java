@@ -3,7 +3,6 @@ package com.eriqaugustine.ocr.pdc;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
 import magick.MagickImage;
-import magick.MagickImage;
 
 import java.awt.Dimension;
 import java.util.ArrayList;

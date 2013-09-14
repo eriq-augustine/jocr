@@ -19,7 +19,7 @@ import java.nio.charset.UnsupportedCharsetException;
  * A class for general web centered utilities.
  */
 public class WebUtils {
-   private final static String WEB_CACHE_PREFIX = "web_cache";
+   private static final String WEB_CACHE_PREFIX = "web_cache";
 
    /**
     * Testing main.

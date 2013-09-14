@@ -54,6 +54,12 @@ public class CharacterUtils {
    }
 
    public static MagickImage generateCharacter(char character,
+                                               boolean shrink,
+                                               String fontFamily) throws Exception {
+      return generateCharacter(character, shrink, DEFAULT_FONT_SIZE, fontFamily);
+   }
+
+   public static MagickImage generateCharacter(char character,
                                                boolean shrink) throws Exception {
       return generateCharacter(character, shrink, DEFAULT_FONT_SIZE, DEFAULT_FONT_FAMILY);
    }

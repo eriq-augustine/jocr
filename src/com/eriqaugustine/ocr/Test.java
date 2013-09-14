@@ -48,19 +48,21 @@ public class Test {
 
    public static void main(String[] args) throws Exception {
       //singleFontGenTest();
-      multiFontGenTest();
+      //multiFontGenTest();
       //imageBreakdown();
       //densityComparisonTest();
       //pdcTest();
       //gridBreakupTest();
       //characterBreakupTest();
-      //translateTest();
+      translateTest();
    }
 
    public static void translateTest() throws Exception {
       String alphabet = HIRAGANA + KATAKANA;
 
-      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
+      PDCClassifier classy =
+            new PDCClassifier(CharacterImage.generateFontImages(alphabet, "RyuminStd-Bold-KO"),
+            // new PDCClassifier(CharacterImage.generateFontImages(alphabet),
                                                //  alphabet, false, 1);
                                                alphabet, true, 1);
 

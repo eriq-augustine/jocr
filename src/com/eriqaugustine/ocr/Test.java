@@ -3,6 +3,7 @@ package com.eriqaugustine.ocr;
 import com.eriqaugustine.ocr.image.BubbleDetection;
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.Filters;
+import com.eriqaugustine.ocr.image.ImageTranslator;
 import com.eriqaugustine.ocr.image.TextImage;
 import com.eriqaugustine.ocr.pdc.PDC;
 import com.eriqaugustine.ocr.pdc.PDCClassifier;
@@ -54,17 +55,38 @@ public class Test {
       //pdcTest();
       //gridBreakupTest();
       //characterBreakupTest();
-      translateTest();
+      //translateTest();
+      imageTranslateTest();
+   }
+
+   public static void imageTranslateTest() throws Exception {
+      String outDirectory = FileUtils.itterationDir("out", "transTest");
+
+      ImageInfo info = new ImageInfo("testImages/page.png");
+      MagickImage baseImage = new MagickImage(info);
+      baseImage.setFileName(outDirectory + "/transTest-base.png");
+      baseImage.writeImage(new ImageInfo());
+
+      ImageTranslator translator = new ImageTranslator();
+      MagickImage transImage = translator.translate(baseImage);
+
+      transImage.setFileName(outDirectory + "/transTest-trans.png");
+      transImage.writeImage(new ImageInfo());
    }
 
    public static void translateTest() throws Exception {
       String alphabet = HIRAGANA + KATAKANA;
 
+      // String[] fonts = new String[]{"IPAGothic", "RyuminStd-Bold-KO"};
+      String[] fonts = new String[]{"Baekmuk Batang", "RyuminStd-Bold-KO"};
+      String trainingAlphabet = "";
+      for (int i = 0; i < fonts.length; i++) {
+         trainingAlphabet += alphabet;
+      }
+
       PDCClassifier classy =
-            new PDCClassifier(CharacterImage.generateFontImages(alphabet, "RyuminStd-Bold-KO"),
-            // new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-                                               //  alphabet, false, 1);
-                                               alphabet, true, 1);
+            new PDCClassifier(CharacterImage.generateFontImages(alphabet, fonts),
+                              trainingAlphabet, true, 1);
 
       // Not exactly hiragana.
       String characters = "アンタにこのセンスは わからないわ     ";

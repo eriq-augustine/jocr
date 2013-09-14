@@ -6,6 +6,8 @@ import com.eriqaugustine.ocr.utils.WebUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.URLEncoder;
+
 /**
  * A simple translator that is a thin wrapper around Google Translate.
  * This will probably later be replaced with more complicated systems.
@@ -43,6 +45,12 @@ public class Translator {
    }
 
    private String fetchTranslation(String text) {
+      // Try to encode the text. If it does not encode, just leave it as is.
+      try {
+         text = URLEncoder.encode(text, "UTF-8");
+      } catch (Exception ex) {
+      }
+
       String translation = null;
       String requestUrl = String.format("%s?key=%s&source=%s&target=%s&q=%s",
                                         BASE_URL,

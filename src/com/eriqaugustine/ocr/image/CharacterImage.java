@@ -2,6 +2,7 @@ package com.eriqaugustine.ocr.image;
 
 import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
+import com.eriqaugustine.ocr.utils.ListUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
 import magick.MagickImage;
@@ -403,10 +404,6 @@ public class CharacterImage {
     * Generate an image for every character in the string.
     * The index of the entry represents the character associated with it.
     */
-   public static MagickImage[] generateFontImages(String characters) throws Exception {
-      return generateFontImages(characters, CharacterUtils.DEFAULT_FONT_FAMILY);
-   }
-
    public static MagickImage[] generateFontImages(String characters,
                                                   String font) throws Exception {
       MagickImage[] images = new MagickImage[characters.length()];
@@ -418,6 +415,22 @@ public class CharacterImage {
       }
 
       return images;
+   }
+
+   public static MagickImage[] generateFontImages(String characters) throws Exception {
+      return generateFontImages(characters, CharacterUtils.DEFAULT_FONT_FAMILY);
+   }
+
+   public static MagickImage[] generateFontImages(String characters,
+                                                  String[] fonts) throws Exception {
+      MagickImage[] rtn = new MagickImage[characters.length() * fonts.length];
+
+      for (int i = 0; i < fonts.length; i++) {
+         MagickImage[] images = generateFontImages(characters, fonts[i]);
+         ListUtils.fill(rtn, images, i * characters.length());
+      }
+
+      return rtn;
    }
 
    /**

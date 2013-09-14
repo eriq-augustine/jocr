@@ -2,7 +2,10 @@ package com.eriqaugustine.ocr.utils;
 
 import com.eriqaugustine.ocr.image.Filters;
 
+import magick.DrawInfo;
+import magick.ImageInfo;
 import magick.MagickImage;
+import magick.PixelPacket;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
@@ -19,6 +22,83 @@ public class ImageUtils {
     */
    public static final char[] ASCII_PLACEHOLDERS =
       {'@', '#', '*', '.', ' '};
+
+   /**
+    * A testing main.
+    */
+   public static void main(String[] args) throws Exception {
+      String outDirectory = FileUtils.itterationDir("out", "imageUtils");
+
+      MagickImage image = generateString("Hello, World!", false, 50, 50);
+      image.setFileName(outDirectory + "/genString.png");
+      image.writeImage(new ImageInfo());
+   }
+
+   /**
+    * Overlay |overlay| over |base|.
+    */
+   public static MagickImage overlayImage(MagickImage baseImage, MagickImage overlayImage,
+                                          int rowOffset, int colOffset) throws Exception {
+      Dimension baseDimensions = baseImage.getDimension();
+      Dimension overlayDimensions = overlayImage.getDimension();
+
+      assert(rowOffset >= 0 && rowOffset < baseDimensions.height);
+      assert(colOffset >= 0 && colOffset < baseDimensions.width);
+      assert(rowOffset + overlayDimensions.height < baseDimensions.height);
+      assert(colOffset + overlayDimensions.width < baseDimensions.width);
+
+      byte[] basePixels = new byte[baseDimensions.width * baseDimensions.height * 3];
+      baseImage.dispatchImage(0, 0,
+                              baseDimensions.width, baseDimensions.height,
+                              "RGB",
+                              basePixels);
+
+      byte[] overlayPixels = new byte[overlayDimensions.width * overlayDimensions.height * 3];
+      overlayImage.dispatchImage(0, 0,
+                                 overlayDimensions.width, overlayDimensions.height,
+                                 "RGB",
+                                 overlayPixels);
+
+      for (int row = 0; row < overlayDimensions.height; row++) {
+         for (int col = 0; col < overlayDimensions.width; col++) {
+            // Make sure to offset for the channels.
+            int baseIndex = 3 * MathUtils.rowColToIndex(rowOffset + row,
+                                                        colOffset + col,
+                                                        baseDimensions.width);
+            int overlayIndex = 3 * MathUtils.rowColToIndex(row, col, overlayDimensions.width);
+
+            basePixels[baseIndex + 0] = overlayPixels[overlayIndex + 0];
+            basePixels[baseIndex + 1] = overlayPixels[overlayIndex + 1];
+            basePixels[baseIndex + 2] = overlayPixels[overlayIndex + 2];
+         }
+      }
+
+      baseImage.constituteImage(baseDimensions.width, baseDimensions.height,
+                                "RGB",
+                                basePixels);
+
+      return baseImage;
+   }
+
+   /**
+    * Generate an image that contains the text from |content|.
+    * ImageMagick is strange and easiest way to get word wrap is to use the "caption" feature.
+    * The same tactic as CharacterUtils.generateCharacter() is not used.
+    */
+   public static MagickImage generateString(String content, boolean shrink,
+                                            int maxWidth, int maxHeight) throws Exception {
+      ImageInfo info = new ImageInfo("caption: " + content);
+      info.setSize(String.format("%dx%d", maxWidth, maxHeight));
+      info.setFont("Arial");
+
+      MagickImage image = new MagickImage(info);
+
+      if (shrink) {
+         return shrinkImage(image);
+      }
+
+      return image;
+   }
 
    public static MagickImage scaleImage(MagickImage image, int newCols, int newRows)
          throws Exception {

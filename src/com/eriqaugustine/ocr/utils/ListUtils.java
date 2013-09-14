@@ -25,4 +25,17 @@ public class ListUtils {
       }
       return rtn;
    }
+
+   /**
+    * Fill |base| with elements from |content|.
+    * Start filling |base| at offset.
+    * |base| must be large enough to fit all of |content|.
+    */
+   public static <T> void fill(T[] base, T[]content, int offset) {
+      assert(base.length - offset + 1 >= content.length);
+
+      for (int i = 0; i < content.length; i++) {
+         base[i + offset] = content[i];
+      }
+   }
 }

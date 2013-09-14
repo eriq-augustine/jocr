@@ -43,6 +43,15 @@ public class BubbleDetection {
     * Extract the pixels for each bubble and convert them to an image.
     */
    public static MagickImage[] extractBubbles(MagickImage image) throws Exception {
+      BubbleInfo[] bubbles = extractBubblesWithInfo(image);
+      MagickImage[] images = new MagickImage[bubbles.length];
+      for (int i = 0; i < bubbles.length; i++) {
+         images[i] = bubbles[i].image;
+      }
+      return images;
+   }
+
+   public static BubbleInfo[] extractBubblesWithInfo(MagickImage image) throws Exception {
       Map<Integer, Blob> bubbles = getBubbles(image);
 
       Dimension dimensions = image.getDimension();
@@ -53,7 +62,7 @@ public class BubbleDetection {
                           "RGB",
                           pixels);
 
-      MagickImage[] images = new MagickImage[bubbles.size()];
+      BubbleInfo[] infos = new BubbleInfo[bubbles.size()];
 
       int count = 0;
       for (Blob blob : bubbles.values()) {
@@ -86,10 +95,12 @@ public class BubbleDetection {
                                    "RGB",
                                    blobPixels);
 
-         images[count++] = blobImage;
+         infos[count++] = new BubbleInfo(blob.getMinRow(), blob.getMinCol(),
+                                         blob.getBoundingWidth(), blob.getBoundingHeight(),
+                                         blobImage);
       }
 
-      return images;
+      return infos;
    }
 
    /**
@@ -222,5 +233,21 @@ public class BubbleDetection {
              (Math.abs(index - base) == 1 &&
               index >= baseRowStart &&
               index < baseRowStart + width));
+   }
+
+   public static class BubbleInfo {
+      public final int startRow;
+      public final int startCol;
+      public final int width;
+      public final int height;
+      public final MagickImage image;
+
+      public BubbleInfo(int startRow, int startCol, int width, int height, MagickImage image) {
+         this.startRow = startRow;
+         this.startCol = startCol;
+         this.width = width;
+         this.height = height;
+         this.image = image;
+      }
    }
 }

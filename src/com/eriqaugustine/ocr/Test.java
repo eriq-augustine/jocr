@@ -19,6 +19,7 @@ import magick.MagickImage;
 import magick.PixelPacket;
 
 import java.awt.GraphicsEnvironment;
+import java.io.File;
 import java.util.List;
 
 /**
@@ -56,7 +57,8 @@ public class Test {
       //gridBreakupTest();
       //characterBreakupTest();
       //translateTest();
-      imageTranslateTest();
+      // imageTranslateTest();
+      volumeFillTest();
    }
 
    public static void imageTranslateTest() throws Exception {
@@ -72,6 +74,25 @@ public class Test {
 
       transImage.setFileName(outDirectory + "/transTest-trans.png");
       transImage.writeImage(new ImageInfo());
+   }
+
+   public static void volumeFillTest() throws Exception {
+      String outDirectory = FileUtils.itterationDir("out", "volFill");
+
+      File baseDir = new File("testImages/testSets/youbatoVol1");
+      File[] imageFiles = baseDir.listFiles();
+
+      int count = 0;
+      for (File imgFile : imageFiles) {
+         ImageInfo info = new ImageInfo(imgFile.getAbsolutePath());
+         MagickImage baseImage = new MagickImage(info);
+
+         MagickImage bubbles = BubbleDetection.fillBubbles(baseImage);
+         bubbles.setFileName(String.format("%s/%03d-bubbles.png", outDirectory, count));
+         bubbles.writeImage(info);
+
+         count++;
+      }
    }
 
    public static void translateTest() throws Exception {

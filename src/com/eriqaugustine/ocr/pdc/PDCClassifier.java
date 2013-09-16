@@ -19,6 +19,7 @@ import java.util.Set;
 
 /**
  * A classifier specialized for PDC features.
+ * TODO(eriq): Add quadrant (maybe 16ths) density to feature set.
  */
 public class PDCClassifier {
    private Classifier classifier;

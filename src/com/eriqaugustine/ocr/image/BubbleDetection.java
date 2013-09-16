@@ -1,7 +1,10 @@
 package com.eriqaugustine.ocr.image;
 
+import com.eriqaugustine.ocr.utils.ColorUtils;
+
 import magick.MagickImage;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,19 +17,30 @@ import java.util.Set;
  * A static class for detecting callouts (speech bubbles).
  */
 public class BubbleDetection {
-   public static final int DEFAULT_MIN_BLOB_SIZE = 2000;
+   // TODO(eriq): These should be relative (percentages).
+   public static final int DEFAULT_MIN_CHARACTER_BLOB_SIZE = 100;
+   public static final int DEFAULT_MAX_CHARACTER_BLOB_SIZE = 3000;
+
+   // Minimum size for a callout candidate blob.
+   public static final int DEFAULT_MIN_CALLOUT_BLOB_SIZE = 1000;
+   public static final int DEFAULT_MAX_CALLOUT_BLOB_SIZE = 100000;
 
    // The minimum density for a blob on the first pass.
+   //public static final double DEFAULT_MIN_BLOB_DENSITY_1 = 0.40;
+   // TODO(eriq): Rename (candidate, callout).
    public static final double DEFAULT_MIN_BLOB_DENSITY_1 = 0.40;
 
    // Second pass.
-   public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.70;
+   //public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.70;
+   public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.60;
 
    /**
     * Get the raw blobs that represent the bubbles.
     */
    public static Map<Integer, Blob> getBubbles(MagickImage image) throws Exception {
-      image = Filters.bw(image, 40).edgeImage(3);
+      image = image.blurImage(3, 1);
+      image = Filters.bw(image, 128);
+      image = image.edgeImage(3);
 
       Dimension dimensions = image.getDimension();
 
@@ -121,7 +135,7 @@ public class BubbleDetection {
                           pixels);
 
       // Fill the blobs.
-      fillBlobs(pixels, bubbles);
+      fillBlobs(pixels, bubbles, null);
 
       MagickImage newImage = new MagickImage();
       newImage.constituteImage(dimensions.width, dimensions.height,
@@ -135,14 +149,23 @@ public class BubbleDetection {
     * Modify |pixels| to fill in all the blobs as red.
     */
    private static void fillBlobs(byte[] pixels, Map<Integer, Blob> blobs) {
+      fillBlobs(pixels, blobs, new Color(255, 0, 0));
+   }
+
+   /**
+    * If |color| is null, then pick a different colot every time.
+    */
+   private static void fillBlobs(byte[] pixels, Map<Integer, Blob> blobs, Color color) {
       for (Blob blob : blobs.values()) {
+         Color activeColor = color != null ? color : ColorUtils.nextColor();
+
          for (Integer index : blob.getPoints()) {
             int pixelIndex = index.intValue() * 3;
 
             // Mark the blobs as red.
-            pixels[pixelIndex + 0] = (byte)0xFF;
-            pixels[pixelIndex + 1] = 0;
-            pixels[pixelIndex + 2] = 0;
+            pixels[pixelIndex + 0] = (byte)activeColor.getRed();
+            pixels[pixelIndex + 1] = (byte)activeColor.getGreen();
+            pixels[pixelIndex + 2] = (byte)activeColor.getBlue();
          }
       }
    }
@@ -153,7 +176,12 @@ public class BubbleDetection {
     *  it has RGB.
     */
    private static Map<Integer, Blob> getBlobs(int width, byte[] pixels) {
-      Map<Integer, Blob> blobs = new HashMap<Integer, Blob>();
+      Map<Integer, Blob> allBlobs = new HashMap<Integer, Blob>();
+
+      // Blobs for possible colors.
+      Map<Integer, Blob> characterBlobs = new HashMap<Integer, Blob>();
+      // Blobs for callout candidates.
+      Map<Integer, Blob> candidateBlobs = new HashMap<Integer, Blob>();
 
       boolean[] visited = new boolean[pixels.length / 3];
       Queue<Integer> toVisit = new LinkedList<Integer>();
@@ -172,52 +200,94 @@ public class BubbleDetection {
 
       // Depth-first w.r.t. blobs.
       for (int i = 0; i < visited.length; i++) {
-         if (!visited[i]) {
-            // Keep track of the dimensions of the blob for density calculations.
-            Blob blob = new Blob(visited.length, width);
+         if (visited[i]) {
+            continue;
+         }
 
-            toVisit.add(new Integer(i));
-            visited[i] = true;
+         // Keep track of the dimensions of the blob for density calculations.
+         Blob blob = new Blob(visited.length, width);
 
-            blob.addPoint(i);
+         toVisit.add(new Integer(i));
+         visited[i] = true;
 
-            while (!toVisit.isEmpty()) {
-               int index = toVisit.remove().intValue();
+         blob.addPoint(i);
 
-               // Check all neighbors
-               // No need to check color, only visited is necessary
-               //  since the edges have already been marked as visited.
-               for (int offset : offsets) {
-                  int newIndex = index + offset;
-                  if (inBoundsAdjacent(index, newIndex, width, visited.length) &&
-                      !visited[newIndex]) {
-                     toVisit.add(newIndex);
+         while (!toVisit.isEmpty()) {
+            int index = toVisit.remove().intValue();
 
-                     // Mark as visited a little early so that it is not added multiple times.
-                     visited[newIndex] = true;
+            // Check all neighbors
+            // No need to check color, only visited is necessary
+            //  since the edges have already been marked as visited.
+            for (int offset : offsets) {
+               int newIndex = index + offset;
+               if (inBoundsAdjacent(index, newIndex, width, visited.length) &&
+                   !visited[newIndex]) {
+                  toVisit.add(newIndex);
 
-                     blob.addPoint(newIndex);
-                  }
+                  // Mark as visited a little early so that it is not added multiple times.
+                  visited[newIndex] = true;
+
+                  blob.addPoint(newIndex);
                }
             }
+         }
 
-            // Do a quick check for size and border before shifting geometry.
-            if (blob.size() > DEFAULT_MIN_BLOB_SIZE &&
-                !blob.isBorderBlob() &&
-                blob.density() >= DEFAULT_MIN_BLOB_DENSITY_1) {
+         if (!blob.isBorderBlob()) {
+            // Get character candidates.
+            if (blob.size() >= DEFAULT_MIN_CHARACTER_BLOB_SIZE &&
+                blob.size() < DEFAULT_MAX_CHARACTER_BLOB_SIZE) {
+               characterBlobs.put(blob.getId(), blob);
+               allBlobs.put(blob.getId(), blob);
+            // Callout candidate.
+            } else if (blob.size() >= DEFAULT_MIN_CALLOUT_BLOB_SIZE &&
+                       blob.size() < DEFAULT_MAX_CALLOUT_BLOB_SIZE &&
+                       blob.density() >= DEFAULT_MIN_BLOB_DENSITY_1) {
                blob.geometryAdjust(0.10);
-
-               // Recheck the size after the geometry adjust.
-               if (blob.size() > DEFAULT_MIN_BLOB_SIZE &&
-                   blob.density() >= DEFAULT_MIN_BLOB_DENSITY_2) {
-                  blob.geometryAdjust(0.60);
-                  blobs.put(blob.getId(), blob);
-               }
+               candidateBlobs.put(blob.getId(), blob);
+               allBlobs.put(blob.getId(), blob);
             }
          }
       }
 
-      return blobs;
+      // Find parents.
+      for (Blob blob : allBlobs.values()) {
+         double minContainingDist = Integer.MAX_VALUE;
+         Blob parent = null;
+
+         // Get the closest containing blob.
+         for (Blob parentCandidate : allBlobs.values()) {
+            double containingDist = parentCandidate.avgContainingDistance(blob);
+            if (containingDist > 0 &&
+                (parent == null || containingDist < minContainingDist)) {
+               minContainingDist = containingDist;
+               parent = parentCandidate;
+            }
+         }
+
+         if (parent != null) {
+            parent.addChild(blob);
+         }
+      }
+
+      // Check the candidate blobs.
+      // Callouts must contain characters.
+      // The characters (child blobs) count as part of the parent for densite calculations.
+      Map<Integer, Blob> calloutBlobs = new HashMap<Integer, Blob>();
+
+      for (Blob candidate : candidateBlobs.values()) {
+         if (candidate.numChildren() == 0) {
+            continue;
+         }
+
+         if (candidate.density(true) > 0.60) {
+            int numSurroundedKids = candidate.numSurroundedChildren();
+            if (numSurroundedKids > 0) {
+               calloutBlobs.put(candidate.getId(), candidate);
+            }
+         }
+      }
+
+      return calloutBlobs;
    }
 
    // Endure that |index| is adjacent to |base|.
@@ -235,6 +305,9 @@ public class BubbleDetection {
               index < baseRowStart + width));
    }
 
+   /**
+    * A container for information about bubbles.
+    */
    public static class BubbleInfo {
       public final int startRow;
       public final int startCol;

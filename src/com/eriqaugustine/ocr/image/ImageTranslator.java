@@ -1,8 +1,5 @@
 package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.image.BubbleDetection;
-import com.eriqaugustine.ocr.image.CharacterImage;
-import com.eriqaugustine.ocr.image.TextImage;
 import com.eriqaugustine.ocr.pdc.PDCClassifier;
 import com.eriqaugustine.ocr.translate.Translator;
 import com.eriqaugustine.ocr.utils.ImageUtils;
@@ -50,7 +47,8 @@ public class ImageTranslator {
 
          MagickImage transBubble = ImageUtils.generateString(translation, false,
                                                              bubble.width, bubble.height);
-         baseImage = ImageUtils.overlayImage(baseImage, transBubble, bubble.startRow, bubble.startCol);
+         baseImage = ImageUtils.overlayImage(baseImage, transBubble,
+                                             bubble.startRow, bubble.startCol);
       }
 
       return baseImage;

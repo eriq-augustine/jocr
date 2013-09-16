@@ -31,6 +31,9 @@ public class ColorUtils {
       return internalColorGen.next();
    }
 
+   /**
+    * Generates random, readable colors.
+    */
    public static class ColorGenerator {
       private Random rand;
 

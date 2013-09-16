@@ -31,13 +31,13 @@ public class FontUtils {
    };
 
    public static void main(String[] args) {
+      registerLocalFonts();
+
       String text = "アンタにこのセンスは わからないわ";
 
-      /*
-      for (String font : FONTS) {
-         showFontDialog(String.format("%s:\n%s", font, text), font);
-      }
-      */
+      // for (String font : FONTS) {
+      //    showFontDialog(String.format("%s:\n%s", font, text), font);
+      // }
 
       String[] fontPaths = getLocalFontPaths();
       for (String fontPath : fontPaths) {

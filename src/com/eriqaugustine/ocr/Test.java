@@ -57,8 +57,8 @@ public class Test {
       //gridBreakupTest();
       //characterBreakupTest();
       //translateTest();
-      // imageTranslateTest();
-      volumeFillTest();
+      imageTranslateTest();
+      //volumeFillTest();
    }
 
    public static void volumeFillTest() throws Exception {
@@ -88,16 +88,26 @@ public class Test {
    public static void imageTranslateTest() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "transTest");
 
-      ImageInfo info = new ImageInfo("testImages/page.png");
-      MagickImage baseImage = new MagickImage(info);
-      baseImage.setFileName(outDirectory + "/transTest-base.png");
-      baseImage.writeImage(new ImageInfo());
+      String[] images = new String[]{"testImages/page.png", "testImages/page2.jpg"};
 
-      ImageTranslator translator = new ImageTranslator();
-      MagickImage transImage = translator.translate(baseImage);
+      for (int i = 0; i < images.length; i++) {
+         ImageInfo info = new ImageInfo(images[i]);
+         MagickImage baseImage = new MagickImage(info);
+         baseImage.setFileName(outDirectory + "/transTest-" + i + "-0-base.png");
+         baseImage.writeImage(new ImageInfo());
 
-      transImage.setFileName(outDirectory + "/transTest-trans.png");
-      transImage.writeImage(new ImageInfo());
+         MagickImage bubbles = BubbleDetection.fillBubbles(baseImage);
+         bubbles.setFileName(outDirectory + "/transTest-" + i + "-1-base.png");
+         bubbles.writeImage(info);
+
+         /*
+         ImageTranslator translator = new ImageTranslator();
+         MagickImage transImage = translator.translate(baseImage);
+
+         transImage.setFileName(outDirectory + "/transTest-2-trans.png");
+         transImage.writeImage(new ImageInfo());
+         */
+      }
    }
 
    public static void translateTest() throws Exception {

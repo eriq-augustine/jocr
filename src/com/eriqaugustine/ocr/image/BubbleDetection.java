@@ -249,14 +249,14 @@ public class BubbleDetection {
          }
       }
 
-      // Find parents.
-      for (Blob blob : allBlobs.values()) {
+      // Find children (character candidates) for candidate blobs.
+      for (Blob characterCandidate : characterBlobs.values()) {
          double minContainingDist = Integer.MAX_VALUE;
          Blob parent = null;
 
          // Get the closest containing blob.
-         for (Blob parentCandidate : allBlobs.values()) {
-            double containingDist = parentCandidate.avgContainingDistance(blob);
+         for (Blob parentCandidate : candidateBlobs.values()) {
+            double containingDist = parentCandidate.avgContainingDistance(characterCandidate);
             if (containingDist > 0 &&
                 (parent == null || containingDist < minContainingDist)) {
                minContainingDist = containingDist;
@@ -265,7 +265,7 @@ public class BubbleDetection {
          }
 
          if (parent != null) {
-            parent.addChild(blob);
+            parent.addChild(characterCandidate);
          }
       }
 
@@ -278,6 +278,19 @@ public class BubbleDetection {
          if (candidate.numChildren() == 0) {
             continue;
          }
+
+         // Debugging Info
+         /*
+         int numSurroundedKids = candidate.numSurroundedChildren();
+         System.out.println(candidate.getId());
+         System.out.println(String.format("   (%d, %d) - (%d, %d)",
+                                          candidate.getMinCol(), candidate.getMinRow(),
+                                          candidate.getMaxCol(), candidate.getMaxRow()));
+         System.out.println("   Density(false): " + candidate.density(false));
+         System.out.println("   Density(true):  " + candidate.density(true));
+         System.out.println("   Num Kids: " + candidate.numChildren());
+         System.out.println("   Num Surrounded Kids: " + numSurroundedKids);
+         */
 
          if (candidate.density(true) > 0.60) {
             int numSurroundedKids = candidate.numSurroundedChildren();

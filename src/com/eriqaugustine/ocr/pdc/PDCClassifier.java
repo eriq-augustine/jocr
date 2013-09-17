@@ -63,12 +63,9 @@ public class PDCClassifier {
                         int groupSize) throws Exception {
       assert(trainingImages.length > 0);
       assert(groupSize > 0);
+      assert(PDC.getNumDCs() % groupSize == 0);
 
-      PDCInfo[] trainingDocuments = PDC.pdc(trainingImages);
-
-      assert(trainingDocuments[0].numPoints() % groupSize == 0);
-
-      numDCs = trainingDocuments[0].numPoints();
+      numDCs = PDC.getNumDCs();
       this.combineDirections = combineDirections;
       this.groupSize = groupSize;
 
@@ -84,7 +81,7 @@ public class PDCClassifier {
 
       featureAttributes = getFeatureAttributes(possibleCharacters);
 
-      Instances trainingSet = prepTraining(trainingImages, trainingDocuments, trainingCharacters);
+      Instances trainingSet = prepTraining(trainingImages, trainingCharacters);
       classifier = new SMO();
       // TODO(eriq): This can throw.
       classifier.buildClassifier(trainingSet);
@@ -96,12 +93,8 @@ public class PDCClassifier {
          return " ";
       }
 
-      PDCInfo info = PDC.pdc(image);
-
-      assert(info.numPoints() == numDCs);
-
       try {
-         Instance instance = prepUnclassed(image, info);
+         Instance instance = prepUnclassed(image);
          int prediction = (int)classifier.classifyInstance(instance);
          return instance.classAttribute().value(prediction);
       } catch (Exception ex) {
@@ -112,7 +105,9 @@ public class PDCClassifier {
    }
 
    // TODO(eriq): Probably better to classify multiple documents at once.
-   private Instance prepUnclassed(MagickImage image, PDCInfo info) throws Exception {
+   private Instance prepUnclassed(MagickImage image) throws Exception {
+      PDCInfo info = PDC.pdc(image);
+
       assert(info.numPoints() == numDCs);
 
       Instances instances = new Instances("Unclassified", featureAttributes, 1);
@@ -153,15 +148,14 @@ public class PDCClassifier {
    }
 
    private Instances prepTraining(MagickImage[] trainingImages,
-                                  PDCInfo[] trainingDocuments,
                                   String[] trainingCharacters) throws Exception {
       Instances trainingSet = new Instances("PDCInstances",
                                             featureAttributes,
                                             trainingCharacters.length);
       trainingSet.setClassIndex(0);
 
-      for (int i = 0; i < trainingDocuments.length; i++) {
-         Instance instance = prepUnclassed(trainingImages[i], trainingDocuments[i]);
+      for (int i = 0; i < trainingImages.length; i++) {
+         Instance instance = prepUnclassed(trainingImages[i]);
          // Set the class value.
          instance.setValue((Attribute)featureAttributes.elementAt(0), trainingCharacters[i]);
 

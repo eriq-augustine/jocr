@@ -21,6 +21,8 @@ public final class PDC {
 
    private static final int NUM_LAYERS = 3;
 
+   private static final int NUM_SCAN_DIRECTIONS = 4;
+
    /**
     * The deltas [row, col] for the different directions available to PDC.
     * Starts at 12 and moves clockwise by 1:30.
@@ -43,6 +45,15 @@ public final class PDC {
    }
 
    /**
+    * Get the number of DCs that this will produce.
+    * This is the number of base DCs (so before any grouping is done).
+    * This will be equal to PDCInfo.numPoints().
+    */
+   public static int getNumDCs() {
+      return SCALE_SIZE * NUM_SCAN_DIRECTIONS * NUM_LAYERS;
+   }
+
+   /**
     * Run PDC on an image.
     * |image| must be already be binary.
     * TODO(eriq): Group vectors into bins.
@@ -53,7 +64,7 @@ public final class PDC {
       boolean[] discretePixels = Filters.discretizePixels(scaleImage);
 
       List<Integer> peripherals = new ArrayList<Integer>(SCALE_SIZE *
-                                                         4 /* scan directions */ *
+                                                         NUM_SCAN_DIRECTIONS *
                                                          NUM_LAYERS);
 
       // Layers
@@ -71,7 +82,7 @@ public final class PDC {
          ListUtils.append(peripherals, scan(discretePixels, SCALE_SIZE, i, false, false));
       }
 
-      assert(peripherals.size() == (SCALE_SIZE * 4 /* scan directions */ * NUM_LAYERS));
+      assert(peripherals.size() == (SCALE_SIZE * NUM_SCAN_DIRECTIONS * NUM_LAYERS));
       int[][] lengths = new int[peripherals.size()][];
 
       for (int i = 0; i < peripherals.size(); i++) {

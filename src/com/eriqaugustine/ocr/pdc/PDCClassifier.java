@@ -22,6 +22,10 @@ import java.util.Set;
  * TODO(eriq): Add quadrant (maybe 16ths) density to feature set.
  */
 public class PDCClassifier {
+   private static final int DEFAULT_GROUP_SIZE = 1;
+   private static final boolean DEFAULT_COMBINE_DIRECTIONS = false;
+   private static final int DEFUALT_REGIONS_PER_SIDE = 5;
+
    private Classifier classifier;
    // WEKA wants FastVector over List, but it will be contained to this class only.
    private FastVector possibleCharacters;
@@ -32,12 +36,9 @@ public class PDCClassifier {
 
    private FastVector featureAttributes;
 
-   private static final int DEFAULT_GROUP_SIZE = 1;
-   private static final boolean DEFAULT_COMBINE_DIRECTIONS = false;
-
    public PDCClassifier(MagickImage[] characterImages,
                         String characters) throws Exception {
-      this(PDC.pdc(characterImages), StringUtils.charSplitArray(characters),
+      this(characterImages, StringUtils.charSplitArray(characters),
            DEFAULT_COMBINE_DIRECTIONS, DEFAULT_GROUP_SIZE);
    }
 
@@ -52,16 +53,20 @@ public class PDCClassifier {
                         String characters,
                         boolean combineDirections,
                         int groupSize) throws Exception {
-      this(PDC.pdc(characterImages), StringUtils.charSplitArray(characters),
+      this(characterImages, StringUtils.charSplitArray(characters),
            combineDirections, groupSize);
    }
 
-   public PDCClassifier(PDCInfo[] trainingDocuments,
+   public PDCClassifier(MagickImage[] trainingImages,
                         String[] trainingCharacters,
                         boolean combineDirections,
                         int groupSize) throws Exception {
-      assert(trainingDocuments.length > 0);
-      assert(groupSize > 0 && trainingDocuments[0].numPoints() % groupSize == 0);
+      assert(trainingImages.length > 0);
+      assert(groupSize > 0);
+
+      PDCInfo[] trainingDocuments = PDC.pdc(trainingImages);
+
+      assert(trainingDocuments[0].numPoints() % groupSize == 0);
 
       numDCs = trainingDocuments[0].numPoints();
       this.combineDirections = combineDirections;
@@ -79,7 +84,7 @@ public class PDCClassifier {
 
       featureAttributes = getFeatureAttributes(possibleCharacters);
 
-      Instances trainingSet = prepTraining(trainingDocuments, trainingCharacters);
+      Instances trainingSet = prepTraining(trainingImages, trainingDocuments, trainingCharacters);
       classifier = new SMO();
       // TODO(eriq): This can throw.
       classifier.buildClassifier(trainingSet);
@@ -91,14 +96,12 @@ public class PDCClassifier {
          return " ";
       }
 
-      return this.classify(PDC.pdc(image));
-   }
+      PDCInfo info = PDC.pdc(image);
 
-   public String classify(PDCInfo info) {
       assert(info.numPoints() == numDCs);
 
       try {
-         Instance instance = prepUnclassed(info);
+         Instance instance = prepUnclassed(image, info);
          int prediction = (int)classifier.classifyInstance(instance);
          return instance.classAttribute().value(prediction);
       } catch (Exception ex) {
@@ -109,31 +112,39 @@ public class PDCClassifier {
    }
 
    // TODO(eriq): Probably better to classify multiple documents at once.
-   private Instance prepUnclassed(PDCInfo info) {
+   private Instance prepUnclassed(MagickImage image, PDCInfo info) throws Exception {
       assert(info.numPoints() == numDCs);
 
       Instances instances = new Instances("Unclassified", featureAttributes, 1);
       instances.setClassIndex(0);
 
-      double[] features = null;
+      double[] dcFeatures = null;
       if (combineDirections) {
          if (groupSize > 1) {
-            features = info.halfGroupedDimensions(groupSize);
+            dcFeatures = info.halfGroupedDimensions(groupSize);
          } else {
-            features = info.halfPDCDimensions();
+            dcFeatures = info.halfPDCDimensions();
          }
       } else {
          if (groupSize > 1) {
-            features = info.fullGroupedDimensions(groupSize);
+            dcFeatures = info.fullGroupedDimensions(groupSize);
          } else {
-            features = info.fullPDCDimensions();
+            dcFeatures = info.fullPDCDimensions();
          }
       }
 
       // Note that the first spot is reserved for the class value;
       Instance instance = new Instance(featureAttributes.size());
-      for (int i = 0; i < features.length; i++) {
-         instance.setValue(1 + i, features[i]);
+      for (int i = 0; i < dcFeatures.length; i++) {
+         instance.setValue(1 + i, dcFeatures[i]);
+      }
+
+      // Add the character densities.
+      double[] characterDensities = ImageUtils.regionDensities(image,
+                                                               128,
+                                                               DEFUALT_REGIONS_PER_SIDE);
+      for (int i = 0; i < characterDensities.length; i++) {
+         instance.setValue(1 + dcFeatures.length, characterDensities[i]);
       }
 
       instances.add(instance);
@@ -141,15 +152,16 @@ public class PDCClassifier {
       return instances.instance(0);
    }
 
-   private Instances prepTraining(PDCInfo[] trainingDocuments,
-                                  String[] trainingCharacters) {
+   private Instances prepTraining(MagickImage[] trainingImages,
+                                  PDCInfo[] trainingDocuments,
+                                  String[] trainingCharacters) throws Exception {
       Instances trainingSet = new Instances("PDCInstances",
                                             featureAttributes,
                                             trainingCharacters.length);
       trainingSet.setClassIndex(0);
 
       for (int i = 0; i < trainingDocuments.length; i++) {
-         Instance instance = prepUnclassed(trainingDocuments[i]);
+         Instance instance = prepUnclassed(trainingImages[i], trainingDocuments[i]);
          // Set the class value.
          instance.setValue((Attribute)featureAttributes.elementAt(0), trainingCharacters[i]);
 
@@ -167,10 +179,17 @@ public class PDCClassifier {
                                               PDC.PDC_DIRECTION_DELTAS.length;
 
       features.addElement(new Attribute("document_class", possibleClasses));
+
+      // Add the DCs
       for (int i = 0; i < numDCs / groupSize; i++) {
          for (int j = 0; j < numDimensions; j++) {
             features.addElement(new Attribute("GROUP_" + i + "_DC_" + j));
          }
+      }
+
+      // Add the densities.
+      for (int i = 0; i < Math.pow(DEFUALT_REGIONS_PER_SIDE, 2); i++) {
+         features.addElement(new Attribute("DENSITY_" + i));
       }
 
       return features;

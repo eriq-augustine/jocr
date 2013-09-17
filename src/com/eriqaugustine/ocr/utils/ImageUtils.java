@@ -16,6 +16,8 @@ import java.awt.Rectangle;
 public class ImageUtils {
    public static final int DEFAULT_WHITE_THRESHOLD = 150;
 
+   public static final int DEFAULT_IMAGE_DIVISION = 3;
+
    /**
     * Character to use when converting an image to ascii.
     * Each character gets an equal range.
@@ -27,11 +29,21 @@ public class ImageUtils {
     * A testing main.
     */
    public static void main(String[] args) throws Exception {
+      /*
       String outDirectory = FileUtils.itterationDir("out", "imageUtils");
 
       MagickImage image = generateString("Hello, World!", false, 50, 50);
       image.setFileName(outDirectory + "/genString.png");
       image.writeImage(new ImageInfo());
+      */
+
+      ImageInfo info = new ImageInfo("training/kana/あ_h.png");
+      MagickImage image = new MagickImage(info);
+      double[] densities = regionDensity(image, 128);
+
+      for (int i = 0; i < densities.length; i++) {
+         System.out.println(i + " -- " + densities[i]);
+      }
    }
 
    /**
@@ -219,9 +231,35 @@ public class ImageUtils {
       byte[] pixels = Filters.averageChannels(Filters.bwPixels(image, whiteThreshold), 3);
 
       return density(pixels, dimensions.width,
-                     0, dimensions.width,
                      0, dimensions.height,
+                     0, dimensions.width,
                      whiteThreshold);
+   }
+
+   public static double[] regionDensities(MagickImage image,
+                                          int whiteThreshold,
+                                          int regionsPerSide) throws Exception {
+      Dimension dimensions = image.getDimension();
+      byte[] pixels = Filters.averageChannels(Filters.bwPixels(image, whiteThreshold), 3);
+
+      double[] regionDensities = new double[regionsPerSide * regionsPerSide];
+
+      for (int regionRow = 0; regionRow < regionsPerSide; regionRow++) {
+         for (int regionCol = 0; regionCol < regionsPerSide; regionCol++) {
+            regionDensities[regionRow * regionsPerSide + regionCol] =
+                  density(pixels, dimensions.width,
+                          regionRow * dimensions.height / regionsPerSide, dimensions.height / regionsPerSide,
+                          regionCol * dimensions.width / regionsPerSide, dimensions.width / regionsPerSide,
+                          whiteThreshold);
+         }
+      }
+
+      return regionDensities;
+   }
+
+   public static double[] regionDensity(MagickImage image,
+                                        int whiteThreshold) throws Exception {
+      return regionDensities(image, whiteThreshold, DEFAULT_IMAGE_DIVISION);
    }
 
    /**

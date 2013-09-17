@@ -21,7 +21,8 @@ public final class PDC {
 
    private static final int NUM_LAYERS = 3;
 
-   private static final int NUM_SCAN_DIRECTIONS = 4;
+   private static final int NUM_CARDINAL_SCAN_DIRECTIONS = 4;
+   private static final int NUM_DIAGONAL_SCAN_DIRECTIONS = 4;
 
    /**
     * The deltas [row, col] for the different directions available to PDC.
@@ -50,13 +51,16 @@ public final class PDC {
     * This will be equal to PDCInfo.numPoints().
     */
    public static int getNumDCs() {
-      return SCALE_SIZE * NUM_SCAN_DIRECTIONS * NUM_LAYERS;
+      return
+         // Cardinals
+         SCALE_SIZE * NUM_CARDINAL_SCAN_DIRECTIONS * NUM_LAYERS +
+         // Diagonals (if scale size is odd, will not be the same number as cardinals.
+         NUM_DIAGONAL_SCAN_DIRECTIONS * (int)(Math.ceil(SCALE_SIZE / 2.0) * 2) * NUM_LAYERS;
    }
 
    /**
     * Run PDC on an image.
     * |image| must be already be binary.
-    * TODO(eriq): Group vectors into bins.
     * TODO(eriq): Diagnal scans.
     */
    public static PDCInfo pdc(MagickImage baseImage) throws Exception {
@@ -64,7 +68,7 @@ public final class PDC {
       boolean[] discretePixels = Filters.discretizePixels(scaleImage);
 
       List<Integer> peripherals = new ArrayList<Integer>(SCALE_SIZE *
-                                                         NUM_SCAN_DIRECTIONS *
+                                                         NUM_CARDINAL_SCAN_DIRECTIONS *
                                                          NUM_LAYERS);
 
       // Layers
@@ -80,9 +84,33 @@ public final class PDC {
 
          // Vertical Up
          ListUtils.append(peripherals, scan(discretePixels, SCALE_SIZE, i, false, false));
+
+         // Diagnals
+         int half = (int)(Math.ceil(SCALE_SIZE / 2.0));
+         int last = SCALE_SIZE - 1;
+
+         // Top Left to Bottom Right
+         peripherals.addAll(diagonalScan(discretePixels, SCALE_SIZE, i, 0, half, 0,
+                                                                        0, half, 0,
+                                                                        1, 1));
+
+         // Top Right to Bottom Left
+         peripherals.addAll(diagonalScan(discretePixels, SCALE_SIZE, i, last - half, last, 0,
+                                                                        0, half, last,
+                                                                        1, -1));
+
+         // Bottom Left to Top Right
+         peripherals.addAll(diagonalScan(discretePixels, SCALE_SIZE, i, 0, half, last,
+                                                                        last - half, last, 0,
+                                                                        -1, 1));
+
+         // Bottom Right to Top Left
+         peripherals.addAll(diagonalScan(discretePixels, SCALE_SIZE, i, last - half, last, last,
+                                                                        last - half, last, last,
+                                                                        -1, -1));
       }
 
-      assert(peripherals.size() == (SCALE_SIZE * NUM_SCAN_DIRECTIONS * NUM_LAYERS));
+      assert(peripherals.size() == getNumDCs());
       int[][] lengths = new int[peripherals.size()][];
 
       for (int i = 0; i < peripherals.size(); i++) {
@@ -134,12 +162,75 @@ public final class PDC {
    }
 
    /**
+    * Do a diagonal scan and get the peripheral points.
+    * See scan().
+    * The very short diagonals (for ex, the one length ones at the corners)
+    * are not very useful. So, only the longest diagonals are used.
+    * This is why we need all the additional parameters.
+    * TODO(eriq): I don't like all the params.
+    */
+   private static List<Integer> diagonalScan(boolean[] image,
+                                             int imageWidth,
+                                             int layerNumber,
+                                             int colStart, int colStop, int baseRow,
+                                             int rowStart, int rowStop, int baseCol,
+                                             int rowDelta, int colDelta) {
+      List<Integer> peripherals = new ArrayList<Integer>();
+
+      int[][] startPoints = new int[colStop - colStart + rowStop - rowStart][];
+      int count = 0;
+      for (int col = colStart; col < colStop; col++) {
+         startPoints[count] = new int[]{baseRow, col};
+         count++;
+      }
+      for (int row = rowStart; row < rowStop; row++) {
+         startPoints[count] = new int[]{row, baseCol};
+         count++;
+      }
+
+      for (int[] startPoint : startPoints) {
+         int diagonalRow = startPoint[0];
+         int diagonalCol = startPoint[1];
+
+         int currentLayer = 0;
+         boolean inBody = false;
+         boolean found = false;
+
+         while (diagonalRow >= 0 && diagonalRow < image.length / imageWidth &&
+                diagonalCol >= 0 && diagonalCol < imageWidth) {
+            int index = MathUtils.rowColToIndex(diagonalRow, diagonalCol, imageWidth);
+
+            if (image[index] && !inBody) {
+               inBody = true;
+
+               if (currentLayer == layerNumber) {
+                  peripherals.add(new Integer(index));
+                  found = true;
+                  break;
+               }
+            } else if (!image[index] && inBody) {
+               inBody = false;
+               currentLayer++;
+            }
+
+            diagonalRow += rowDelta;
+            diagonalCol += colDelta;
+         }
+
+         if (!found) {
+            peripherals.add(new Integer(-1));
+         }
+      }
+
+      return peripherals;
+   }
+
+   /**
     * Scan a direction and get all of the peripheral (edge) points.
     * |layerNumber| is the number of solid bodies to pass through before the final
     * peripheral edge. 0 means that it will pass through no bodies.
     * There will be a result for EVERY row/col that is scanned.
     * If a row/col has no peripheral point, then a -1 will be the result.
-    * TODO(eriq): Abstract to allow vertical and maybe diagnal scans.
     */
    private static int[] scan(boolean[] image,
                              int imageWidth,

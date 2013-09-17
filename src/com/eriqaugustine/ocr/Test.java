@@ -56,9 +56,25 @@ public class Test {
       //pdcTest();
       //gridBreakupTest();
       //characterBreakupTest();
-      //translateTest();
-      imageTranslateTest();
+      translateTest();
+      //imageTranslateTest();
       //volumeFillTest();
+      //splitImage();
+   }
+
+   public static void splitImage() throws Exception {
+      String outDirectory = FileUtils.itterationDir("out", "splitImage");
+
+      // ImageInfo info = new ImageInfo("training/kana/hiragana.png");
+      ImageInfo info = new ImageInfo("testImages/katakana.png");
+      MagickImage baseImage = new MagickImage(info);
+
+      List<MagickImage> characterImages = TextImage.characterBreakup(baseImage);
+      for (int i = 0; i < characterImages.size(); i++) {
+         MagickImage image = characterImages.get(i);
+         image.setFileName(String.format("%s/%03d-breakup.png", outDirectory, i));
+         image.writeImage(info);
+      }
    }
 
    public static void volumeFillTest() throws Exception {
@@ -114,7 +130,8 @@ public class Test {
       String alphabet = HIRAGANA + KATAKANA;
 
       // String[] fonts = new String[]{"IPAGothic", "RyuminStd-Bold-KO"};
-      String[] fonts = new String[]{"Baekmuk Batang", "RyuminStd-Bold-KO"};
+      // String[] fonts = new String[]{"Baekmuk Batang", "RyuminStd-Bold-KO"};
+      String[] fonts = new String[]{"IPAGothic", "RyuminStd-Bold-KO", "Baekmuk Batang"};
       String trainingAlphabet = "";
       for (int i = 0; i < fonts.length; i++) {
          trainingAlphabet += alphabet;
@@ -124,41 +141,30 @@ public class Test {
             new PDCClassifier(CharacterImage.generateFontImages(alphabet, fonts),
                               trainingAlphabet, true, 1);
 
-      // Not exactly hiragana.
-      String characters = "アンタにこのセンスは わからないわ     ";
+      File baseDir = new File("training/kana");
+      File[] testFiles = baseDir.listFiles();
 
-      ImageInfo info = new ImageInfo("testImages/hiraganaKatakanaCallout.png");
-      MagickImage baseImage = new MagickImage(info);
-
-      int count = 0;
       int hits = 0;
+      for (int i = 0; i < testFiles.length; i++) {
+         File testFile = testFiles[i];
 
-      List<MagickImage> characterImages = TextImage.characterBreakup(baseImage);
+         ImageInfo info = new ImageInfo(testFile.getAbsolutePath());
+         MagickImage image = new MagickImage(info);
 
-      for (int i = 0; i < characterImages.size(); i++) {
-         MagickImage image = characterImages.get(i);
-
-         /*
-         if (ImageUtils.isEmptyImage(image)) {
-            System.out.println("<empty>\n-\n");
-         } else {
-            System.out.println(ImageUtils.asciiImage(image) + "\n-\n");
-         }
-         */
-
+         String actual = "" + testFile.getName().charAt(0);
          String prediction = classy.classify(image);
-         System.out.println(String.format("Classify (%d)[%s]: %s",
+
+         System.out.println(String.format("Classify (%03d)[%s]: %s",
                                           i,
-                                          "" + characters.charAt(count),
+                                          actual,
                                           prediction));
 
-         if (prediction.equals("" + characters.charAt(count))) {
+         if (prediction.equals(actual)) {
             hits++;
          }
-
-         count++;
       }
 
+      int count = testFiles.length;
       System.err.println("Hits: " + hits + " / " + count + " (" + ((double)hits / count) + ")");
    }
 

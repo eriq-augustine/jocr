@@ -20,6 +20,7 @@ import magick.PixelPacket;
 
 import java.awt.GraphicsEnvironment;
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -56,10 +57,10 @@ public class Test {
       //pdcTest();
       //gridBreakupTest();
       //characterBreakupTest();
-      translateTest();
-      //imageTranslateTest();
-      //volumeFillTest();
+      //translateTest();
       //splitImage();
+      imageTranslateTest();
+      //volumeFillTest();
    }
 
    public static void splitImage() throws Exception {
@@ -80,8 +81,11 @@ public class Test {
    public static void volumeFillTest() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "volFill");
 
-      File baseDir = new File("testImages/testSets/youbatoVol1");
+      // File baseDir = new File("testImages/testSets/youbatoVol1");
+      File baseDir = new File("testImages/testSets/youbatoVol1_kana");
       File[] imageFiles = baseDir.listFiles();
+
+      Arrays.sort(imageFiles);
 
       int count = 0;
       for (File imgFile : imageFiles) {
@@ -98,13 +102,28 @@ public class Test {
          bubbles.writeImage(info);
 
          count++;
+
+         /*
+         //TEST
+         break;
+         */
       }
    }
+
+   //TEST
+   public static String outDir;
+   public static boolean allCandidates;
 
    public static void imageTranslateTest() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "transTest");
 
-      String[] images = new String[]{"testImages/page.png", "testImages/page2.jpg"};
+      //TEST
+      outDir = outDirectory;
+
+      ImageTranslator translator = new ImageTranslator();
+
+      //String[] images = new String[]{"testImages/page.png", "testImages/page2.jpg"};
+      String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_023.jpg"};
 
       for (int i = 0; i < images.length; i++) {
          ImageInfo info = new ImageInfo(images[i]);
@@ -112,17 +131,21 @@ public class Test {
          baseImage.setFileName(outDirectory + "/transTest-" + i + "-0-base.png");
          baseImage.writeImage(new ImageInfo());
 
+         //TEST
+         allCandidates = true;
          MagickImage bubbles = BubbleDetection.fillBubbles(baseImage);
-         bubbles.setFileName(outDirectory + "/transTest-" + i + "-1-base.png");
+         bubbles.setFileName(outDirectory + "/transTest-" + i + "-88-base.png");
          bubbles.writeImage(info);
 
-         /*
-         ImageTranslator translator = new ImageTranslator();
-         MagickImage transImage = translator.translate(baseImage);
+         //TEST
+         allCandidates = false;
+         bubbles = BubbleDetection.fillBubbles(baseImage);
+         bubbles.setFileName(outDirectory + "/transTest-" + i + "-89-base.png");
+         bubbles.writeImage(info);
 
-         transImage.setFileName(outDirectory + "/transTest-2-trans.png");
+         MagickImage transImage = translator.translate(baseImage);
+         transImage.setFileName(outDirectory + "/transTest-" + i + "-99-trans.png");
          transImage.writeImage(new ImageInfo());
-         */
       }
    }
 

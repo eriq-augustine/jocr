@@ -39,8 +39,25 @@ public class BubbleDetection {
     */
    public static Map<Integer, Blob> getBubbles(MagickImage image) throws Exception {
       image = image.blurImage(3, 1);
-      image = Filters.bw(image, 128);
+      /*
+      //TEST
+      image.setFileName(com.eriqaugustine.ocr.Test.outDir + "/transTest-0-10-base.png");
+      image.writeImage(new magick.ImageInfo());
+      */
+
+      image = Filters.bw(image, 200);
+      /*
+      //TEST
+      image.setFileName(com.eriqaugustine.ocr.Test.outDir + "/transTest-0-11-base.png");
+      image.writeImage(new magick.ImageInfo());
+      */
+
       image = image.edgeImage(3);
+      /*
+      //TEST
+      image.setFileName(com.eriqaugustine.ocr.Test.outDir + "/transTest-0-12-base.png");
+      image.writeImage(new magick.ImageInfo());
+      */
 
       Dimension dimensions = image.getDimension();
 
@@ -233,17 +250,17 @@ public class BubbleDetection {
          }
 
          if (!blob.isBorderBlob()) {
-            // Get character candidates.
-            if (blob.size() >= DEFAULT_MIN_CHARACTER_BLOB_SIZE &&
-                blob.size() < DEFAULT_MAX_CHARACTER_BLOB_SIZE) {
-               characterBlobs.put(blob.getId(), blob);
-               allBlobs.put(blob.getId(), blob);
             // Callout candidate.
-            } else if (blob.size() >= DEFAULT_MIN_CALLOUT_BLOB_SIZE &&
+            if (blob.size() >= DEFAULT_MIN_CALLOUT_BLOB_SIZE &&
                        blob.size() < DEFAULT_MAX_CALLOUT_BLOB_SIZE &&
                        blob.density() >= DEFAULT_MIN_BLOB_DENSITY_1) {
                blob.geometryAdjust(0.10);
                candidateBlobs.put(blob.getId(), blob);
+               allBlobs.put(blob.getId(), blob);
+            // Get character candidates.
+            } else if (blob.size() >= DEFAULT_MIN_CHARACTER_BLOB_SIZE &&
+                blob.size() < DEFAULT_MAX_CHARACTER_BLOB_SIZE) {
+               characterBlobs.put(blob.getId(), blob);
                allBlobs.put(blob.getId(), blob);
             }
          }
@@ -279,8 +296,8 @@ public class BubbleDetection {
             continue;
          }
 
-         // Debugging Info
          /*
+         // Debugging Info
          int numSurroundedKids = candidate.numSurroundedChildren();
          System.out.println(candidate.getId());
          System.out.println(String.format("   (%d, %d) - (%d, %d)",
@@ -300,7 +317,15 @@ public class BubbleDetection {
          }
       }
 
+      //TEST
       return calloutBlobs;
+      /*
+      if (com.eriqaugustine.ocr.Test.allCandidates) {
+         return candidateBlobs;
+      } else {
+         return calloutBlobs;
+      }
+      */
    }
 
    // Endure that |index| is adjacent to |base|.

@@ -43,6 +43,9 @@ public class ImageTranslator {
             text += classy.classify(image);
          }
 
+         //TEST
+         System.out.println(text.trim());
+
          String translation = trans.translate(text.trim());
 
          MagickImage transBubble = ImageUtils.generateString(translation, false,

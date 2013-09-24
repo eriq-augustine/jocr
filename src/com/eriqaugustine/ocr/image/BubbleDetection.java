@@ -1,14 +1,20 @@
 package com.eriqaugustine.ocr.image;
 
+import com.eriqaugustine.ocr.math.BinaryConfusionMatrix;
 import com.eriqaugustine.ocr.utils.ColorUtils;
+import com.eriqaugustine.ocr.utils.FileUtils;
 
+import magick.ImageInfo;
 import magick.MagickImage;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Point;
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -33,6 +39,62 @@ public class BubbleDetection {
    // Second pass.
    //public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.70;
    public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.60;
+
+   /**
+    * Run a detection test on the given image.
+    * Reuse |matrix| for multiple images to get an overall score.
+    * The resulting image will have the bubbles filled.
+    * Note: The training sets are constructed so that there are no two valid bubbles inside
+    *  of a single training bounding box. So, if there are multiples, all but one are FP.
+    */
+   public static MagickImage bubbleFillTest(String imageFile,
+                                            FileUtils.BubbleTrainingSet trainingData,
+                                            BinaryConfusionMatrix matrix) throws Exception {
+      String baseImageName = new File(imageFile).getName();
+
+      ImageInfo imageInfo = new ImageInfo(imageFile);
+      MagickImage image = new MagickImage(imageInfo);
+
+      Map<Integer, Blob> bubbles = getBubbles(image);
+
+      int foundCount = 0;
+      List<Point[]> bounds = trainingData.trainingBubbles.get(baseImageName);
+      if (bounds != null) {
+         for (Blob bubble : bubbles.values()) {
+            boolean found = false;
+
+            for (Point[] trainingBounds : bounds) {
+               if (trainingBounds[0].y <= bubble.getMinRow() &&
+                   trainingBounds[1].y >= bubble.getMaxRow() &&
+                   trainingBounds[0].x <= bubble.getMinCol() &&
+                   trainingBounds[1].x >= bubble.getMaxCol()) {
+                  if (!found) {
+                     // TP
+                     foundCount++;
+                     found = true;
+                     matrix.truePositive();
+                  } else {
+                     // This blob was already marked
+                     // FP
+                     matrix.falsePositive();
+                  }
+               }
+            }
+
+            if (!found) {
+               // FP
+               matrix.falsePositive();
+            }
+         }
+
+         // The rest of the blobs were not found, they are FN.
+         for (int i = foundCount; i < bounds.size(); i++) {
+            matrix.falseNegative();
+         }
+      }
+
+      return colorBubbles(image, bubbles);
+   }
 
    /**
     * Get the raw blobs that represent the bubbles.
@@ -142,7 +204,11 @@ public class BubbleDetection {
     */
    public static MagickImage fillBubbles(MagickImage image) throws Exception {
       Map<Integer, Blob> bubbles = getBubbles(image);
+      return colorBubbles(image, bubbles);
+   }
 
+   public static MagickImage colorBubbles(MagickImage image, Map<Integer,
+                                          Blob> bubbles) throws Exception {
       Dimension dimensions = image.getDimension();
       byte[] pixels = new byte[dimensions.width * dimensions.height * 3];
 

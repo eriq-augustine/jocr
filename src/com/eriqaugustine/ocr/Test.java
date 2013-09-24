@@ -5,6 +5,7 @@ import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.Filters;
 import com.eriqaugustine.ocr.image.ImageTranslator;
 import com.eriqaugustine.ocr.image.TextImage;
+import com.eriqaugustine.ocr.math.BinaryConfusionMatrix;
 import com.eriqaugustine.ocr.pdc.PDC;
 import com.eriqaugustine.ocr.pdc.PDCClassifier;
 import com.eriqaugustine.ocr.pdc.PDCInfo;
@@ -59,8 +60,32 @@ public class Test {
       //characterBreakupTest();
       //translateTest();
       //splitImage();
-      imageTranslateTest();
+      //imageTranslateTest();
       //volumeFillTest();
+      bubbleTrainingTest();
+   }
+
+   public static void bubbleTrainingTest() throws Exception {
+      String outDirectory = FileUtils.itterationDir("out", "bubbleTraining");
+
+      FileUtils.BubbleTrainingSet training =
+            FileUtils.loadBubbleTrainingSet("testImages/testSets/bubbleTrainingSet");
+
+      BinaryConfusionMatrix matrix = new BinaryConfusionMatrix();
+
+      int count = 0;
+      for (File imgFile : training.trainingFiles) {
+         MagickImage bubbles = BubbleDetection.bubbleFillTest(imgFile.getAbsolutePath(),
+                                                              training,
+                                                              matrix);
+
+         bubbles.setFileName(String.format("%s/%03d-bubbles.png", outDirectory, count));
+         bubbles.writeImage(new ImageInfo());
+
+         count++;
+      }
+
+      System.out.println(matrix.fullToString());
    }
 
    public static void splitImage() throws Exception {

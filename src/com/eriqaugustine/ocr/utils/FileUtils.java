@@ -1,7 +1,14 @@
 package com.eriqaugustine.ocr.utils;
 
+import java.awt.Point;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 
 /**
  * Just some general utils for working with files.
@@ -10,6 +17,9 @@ import java.io.FilenameFilter;
  *  Fix paths to be cross-platform.
  */
 public class FileUtils {
+   private static final String BUBBLE_TRAINING_IMAGES_DIR = "images";
+   private static final String BUBBLE_TRAINING_DATA_FILE = "bubbles.txt";
+
    /**
     * Create the "next" directory and return the path.
     * This is meant for when a series of tests are run.
@@ -45,5 +55,60 @@ public class FileUtils {
 
    public static String itterationDir(String baseDir) {
       return itterationDir(baseDir, "");
+   }
+
+   public static BubbleTrainingSet loadBubbleTrainingSet(String baseDir) {
+      File base = new File(baseDir + File.separator + BUBBLE_TRAINING_IMAGES_DIR);
+      assert(base.exists() && base.isDirectory());
+
+      File[] imageFiles = base.listFiles();
+      Arrays.sort(imageFiles);
+      BubbleTrainingSet training = new BubbleTrainingSet(imageFiles);
+
+      File trainingDataFile = new File(baseDir + File.separator + BUBBLE_TRAINING_DATA_FILE);
+      assert(trainingDataFile.exists() && trainingDataFile.isFile());
+
+      try {
+         Scanner fileScanner = new Scanner(trainingDataFile);
+         // Eat the header line.
+         fileScanner.nextLine();
+
+         while (fileScanner.hasNextLine()) {
+            String[] attributes = fileScanner.nextLine().trim().split(";");
+            training.addBubble(attributes[0],
+                               new Point[]{new Point(Integer.parseInt(attributes[1]),
+                                                     Integer.parseInt(attributes[2])),
+                                           new Point(Integer.parseInt(attributes[3]),
+                                                     Integer.parseInt(attributes[4]))});
+         }
+      } catch (Exception ex) {
+         // TODO(eriq): Logging, fatal
+         System.err.println("Bubble training directory file is not formatted correctly.");
+         System.exit(1);
+      }
+
+      return training;
+   }
+
+   public static class BubbleTrainingSet {
+      public List<File> trainingFiles;
+
+      /**
+       * {filename : [[Upper Left, Lower Right], ...]}
+       */
+      public Map<String, List<Point[]>> trainingBubbles;
+
+      public BubbleTrainingSet(File[] files) {
+         trainingFiles = Arrays.asList(files);
+         trainingBubbles = new HashMap<String, List<Point[]>>();
+      }
+
+      public void addBubble(String filename, Point[] bounds) {
+         if (!trainingBubbles.containsKey(filename)) {
+            trainingBubbles.put(filename, new ArrayList<Point[]>());
+         }
+
+         trainingBubbles.get(filename).add(bounds);
+      }
    }
 }

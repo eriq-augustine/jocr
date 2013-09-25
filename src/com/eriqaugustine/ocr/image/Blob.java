@@ -23,12 +23,22 @@ public class Blob {
    // The necessary percentage of points on an edge during adjustments.
    public static final double DEFAULT_SIDE_COVERAGE = 0.10;
 
+   // [row, col]
+   // up, down, left, right
+   public static final int[][] DIRECTIONAL_OFFSETS = new int[][]{
+      new int[]{1, 0},
+      new int[]{-1, 0},
+      new int[]{0, 1},
+      new int[]{0, -1},
+   };
+
    private static int nextId = 0;
 
    private int id;
    private Set<Integer> points;
 
    private List<Blob> children;
+   private Blob parent;
 
    private int minRow;
    private int maxRow;
@@ -57,6 +67,7 @@ public class Blob {
       this.imageLength = imageLength;
 
       children = new ArrayList<Blob>();
+      parent = null;
    }
 
    public void addPoint(int index) {
@@ -88,6 +99,18 @@ public class Blob {
 
    public int numChildren() {
       return children.size();
+   }
+
+   public void clearChildren() {
+      children.clear();
+   }
+
+   public void setParent(Blob parent) {
+      this.parent = parent;
+   }
+
+   public Blob getParent() {
+      return parent;
    }
 
    /**
@@ -286,10 +309,10 @@ public class Blob {
     * Right now, this is just a quick and dirty bounding box solution.
     */
    public boolean contains(Blob other) {
-      return this.getMinRow() < other.getMinRow() &&
-             this.getMaxRow() > other.getMaxRow() &&
-             this.getMinCol() < other.getMinCol() &&
-             this.getMaxCol() > other.getMaxCol();
+      return this.getMinRow() <= other.getMinRow() &&
+             this.getMaxRow() >= other.getMaxRow() &&
+             this.getMinCol() <= other.getMinCol() &&
+             this.getMaxCol() >= other.getMaxCol();
    }
 
    /**
@@ -381,6 +404,65 @@ public class Blob {
       }
 
       return cols;
+   }
+
+   public int[][] getOuterRows() {
+      int[][] rows = new int[getBoundingWidth()][];
+
+      for (int col = minCol; col <= maxCol; col++) {
+         int firstRow = minRow;
+         int lastRow = maxRow;
+
+         for (int row = minRow; row <= maxRow; row++) {
+            int index = MathUtils.rowColToIndex(row, col, imageWidth);
+            if (points.contains(index)) {
+               firstRow = row;
+               break;
+            }
+         }
+
+         for (int row = maxRow; row >= minRow; row--) {
+            int index = MathUtils.rowColToIndex(row, col, imageWidth);
+            if (points.contains(index)) {
+               lastRow = row;
+               break;
+            }
+         }
+
+         rows[col - minCol] = new int[]{firstRow, lastRow};
+      }
+
+      return rows;
+   }
+
+   /**
+    * Get the approximate outline for this blob.
+    * The returned points are seperated out according to DIRECTIONAL_OFFSETS.
+    * TODO(eriq): Cleanup this hackery (magic numbers and such).
+    */
+   public int[][] approximateOutline() {
+      int[][] outerCols = getOuterColumns();
+      int[][] outerRows = getOuterRows();
+
+      int[][] rtn = new int[DIRECTIONAL_OFFSETS.length][];
+
+      // Up, Down
+      rtn[0] = new int[outerRows.length];
+      rtn[1] = new int[outerRows.length];
+      for (int i = 0; i < outerRows.length; i++) {
+         rtn[0][i] = MathUtils.rowColToIndex(outerRows[i][0], minCol + i, imageWidth);
+         rtn[1][i] = MathUtils.rowColToIndex(outerRows[i][1], minCol + i, imageWidth);
+      }
+
+      // LR
+      rtn[2] = new int[outerCols.length];
+      rtn[3] = new int[outerCols.length];
+      for (int i = 0; i < outerCols.length; i++) {
+         rtn[2][i] = MathUtils.rowColToIndex(minRow + i, outerCols[i][0], imageWidth);
+         rtn[3][i] = MathUtils.rowColToIndex(minRow + i, outerCols[i][1], imageWidth);
+      }
+
+      return rtn;
    }
 
    /**
@@ -566,6 +648,22 @@ public class Blob {
       return points;
    }
 
+   public boolean contains(int index) {
+      return points.contains(new Integer(index));
+   }
+
+   /**
+    * Just get a single point, could be any point.
+    * -1 if there are no points.
+    */
+   public int getSinglePoint() {
+      for (Integer point : points) {
+         return point.intValue();
+      }
+
+      return -1;
+   }
+
    /**
     * Check if the the blob is the border blob
     * (the blob the surrounds the initial borders of the image).
@@ -575,5 +673,9 @@ public class Blob {
              points.contains(imageLength - 1) &&
              points.contains(imageWidth - 1) &&
              points.contains(imageLength - imageWidth + 1);
+   }
+
+   public int hashCode() {
+      return id;
    }
 }

@@ -26,6 +26,12 @@ public class MathUtils {
       return row * width + col;
    }
 
+   public static int indexOffset(int index, int rowOffset, int colOffset, int imageWidth) {
+      int row = indexToRow(index, imageWidth) + rowOffset;
+      int col = indexToCol(index, imageWidth) + colOffset;
+      return rowColToIndex(row, col, imageWidth);
+   }
+
    public static boolean inBounds(int row, int col, int width, int length) {
       return row >= 0 && row < length / width &&
              col >= 0 && col < width;

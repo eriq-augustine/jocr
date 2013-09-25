@@ -3,6 +3,7 @@ package com.eriqaugustine.ocr.image;
 import com.eriqaugustine.ocr.math.BinaryConfusionMatrix;
 import com.eriqaugustine.ocr.utils.ColorUtils;
 import com.eriqaugustine.ocr.utils.FileUtils;
+import com.eriqaugustine.ocr.utils.MathUtils;
 
 import magick.ImageInfo;
 import magick.MagickImage;
@@ -11,6 +12,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -23,22 +25,33 @@ import java.util.Set;
  * A static class for detecting callouts (speech bubbles).
  */
 public class BubbleDetection {
-   // TODO(eriq): These should be relative (percentages).
+   // BEGIN deprecated, use ratios.
    public static final int DEFAULT_MIN_CHARACTER_BLOB_SIZE = 100;
    public static final int DEFAULT_MAX_CHARACTER_BLOB_SIZE = 3000;
 
    // Minimum size for a callout candidate blob.
    public static final int DEFAULT_MIN_CALLOUT_BLOB_SIZE = 1000;
    public static final int DEFAULT_MAX_CALLOUT_BLOB_SIZE = 100000;
+   // END deprecated.
 
    // The minimum density for a blob on the first pass.
-   //public static final double DEFAULT_MIN_BLOB_DENSITY_1 = 0.40;
-   // TODO(eriq): Rename (candidate, callout).
    public static final double DEFAULT_MIN_BLOB_DENSITY_1 = 0.40;
 
    // Second pass.
    //public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.70;
    public static final double DEFAULT_MIN_BLOB_DENSITY_2 = 0.60;
+
+   // Size ratios (ratio of the entire image size).
+   private static final double MIN_CHARACTER_RATIO = 0.00001;
+   private static final double MAX_CHARACTER_RATIO = 0.003;
+
+   //private static final double MAX_CHARACTER_BOUNDING_RATIO = 0.00074173;
+   private static final double MAX_CHARACTER_BOUNDING_RATIO = 0.005;
+   private static final double MAX_CHARACTER_BOUNDING_LENGTH_RATIO = 0.0001;
+
+   private static final double MIN_CALLOUT_RATIO = 0.00075;
+   private static final double MAX_CALLOUT_RATIO = 0.075;
+   private static final double MAX_CALLOUT_BOUNDING_RATIO = 0.1;
 
    /**
     * Run a detection test on the given image.
@@ -55,12 +68,12 @@ public class BubbleDetection {
       ImageInfo imageInfo = new ImageInfo(imageFile);
       MagickImage image = new MagickImage(imageInfo);
 
-      Map<Integer, Blob> bubbles = getBubbles(image);
+      List<Blob> bubbles = getBubbles(image);
 
       int foundCount = 0;
       List<Point[]> bounds = trainingData.trainingBubbles.get(baseImageName);
       if (bounds != null) {
-         for (Blob bubble : bubbles.values()) {
+         for (Blob bubble : bubbles) {
             boolean found = false;
 
             for (Point[] trainingBounds : bounds) {
@@ -99,35 +112,19 @@ public class BubbleDetection {
    /**
     * Get the raw blobs that represent the bubbles.
     */
-   public static Map<Integer, Blob> getBubbles(MagickImage image) throws Exception {
+   public static List<Blob> getBubbles(MagickImage image) throws Exception {
       image = image.blurImage(3, 1);
-      /*
-      //TEST
-      image.setFileName(com.eriqaugustine.ocr.Test.outDir + "/transTest-0-10-base.png");
-      image.writeImage(new magick.ImageInfo());
-      */
-
       image = Filters.bw(image, 200);
-      /*
-      //TEST
-      image.setFileName(com.eriqaugustine.ocr.Test.outDir + "/transTest-0-11-base.png");
-      image.writeImage(new magick.ImageInfo());
-      */
+
+      byte[] rawPixels = Filters.averageChannels(Filters.bwPixels(image, 200), 3);
 
       image = image.edgeImage(3);
-      /*
-      //TEST
-      image.setFileName(com.eriqaugustine.ocr.Test.outDir + "/transTest-0-12-base.png");
-      image.writeImage(new magick.ImageInfo());
-      */
 
       Dimension dimensions = image.getDimension();
 
-      // Note: bw pixels pulls out three values for each pixel.
-      byte[] pixels = Filters.bwPixels(image);
+      byte[] edgedPixels = Filters.averageChannels(Filters.bwPixels(image), 3);
 
-      // {blob identifier -> blob size}
-      Map<Integer, Blob> blobs = getBlobs(dimensions.width, pixels);
+      List<Blob> blobs = getBubbles(dimensions.width, edgedPixels, rawPixels);
 
       return blobs;
    }
@@ -145,7 +142,7 @@ public class BubbleDetection {
    }
 
    public static BubbleInfo[] extractBubblesWithInfo(MagickImage image) throws Exception {
-      Map<Integer, Blob> bubbles = getBubbles(image);
+      List<Blob> bubbles = getBubbles(image);
 
       Dimension dimensions = image.getDimension();
       byte[] pixels = new byte[dimensions.width * dimensions.height * 3];
@@ -158,7 +155,7 @@ public class BubbleDetection {
       BubbleInfo[] infos = new BubbleInfo[bubbles.size()];
 
       int count = 0;
-      for (Blob blob : bubbles.values()) {
+      for (Blob blob : bubbles) {
          byte[] blobPixels = new byte[blob.getBoundingSize() * 3];
          Map<Integer, int[]> bounds = blob.getBoundaries();
 
@@ -203,12 +200,12 @@ public class BubbleDetection {
     * White pixels are edges.
     */
    public static MagickImage fillBubbles(MagickImage image) throws Exception {
-      Map<Integer, Blob> bubbles = getBubbles(image);
+      List<Blob> bubbles = getBubbles(image);
       return colorBubbles(image, bubbles);
    }
 
-   public static MagickImage colorBubbles(MagickImage image, Map<Integer,
-                                          Blob> bubbles) throws Exception {
+   public static MagickImage colorBubbles(MagickImage image,
+                                          List<Blob> bubbles) throws Exception {
       Dimension dimensions = image.getDimension();
       byte[] pixels = new byte[dimensions.width * dimensions.height * 3];
 
@@ -231,15 +228,15 @@ public class BubbleDetection {
    /**
     * Modify |pixels| to fill in all the blobs as red.
     */
-   private static void fillBlobs(byte[] pixels, Map<Integer, Blob> blobs) {
+   private static void fillBlobs(byte[] pixels, List<Blob> blobs) {
       fillBlobs(pixels, blobs, new Color(255, 0, 0));
    }
 
    /**
     * If |color| is null, then pick a different colot every time.
     */
-   private static void fillBlobs(byte[] pixels, Map<Integer, Blob> blobs, Color color) {
-      for (Blob blob : blobs.values()) {
+   private static void fillBlobs(byte[] pixels, List<Blob> blobs, Color color) {
+      for (Blob blob : blobs) {
          Color activeColor = color != null ? color : ColorUtils.nextColor();
 
          for (Integer index : blob.getPoints()) {
@@ -254,19 +251,12 @@ public class BubbleDetection {
    }
 
    /**
-    * Get the large blobs.
-    * Note that |pixels| is three times the length of the image because
-    *  it has RGB.
+    * Get all the blobs.
     */
-   private static Map<Integer, Blob> getBlobs(int width, byte[] pixels) {
-      Map<Integer, Blob> allBlobs = new HashMap<Integer, Blob>();
+   private static List<Blob> getRawBlobs(int width, byte[] pixels) {
+      List<Blob> allBlobs = new ArrayList<Blob>();
 
-      // Blobs for possible colors.
-      Map<Integer, Blob> characterBlobs = new HashMap<Integer, Blob>();
-      // Blobs for callout candidates.
-      Map<Integer, Blob> candidateBlobs = new HashMap<Integer, Blob>();
-
-      boolean[] visited = new boolean[pixels.length / 3];
+      boolean[] visited = new boolean[pixels.length];
       Queue<Integer> toVisit = new LinkedList<Integer>();
 
       // All the offsets to check for blobs.
@@ -276,7 +266,7 @@ public class BubbleDetection {
 
       // Fill the visited pixels with edges.
       for (int i = 0; i < visited.length; i++) {
-         if ((0xFF & pixels[i * 3]) == 255) {
+         if ((0xFF & pixels[i]) == 255) {
             visited[i] = true;
          }
       }
@@ -316,30 +306,260 @@ public class BubbleDetection {
          }
 
          if (!blob.isBorderBlob()) {
-            // Callout candidate.
-            if (blob.size() >= DEFAULT_MIN_CALLOUT_BLOB_SIZE &&
-                       blob.size() < DEFAULT_MAX_CALLOUT_BLOB_SIZE &&
-                       blob.density() >= DEFAULT_MIN_BLOB_DENSITY_1) {
-               blob.geometryAdjust(0.10);
-               candidateBlobs.put(blob.getId(), blob);
-               allBlobs.put(blob.getId(), blob);
-            // Get character candidates.
-            } else if (blob.size() >= DEFAULT_MIN_CHARACTER_BLOB_SIZE &&
-                blob.size() < DEFAULT_MAX_CHARACTER_BLOB_SIZE) {
-               characterBlobs.put(blob.getId(), blob);
-               allBlobs.put(blob.getId(), blob);
+            allBlobs.add(blob);
+         }
+      }
+
+      return allBlobs;
+   }
+
+   /**
+    * Get the bubbles (callouts with text).
+    */
+   private static List<Blob> getBubbles(int width, byte[] edgedPixels,
+                                        byte[] rawPixels) {
+      assert(edgedPixels.length == rawPixels.length);
+
+      List<Blob> allBlobs = getRawBlobs(width, edgedPixels);
+
+      // Blobs for possible colors.
+      List<Blob> characterBlobs = new ArrayList<Blob>();
+      // Blobs for callout candidates.
+      List<Blob> candidateBlobs = new ArrayList<Blob>();
+      // Any blob that is black
+      Set<Blob> blackBlobs = new HashSet<Blob>();
+
+      int numPixels = edgedPixels.length;
+
+      int minCharPixels = (int)(numPixels * MIN_CHARACTER_RATIO);
+      int maxCharPixels = (int)(numPixels * MAX_CHARACTER_RATIO);
+      int maxCharBoundingLengthPixels = (int)(numPixels * MAX_CHARACTER_BOUNDING_LENGTH_RATIO);
+
+      int minCalloutPixels = (int)(numPixels * MIN_CALLOUT_RATIO);
+      int maxCalloutPixels = (int)(numPixels * MAX_CALLOUT_RATIO);
+      int maxCalloutBoundingPixels = (int)(numPixels * MAX_CALLOUT_BOUNDING_RATIO);
+
+      // Get all blobs that are black.
+      // We need this because callout candidates need to the surrounded by
+      // a single black block.
+      for (Blob blob : allBlobs) {
+         int blackCount = 0;
+         for (Integer point : blob.getPoints()) {
+            if (rawPixels[point.intValue()] == 0) {
+               blackCount++;
             }
+         }
+
+         if (blackCount >= blob.size() / 2) {
+            blackBlobs.add(blob);
+         }
+      }
+
+      for (Blob blob : allBlobs) {
+         if (blob.size() >= minCharPixels &&
+             blob.size() <= maxCharPixels &&
+             blob.getBoundingWidth() <= maxCharBoundingLengthPixels &&
+             blob.getBoundingHeight() <= maxCharBoundingLengthPixels &&
+             // Character pixels must be black.
+             blackBlobs.contains(blob)) {
+            characterBlobs.add(blob);
+         } else if (blob.size() >= minCalloutPixels &&
+                    blob.size() <= maxCalloutPixels &&
+                    blob.getBoundingSize() <= maxCalloutBoundingPixels &&
+                    // Callout pixels must be white.
+                    !blackBlobs.contains(blob)) {
+            candidateBlobs.add(blob);
+         }
+      }
+
+      // Resolve the parentage of the callout candidates.
+      resolveParentage(candidateBlobs, allBlobs, edgedPixels, width);
+
+      // Only keep candidates that have a black parent.
+      int index = 0;
+      while (index < candidateBlobs.size()) {
+         if (candidateBlobs.get(index).getParent() == null ||
+             !blackBlobs.contains(candidateBlobs.get(index).getParent())) {
+            candidateBlobs.remove(index);
+         } else {
+            index++;
+         }
+      }
+
+      // Find the parentage for character candidates and callout candidates.
+      quickResolveParentage(characterBlobs, candidateBlobs);
+
+      // Only keep candidates with character kids.
+      index = 0;
+      while (index < candidateBlobs.size()) {
+         if (candidateBlobs.get(index).numChildren() == 0 ||
+             candidateBlobs.get(index).numSurroundedChildren() == 0) {
+            candidateBlobs.remove(index);
+         } else {
+            index++;
+         }
+      }
+
+      return candidateBlobs;
+   }
+
+   /**
+    * Get the bubbles (callouts with text).
+    * (Old version for reference).
+    */
+   private static List<Blob> getBubblesOld(int width, byte[] pixels) {
+      List<Blob> allBlobs = getRawBlobs(width, pixels);
+
+      // Blobs for possible colors.
+      List<Blob> characterBlobs = new ArrayList<Blob>();
+      // Blobs for callout candidates.
+      List<Blob> candidateBlobs = new ArrayList<Blob>();
+
+      for (Blob blob : allBlobs) {
+         // Callout candidate.
+         if (blob.size() >= DEFAULT_MIN_CALLOUT_BLOB_SIZE &&
+             blob.size() < DEFAULT_MAX_CALLOUT_BLOB_SIZE &&
+             blob.density() >= DEFAULT_MIN_BLOB_DENSITY_1) {
+            blob.geometryAdjust(0.10);
+            candidateBlobs.add(blob);
+         // Get character candidates.
+         } else if (blob.size() >= DEFAULT_MIN_CHARACTER_BLOB_SIZE &&
+             blob.size() <= DEFAULT_MAX_CHARACTER_BLOB_SIZE) {
+            characterBlobs.add(blob);
          }
       }
 
       // Find children (character candidates) for candidate blobs.
-      for (Blob characterCandidate : characterBlobs.values()) {
+      quickResolveParentage(characterBlobs, candidateBlobs);
+
+      // Check the candidate blobs.
+      // Callouts must contain characters.
+      // The characters (child blobs) count as part of the parent for densite calculations.
+      List<Blob> calloutBlobs = new ArrayList<Blob>();
+
+      for (Blob candidate : candidateBlobs) {
+         if (candidate.numChildren() == 0) {
+            continue;
+         }
+
+         if (candidate.density(true) > 0.60) {
+            int numSurroundedKids = candidate.numSurroundedChildren();
+            if (numSurroundedKids > 0) {
+               calloutBlobs.add(candidate);
+            }
+         }
+      }
+
+      return calloutBlobs;
+   }
+
+   /**
+    * Clear all the parents and kids.
+    */
+   private static void clearParentage(List<Blob> possibleKids,
+                                      List<Blob> possibleParents) {
+      for (Blob kid : possibleKids) {
+         kid.setParent(null);
+      }
+
+      for (Blob parent : possibleParents) {
+         parent.clearChildren();
+      }
+   }
+
+   /**
+    * Resolve the parentage of the kid blobs.
+    * This one is expensive, but will find the optimal parent.
+    * To be a parent, a blob must completley surround a child.
+    */
+   private static void resolveParentage(List<Blob> kids,
+                                        List<Blob> possibleParents,
+                                        byte[] edgedPixels,
+                                        int imageWidth) {
+      for (Blob kidCandidate : kids) {
+         int[][] outline = kidCandidate.approximateOutline();
+         Blob parentCandidate = null;
+         boolean done = false;
+
+         for (int i = 0; i < outline.length; i++) {
+            int[] offsets = new int[2];
+            // Invert the offset so we are going away from the outline.
+            offsets[0] = -1 * Blob.DIRECTIONAL_OFFSETS[i][0];
+            offsets[1] = -1 * Blob.DIRECTIONAL_OFFSETS[i][1];
+
+            // Move down a side.
+            for (int base : outline[i]) {
+               int index = MathUtils.indexOffset(base, offsets[0], offsets[1], imageWidth);
+
+               // Move out from the outline.
+               while (inBoundsAdjacent(base, index, imageWidth, edgedPixels.length)) {
+                  if (edgedPixels[index] == 0) {
+                     // Found another blob.
+                     Blob blob = getBlobWithPixel(possibleParents, index);
+
+                     if (blob != null) {
+                        if (parentCandidate == null) {
+                           parentCandidate = blob;
+                           break;
+                        } else if (blob.getId() != parentCandidate.getId()) {
+                           // Found multiple surrounding blobs, this kid has no parents. :.(
+                           done = true;
+                           parentCandidate = null;
+                           break;
+                        } else {
+                           break;
+                        }
+                     }
+                  }
+
+                  // Move index and base.
+                  base = MathUtils.indexOffset(base, offsets[0], offsets[1], imageWidth);
+                  index = MathUtils.indexOffset(index, offsets[0], offsets[1], imageWidth);
+               }
+
+               if (done) {
+                  break;
+               }
+            }
+
+            if (done) {
+               break;
+            }
+         }
+
+         if (parentCandidate != null) {
+            // Adopt!
+            parentCandidate.addChild(kidCandidate);
+            kidCandidate.setParent(parentCandidate);
+         }
+      }
+   }
+
+   private static Blob getBlobWithPixel(List<Blob> blobs, int index) {
+      for (Blob blob : blobs) {
+         if (blob.contains(index)) {
+            return blob;
+         }
+      }
+
+      return null;
+   }
+
+   /**
+    * Resolve the parentage of the kid blobs.
+    * Uses contains() (really avgContainingDistance()).
+    * Because of contains(), this is a quick approximation.
+    * Use resolveParentage() for more accurate results (at a computational cost).
+    */
+   private static void quickResolveParentage(List<Blob> kids,
+                                             List<Blob> possibleParents) {
+      for (Blob kidCandidate : kids) {
          double minContainingDist = Integer.MAX_VALUE;
          Blob parent = null;
 
          // Get the closest containing blob.
-         for (Blob parentCandidate : candidateBlobs.values()) {
-            double containingDist = parentCandidate.avgContainingDistance(characterCandidate);
+         for (Blob parentCandidate : possibleParents) {
+            double containingDist = parentCandidate.avgContainingDistance(kidCandidate);
             if (containingDist > 0 &&
                 (parent == null || containingDist < minContainingDist)) {
                minContainingDist = containingDist;
@@ -348,50 +568,10 @@ public class BubbleDetection {
          }
 
          if (parent != null) {
-            parent.addChild(characterCandidate);
+            parent.addChild(kidCandidate);
+            kidCandidate.setParent(parent);
          }
       }
-
-      // Check the candidate blobs.
-      // Callouts must contain characters.
-      // The characters (child blobs) count as part of the parent for densite calculations.
-      Map<Integer, Blob> calloutBlobs = new HashMap<Integer, Blob>();
-
-      for (Blob candidate : candidateBlobs.values()) {
-         if (candidate.numChildren() == 0) {
-            continue;
-         }
-
-         /*
-         // Debugging Info
-         int numSurroundedKids = candidate.numSurroundedChildren();
-         System.out.println(candidate.getId());
-         System.out.println(String.format("   (%d, %d) - (%d, %d)",
-                                          candidate.getMinCol(), candidate.getMinRow(),
-                                          candidate.getMaxCol(), candidate.getMaxRow()));
-         System.out.println("   Density(false): " + candidate.density(false));
-         System.out.println("   Density(true):  " + candidate.density(true));
-         System.out.println("   Num Kids: " + candidate.numChildren());
-         System.out.println("   Num Surrounded Kids: " + numSurroundedKids);
-         */
-
-         if (candidate.density(true) > 0.60) {
-            int numSurroundedKids = candidate.numSurroundedChildren();
-            if (numSurroundedKids > 0) {
-               calloutBlobs.put(candidate.getId(), candidate);
-            }
-         }
-      }
-
-      //TEST
-      return calloutBlobs;
-      /*
-      if (com.eriqaugustine.ocr.Test.allCandidates) {
-         return candidateBlobs;
-      } else {
-         return calloutBlobs;
-      }
-      */
    }
 
    // Endure that |index| is adjacent to |base|.

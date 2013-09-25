@@ -127,23 +127,11 @@ public class Test {
          bubbles.writeImage(info);
 
          count++;
-
-         /*
-         //TEST
-         break;
-         */
       }
    }
 
-   //TEST
-   public static String outDir;
-   public static boolean allCandidates;
-
    public static void imageTranslateTest() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "transTest");
-
-      //TEST
-      outDir = outDirectory;
 
       ImageTranslator translator = new ImageTranslator();
 
@@ -156,14 +144,10 @@ public class Test {
          baseImage.setFileName(outDirectory + "/transTest-" + i + "-0-base.png");
          baseImage.writeImage(new ImageInfo());
 
-         //TEST
-         allCandidates = true;
          MagickImage bubbles = BubbleDetection.fillBubbles(baseImage);
          bubbles.setFileName(outDirectory + "/transTest-" + i + "-88-base.png");
          bubbles.writeImage(info);
 
-         //TEST
-         allCandidates = false;
          bubbles = BubbleDetection.fillBubbles(baseImage);
          bubbles.setFileName(outDirectory + "/transTest-" + i + "-89-base.png");
          bubbles.writeImage(info);

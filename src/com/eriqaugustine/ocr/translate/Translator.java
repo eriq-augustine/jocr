@@ -3,6 +3,9 @@ package com.eriqaugustine.ocr.translate;
 import com.eriqaugustine.ocr.utils.Props;
 import com.eriqaugustine.ocr.utils.WebUtils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -13,6 +16,8 @@ import java.net.URLEncoder;
  * This will probably later be replaced with more complicated systems.
  */
 public class Translator {
+   private static Logger logger = LogManager.getLogger(Translator.class.getName());
+
    private final String fromLanguage;
    private final String targetLanguage;
 
@@ -61,8 +66,7 @@ public class Translator {
 
       String response = WebUtils.fetchPageAsString(requestUrl);
       if (response == null) {
-         // TODO(eriq): Log
-         System.err.println("Error fetching translation.");
+         logger.error("Error fetching translation.");
          return null;
       }
 
@@ -70,7 +74,7 @@ public class Translator {
       try {
          jsonResponse = new JSONObject(response);
       } catch (JSONException ex) {
-         System.err.println("Bad json response for '" + text + "'.");
+         logger.error("Bad json response for '" + text + "'.", ex);
          return null;
       }
 
@@ -80,8 +84,7 @@ public class Translator {
                                     getJSONObject(0).
                                     getString("translatedText");
       } catch (JSONException ex) {
-         // TODO(eriq): Logs.
-         System.err.println("JSON is not formatted as expected.");
+         logger.error("JSON is not formatted as expected.", ex);
          return null;
       }
 

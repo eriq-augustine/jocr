@@ -248,8 +248,10 @@ public class ImageUtils {
          for (int regionCol = 0; regionCol < regionsPerSide; regionCol++) {
             regionDensities[regionRow * regionsPerSide + regionCol] =
                   density(pixels, dimensions.width,
-                          regionRow * dimensions.height / regionsPerSide, dimensions.height / regionsPerSide,
-                          regionCol * dimensions.width / regionsPerSide, dimensions.width / regionsPerSide,
+                          regionRow * dimensions.height / regionsPerSide,
+                          dimensions.height / regionsPerSide,
+                          regionCol * dimensions.width / regionsPerSide,
+                          dimensions.width / regionsPerSide,
                           whiteThreshold);
          }
       }

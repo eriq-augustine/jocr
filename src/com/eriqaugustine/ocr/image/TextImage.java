@@ -212,13 +212,6 @@ public class TextImage {
       double[] widths = stripeWidths(stripes);
       double average = MathUtils.median(widths);
 
-      /*
-      System.err.println("Average Width: " + average);
-      for (double width : widths) {
-         System.err.println("   " + width);
-      }
-      */
-
       List<int[]> newStripes = new ArrayList<int[]>();
       int stripeStart = -1;
 

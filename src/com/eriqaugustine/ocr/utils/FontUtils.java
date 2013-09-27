@@ -1,5 +1,8 @@
 package com.eriqaugustine.ocr.utils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.io.File;
@@ -18,6 +21,8 @@ import javax.swing.JOptionPane;
  * Font.TRUETYPE_FONT.
  */
 public class FontUtils {
+   private static Logger logger = LogManager.getLogger(FontUtils.class.getName());
+
    public static final int DEFAULT_FONT_SIZE = 24;
 
    public static final String[] FONTS = new String[]{
@@ -89,8 +94,7 @@ public class FontUtils {
          Font font = Font.createFont(Font.TRUETYPE_FONT, new File(fontPath));
          fontName = font.getName();
       } catch (Exception ex) {
-         System.err.println("Unable to create font.");
-         ex.printStackTrace(System.err);
+         logger.error("Unable to create font.", ex);
       }
 
       return fontName;
@@ -113,8 +117,7 @@ public class FontUtils {
          GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
          return ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File(fontPath)));
       } catch (Exception ex) {
-         // TODO(eriq): Better logging.
-         ex.printStackTrace(System.err);
+         logger.error("Unable to register font.", ex);
          return false;
       }
    }

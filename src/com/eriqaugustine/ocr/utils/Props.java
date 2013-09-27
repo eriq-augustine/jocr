@@ -1,6 +1,8 @@
 package com.eriqaugustine.ocr.utils;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,6 +24,8 @@ import java.util.Map;
  * If the conversion fails, you will get the default value.
  */
 public class Props {
+   private static Logger logger = LogManager.getLogger(Props.class.getName());
+
    /**
     * All the properties read in.
     */
@@ -51,8 +55,7 @@ public class Props {
       PropType prop = props.get(key);
 
       if (prop == null || !prop.isString()) {
-         // TODO(eriq): Log warn
-         System.err.println("Tried to get a property that does not exist: " + key);
+         logger.warn("Tried to get a property that does not exist: {}", key);
          return null;
       }
 
@@ -199,15 +202,12 @@ public class Props {
                }
                props.put(key, prop);
             } catch (Exception ex) {
-               // TODO(eriq): Log Error
-               System.err.println("Error lifting property, [" + key +
-                "] from file: " + fileName + ".");
+               logger.error("Error lifting property, [{}] from file: {}.", key, fileName);
                failedConversion = true;
             }
          }
       } catch (Exception ex) {
-         // TODO(eriq): Log Error
-         System.err.println("Error getting properties from: " + fileName + ".");
+            logger.fatal("Error getting properties from: {}.", fileName);
          return false;
       }
 

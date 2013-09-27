@@ -1,10 +1,13 @@
 package com.eriqaugustine.ocr.utils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.awt.Point;
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +20,8 @@ import java.util.Scanner;
  *  Fix paths to be cross-platform.
  */
 public class FileUtils {
+   private static Logger logger = LogManager.getLogger(FileUtils.class.getName());
+
    private static final String BUBBLE_TRAINING_IMAGES_DIR = "images";
    private static final String BUBBLE_TRAINING_DATA_FILE = "bubbles.txt";
 
@@ -82,18 +87,21 @@ public class FileUtils {
                                                      Integer.parseInt(attributes[4]))});
          }
       } catch (Exception ex) {
-         // TODO(eriq): Logging, fatal
-         System.err.println("Bubble training directory file is not formatted correctly.");
-         System.exit(1);
+         logger.fatal("Bubble training directory file is not formatted correctly.", ex);
       }
 
       return training;
    }
 
+   /**
+    * Just a simple wrapper for information about the image files to test
+    * and the bubble bounding boxes.
+    */
    public static class BubbleTrainingSet {
       public List<File> trainingFiles;
 
       /**
+       * The bounding boxes.
        * {filename : [[Upper Left, Lower Right], ...]}
        */
       public Map<String, List<Point[]>> trainingBubbles;

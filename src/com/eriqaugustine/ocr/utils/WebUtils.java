@@ -2,6 +2,8 @@ package com.eriqaugustine.ocr.utils;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,6 +21,8 @@ import java.nio.charset.UnsupportedCharsetException;
  * A class for general web centered utilities.
  */
 public class WebUtils {
+   private static Logger logger = LogManager.getLogger(WebUtils.class.getName());
+
    private static final String WEB_CACHE_PREFIX = "web_cache";
 
    /**
@@ -75,8 +79,7 @@ public class WebUtils {
       try {
          url = new URL(address);
       } catch (java.net.MalformedURLException ex) {
-         // TODO(eriq): Log all these errors.
-         ex.printStackTrace(System.err);
+         logger.error("Bad URL.", ex);
          return null;
       }
 
@@ -93,7 +96,7 @@ public class WebUtils {
       try {
          conn = url.openConnection();
       } catch (Exception ex) {
-         ex.printStackTrace(System.err);
+         logger.warn("Unable to open connection.", ex);
          return null;
       }
 
@@ -113,7 +116,7 @@ public class WebUtils {
          final InputStreamReader reader = new InputStreamReader(is, charset);
          page = readerToString(reader);
       } catch (IOException ioEx) {
-         ioEx.printStackTrace(System.err);
+         logger.error("Unable to read GET stream.", ioEx);
          return null;
       }
 
@@ -167,8 +170,7 @@ public class WebUtils {
       try {
          FileUtils.writeStringToFile(cacheFile, page, "UTF-8");
       } catch (Exception ex) {
-         // TODO(eriq): Log Error
-         System.err.println("Error creating cache.");
+         logger.error("Error creating cache.", ex);
          cacheFile.delete();
       }
    }
@@ -181,8 +183,7 @@ public class WebUtils {
 
          return FileUtils.readFileToString(cacheFile, "UTF-8");
       } catch (Exception ex) {
-         // TODO(eriq): Log Error
-         System.err.println("Error fetching cache.");
+         logger.error("Error fetching cache.", ex);
          return null;
       }
    }

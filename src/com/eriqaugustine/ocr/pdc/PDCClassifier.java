@@ -5,6 +5,9 @@ import com.eriqaugustine.ocr.utils.StringUtils;
 
 import magick.MagickImage;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.SMO;
 import weka.core.Attribute;
@@ -19,9 +22,10 @@ import java.util.Set;
 
 /**
  * A classifier specialized for PDC features.
- * TODO(eriq): Add quadrant (maybe 16ths) density to feature set.
  */
 public class PDCClassifier {
+   private static Logger logger = LogManager.getLogger(PDCClassifier.class.getName());
+
    private static final int DEFAULT_GROUP_SIZE = 1;
    private static final boolean DEFAULT_COMBINE_DIRECTIONS = false;
    private static final int DEFUALT_REGIONS_PER_SIDE = 5;
@@ -98,8 +102,7 @@ public class PDCClassifier {
          int prediction = (int)classifier.classifyInstance(instance);
          return instance.classAttribute().value(prediction);
       } catch (Exception ex) {
-         System.err.println("ERROR: " + ex);
-         ex.printStackTrace(System.err);
+         logger.error("Classification error.", ex);
          return null;
       }
    }

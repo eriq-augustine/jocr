@@ -17,25 +17,9 @@
       <pathelement location="lib/commons-lang3-3.1.jar" />
       <pathelement location="lib/commons-lang-2.6.jar" />
       <pathelement location="lib/commons-logging-1.1.1.jar" />
+      <pathelement location="lib/log4j-api-2.0-beta9.jar" />
+      <pathelement location="lib/log4j-core-2.0-beta9.jar" />
       <pathelement location="lib/json.jar" />
-
-      <!-- Google Stuff -->
-      <!-- TEST
-      <pathelement location="lib/google/google-api-services-translate-v2-rev19-1.17.0-rc.jar" />
-      <pathelement location="lib/google/google-api-client-1.17.0-rc.jar" />
-      <pathelement location="lib/google/google-oauth-client-1.17.0-rc.jar" />
-      <pathelement location="lib/google/google-http-client-1.17.0-rc.jar" />
-      <pathelement location="lib/google/jsr305-1.3.9.jar" />
-      <pathelement location="lib/google/google-http-client-gson-1.17.0-rc.jar" />
-      <pathelement location="lib/google/gson-2.1.jar" />
-      <pathelement location="lib/google/google-http-client-jackson2-1.17.0-rc.jar" />
-      <pathelement location="lib/google/jackson-core-2.1.3.jar" />
-      <pathelement location="lib/google/google-http-client-jdo-1.17.0-rc.jar" />
-      <pathelement location="lib/google/jdo2-api-2.3-eb.jar" />
-      <pathelement location="lib/google/commons-logging-1.1.1.jar" />
-      <pathelement location="lib/google/httpclient-4.0.1.jar" />
-      <pathelement location="lib/google/httpcore-4.0.1.jar" />
-      -->
    </path>
 
    <target name="init">

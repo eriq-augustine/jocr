@@ -6,12 +6,17 @@ import com.eriqaugustine.ocr.utils.ImageUtils;
 
 import magick.MagickImage;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.List;
 
 /**
  * Translate and replace the text in an image.
  */
 public class ImageTranslator {
+   private static Logger logger = LogManager.getLogger(ImageTranslator.class.getName());
+
    private static final String[] FONTS = new String[]{"Baekmuk Batang", "RyuminStd-Bold-KO"};
 
    // TODO(eriq): Move the training set generation to a single location.
@@ -43,8 +48,7 @@ public class ImageTranslator {
             text += classy.classify(image);
          }
 
-         //TEST
-         System.out.println(text.trim());
+         logger.debug(text.trim());
 
          String translation = trans.translate(text.trim());
 

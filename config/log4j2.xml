@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+  <Appenders>
+    <File name="debugFile" fileName="log/debug.log" />
+    <File name="infoFile" fileName="log/info.log" />
+    <File name="warnFile" fileName="log/warn.log" />
+    <File name="errorFile" fileName="log/error.log" />
+    <File name="fatalFile" fileName="log/fatal.log" immediateFlush="true" />
+
+    <Console name="stdout" target="SYSTEM_OUT" />
+    <Console name="stderr" target="SYSTEM_ERR" />
+  </Appenders>
+  <Loggers>
+    <Root level="trace" additivity="false">
+      <AppenderRef ref="debugFile" level="DEBUG">
+         <!-- Reject everything higher. -->
+         <thresholdFilter level="INFO" onMatch="DENY" onMismatch="NEUTRAL"/>
+      </AppenderRef>
+
+      <AppenderRef ref="infoFile" level="INFO">
+         <thresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
+      </AppenderRef>
+
+      <AppenderRef ref="warnFile" level="WARN">
+         <thresholdFilter level="ERROR" onMatch="DENY" onMismatch="NEUTRAL"/>
+      </AppenderRef>
+
+      <AppenderRef ref="errorFile" level="ERROR">
+         <thresholdFilter level="FATAL" onMatch="DENY" onMismatch="NEUTRAL"/>
+      </AppenderRef>
+
+      <AppenderRef ref="fatalFile" level="FATAL" />
+      <AppenderRef ref="stderr" level="FATAL" />
+    </Root>
+  </Loggers>
+</Configuration>

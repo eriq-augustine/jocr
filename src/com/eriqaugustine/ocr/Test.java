@@ -19,6 +19,9 @@ import magick.ImageInfo;
 import magick.MagickImage;
 import magick.PixelPacket;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.util.Arrays;
@@ -62,7 +65,23 @@ public class Test {
       //splitImage();
       //imageTranslateTest();
       //volumeFillTest();
-      bubbleTrainingTest();
+      //bubbleTrainingTest();
+      loggingTest();
+   }
+
+   public static void loggingTest() throws Exception {
+      Logger logger = LogManager.getLogger();
+
+      logger.debug("Test debug");
+      logger.info("Test info");
+      logger.warn("Test warn");
+      logger.error("Test error");
+      logger.fatal("Test fatal");
+
+      //TEST
+      com.eriqaugustine.ocr.utils.Props.has("test");
+
+      System.out.println("Final");
    }
 
    public static void bubbleTrainingTest() throws Exception {

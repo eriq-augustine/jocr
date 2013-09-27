@@ -15,8 +15,6 @@ import java.util.Set;
 
 /**
  * Namespace for images that contain a single character.
- * TODO(eriq): All of the horizontal boolean buisness is confusing and error-prone
- *  (see getLines() and most called functions from there).
  */
 public class CharacterImage {
    private static final int DEFAULT_POINT_SIZE = 2;

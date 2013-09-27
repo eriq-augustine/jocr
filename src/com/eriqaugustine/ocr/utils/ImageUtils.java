@@ -120,7 +120,6 @@ public class ImageUtils {
    /**
     * Make an empty image.
     * Right now 1x1 images are "empty".
-    * TODO(eriq): Get a better represetation for an empty image.
     */
    public static MagickImage emptyImage() throws Exception {
       MagickImage rtn = new MagickImage();
@@ -130,7 +129,6 @@ public class ImageUtils {
 
    /**
     * Return true if the given image is empty, usually representing a space.
-    * TODO(eriq): Right now 1x1 images are empty, find a better representation.
     */
    public static boolean isEmptyImage(MagickImage image) throws Exception {
       return image.getDimension().width == 1;

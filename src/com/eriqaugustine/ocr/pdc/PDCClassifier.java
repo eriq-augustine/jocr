@@ -87,7 +87,6 @@ public class PDCClassifier {
 
       Instances trainingSet = prepTraining(trainingImages, trainingCharacters);
       classifier = new SMO();
-      // TODO(eriq): This can throw.
       classifier.buildClassifier(trainingSet);
    }
 
@@ -107,7 +106,6 @@ public class PDCClassifier {
       }
    }
 
-   // TODO(eriq): Probably better to classify multiple documents at once.
    private Instance prepUnclassed(MagickImage image) throws Exception {
       PDCInfo info = PDC.pdc(image);
 

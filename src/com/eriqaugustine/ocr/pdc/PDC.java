@@ -61,7 +61,6 @@ public final class PDC {
    /**
     * Run PDC on an image.
     * |image| must be already be binary.
-    * TODO(eriq): Diagnal scans.
     */
    public static PDCInfo pdc(MagickImage baseImage) throws Exception {
       MagickImage scaleImage = ImageUtils.scaleImage(baseImage, SCALE_SIZE, SCALE_SIZE);
@@ -167,7 +166,6 @@ public final class PDC {
     * The very short diagonals (for ex, the one length ones at the corners)
     * are not very useful. So, only the longest diagonals are used.
     * This is why we need all the additional parameters.
-    * TODO(eriq): I don't like all the params.
     */
    private static List<Integer> diagonalScan(boolean[] image,
                                              int imageWidth,
@@ -244,7 +242,6 @@ public final class PDC {
       int innerStart, innerEnd, innerDelta;
       int[] peripherals;
 
-      // TODO(eriq): I hate these damn horizontal tricks.
       if (horizontal) {
          // row
          outerStart = 0;

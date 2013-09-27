@@ -338,7 +338,7 @@ public class Blob {
       for (int i = 0; i < outerCols.length; i++) {
          int otherRow = other.getMinRow() + i;
 
-         // TODO(eriq): This probably shouldn't happen, but I am tired and lazy.
+         // HACK(eriq): This probably shouldn't happen, but I am tired and lazy.
          if (!outline.containsKey(otherRow)) {
             continue;
          }
@@ -438,7 +438,7 @@ public class Blob {
    /**
     * Get the approximate outline for this blob.
     * The returned points are seperated out according to DIRECTIONAL_OFFSETS.
-    * TODO(eriq): Cleanup this hackery (magic numbers and such).
+    * HACK(eriq): Cleanup this hackery (magic numbers and such).
     */
    public int[][] approximateOutline() {
       int[][] outerCols = getOuterColumns();
@@ -473,7 +473,6 @@ public class Blob {
     * @return {row: [[begin, end], ... (ordered)]}
     *  ie. "For this row, the blob begins here and ends here,
     *  then starts again here and so on."
-    * TODO(eriq): If this needs to be called more than once, cache or something.
     */
    public Map<Integer, List<int[]>> getOutline() {
       Map<Integer, List<Integer>> border = new HashMap<Integer, List<Integer>>();
@@ -584,21 +583,6 @@ public class Blob {
 
          List<int[]> ranges = new ArrayList<int[]>();
 
-         // TODO(eriq): This is VERY wrong!
-         // There are some cases that are very hard to distinguish between.
-         // This is because horizontal lines (which may not be just on the
-         // top or bottom) generate a border point for every point on the
-         // horizontal. This becomes problematic when ranges are brought into
-         // the picture. Should the range be extended from the horizontal set
-         // to the single point on the other size.
-         // Ex: [45, 46, 47, 112]
-         //  Does it go from 45 - 112 ?
-         //                  45 - 47, 112 ?
-         // Not to mention, that this does not handle multiple range cases
-         // without horizontals like: [45, 66, 77, 88].
-         //  This could be: 45 - 66, 77 - 88
-         //              or 45, 66 - 77, 88
-         // This method needs more support from getOutline().
          ranges.add(new int[]{sortedCols.get(0),
                               sortedCols.get(sortedCols.size() - 1)});
 

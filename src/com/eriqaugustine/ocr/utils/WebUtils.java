@@ -68,7 +68,6 @@ public class WebUtils {
 
    /**
     * Get a web page.
-    * TODO(eriq): Don't just error on all non-200 status and return the status.
     * @return A Reader that the caller owns on success, null on failure.
     */
    private static String fetchPageImpl(String address, boolean cache) {

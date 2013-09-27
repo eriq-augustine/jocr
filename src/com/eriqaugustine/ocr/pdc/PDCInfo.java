@@ -58,7 +58,6 @@ public class PDCInfo {
     * The average of the group will be emitted to represent that group.
     * This will reduce the feature set and help handle noise.
     */
-   // TODO(eriq): Don't throw. Get dimensions in constructor.
    public double[] fullGroupedDimensions(int groupSize) {
       assert(scaleDimensions.width % groupSize == 0);
       return averageDimensions(fullPDCDimensions(), groupSize, PDC.PDC_DIRECTION_DELTAS.length);

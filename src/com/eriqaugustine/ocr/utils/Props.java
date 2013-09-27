@@ -4,6 +4,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,14 +27,18 @@ import java.util.Map;
 public class Props {
    private static Logger logger = LogManager.getLogger(Props.class.getName());
 
+   private static final String DEFAULT_CONFIG_FILE = "config/config.properties";
+
    /**
     * All the properties read in.
     */
    private static Map<String, PropType> props = new HashMap<String, PropType>();
 
-   // TODO(eriq): This should really be done by the primary driver
    static {
-      readFile("config/config.properties");
+      File file = new File(DEFAULT_CONFIG_FILE);
+      if (file.exists() && file.isFile()) {
+         readFile(file.getAbsolutePath());
+      }
    }
 
    /**

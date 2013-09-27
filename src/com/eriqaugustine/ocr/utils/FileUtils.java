@@ -15,9 +15,6 @@ import java.util.Scanner;
 
 /**
  * Just some general utils for working with files.
- *
- * TODO(eriq): This assumes that all paths are on linux machines.
- *  Fix paths to be cross-platform.
  */
 public class FileUtils {
    private static Logger logger = LogManager.getLogger(FileUtils.class.getName());

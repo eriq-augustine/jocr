@@ -19,7 +19,6 @@ public class ImageTranslator {
 
    private static final String[] FONTS = new String[]{"Baekmuk Batang", "RyuminStd-Bold-KO"};
 
-   // TODO(eriq): Move the training set generation to a single location.
    private static final String ALPHABET = com.eriqaugustine.ocr.Test.HIRAGANA +
                                           com.eriqaugustine.ocr.Test.KATAKANA;
 

@@ -204,7 +204,6 @@ public class TextImage {
       return images;
    }
 
-   // TODO(eriq): This can get in trouble with a small number of stripes.
    private static List<int[]> normalizeStripes(List<int[]> stripes) {
       // Note(eriq): Widening the stripes hurt the first and last line too much.
       // stripes = widenStripes(stripes);

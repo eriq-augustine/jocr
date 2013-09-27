@@ -63,23 +63,23 @@ public class Test {
       //characterBreakupTest();
       //translateTest();
       //splitImage();
-      //imageTranslateTest();
+      imageTranslateTest();
       //volumeFillTest();
       //bubbleTrainingTest();
-      loggingTest();
+      //loggingTest();
    }
 
    public static void loggingTest() throws Exception {
       Logger logger = LogManager.getLogger();
+
+      //TEST
+      System.err.println(logger.isDebugEnabled());
 
       logger.debug("Test debug");
       logger.info("Test info");
       logger.warn("Test warn");
       logger.error("Test error");
       logger.fatal("Test fatal");
-
-      //TEST
-      com.eriqaugustine.ocr.utils.Props.has("test");
 
       System.out.println("Final");
    }
@@ -155,7 +155,7 @@ public class Test {
       ImageTranslator translator = new ImageTranslator();
 
       //String[] images = new String[]{"testImages/page.png", "testImages/page2.jpg"};
-      String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_023.jpg"};
+      String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_022.jpg"};
 
       for (int i = 0; i < images.length; i++) {
          ImageInfo info = new ImageInfo(images[i]);
@@ -165,10 +165,6 @@ public class Test {
 
          MagickImage bubbles = BubbleDetection.fillBubbles(baseImage);
          bubbles.setFileName(outDirectory + "/transTest-" + i + "-88-base.png");
-         bubbles.writeImage(info);
-
-         bubbles = BubbleDetection.fillBubbles(baseImage);
-         bubbles.setFileName(outDirectory + "/transTest-" + i + "-89-base.png");
          bubbles.writeImage(info);
 
          MagickImage transImage = translator.translate(baseImage);

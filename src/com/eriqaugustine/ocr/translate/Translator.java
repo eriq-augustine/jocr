@@ -88,6 +88,8 @@ public class Translator {
          return null;
       }
 
+      logger.debug(translation);
+
       return translation;
    }
 }

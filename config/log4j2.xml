@@ -11,7 +11,7 @@
     <Console name="stderr" target="SYSTEM_ERR" />
   </Appenders>
   <Loggers>
-    <Root level="trace" additivity="false">
+    <Root level="TRACE" additivity="false">
       <AppenderRef ref="debugFile" level="DEBUG">
          <!-- Reject everything higher. -->
          <thresholdFilter level="INFO" onMatch="DENY" onMismatch="NEUTRAL"/>

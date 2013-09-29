@@ -9,15 +9,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.functions.SMO;
 import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -61,6 +62,8 @@ public class PDCClassifier {
            combineDirections, groupSize);
    }
 
+   // Suppress the classifier Class cast.
+   @SuppressWarnings("unchecked")
    public PDCClassifier(MagickImage[] trainingImages,
                         String[] trainingCharacters,
                         boolean combineDirections,
@@ -86,8 +89,21 @@ public class PDCClassifier {
       featureAttributes = getFeatureAttributes(possibleCharacters);
 
       Instances trainingSet = prepTraining(trainingImages, trainingCharacters);
-      classifier = new SMO();
-      classifier.buildClassifier(trainingSet);
+
+      Class<? extends Classifier> classifierClass =
+            (Class<? extends Classifier>)Class.forName("weka.classifiers.functions.SMO");
+      Map<String, String> attributes = new HashMap<String, String>();
+      attributes.put("combine_directions", "" + this.combineDirections);
+      attributes.put("group_size", "" + this.groupSize);
+
+      classifier = SerializedWekaClassifier.fetchClassifier(classifierClass, trainingSet,
+                                                            true /* cache */,
+                                                            attributes, "");
+
+      if (classifier == null) {
+         logger.fatal("Unable to make a classifier.");
+         System.exit(1);
+      }
    }
 
    public String classify(MagickImage image) throws Exception {

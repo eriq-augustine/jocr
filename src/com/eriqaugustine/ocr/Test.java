@@ -63,10 +63,19 @@ public class Test {
       //characterBreakupTest();
       //translateTest();
       //splitImage();
-      imageTranslateTest();
+      //imageTranslateTest();
       //volumeFillTest();
       //bubbleTrainingTest();
       //loggingTest();
+      imageMagickBaseTest();
+   }
+
+   // Just do the most base image magick functionality. Read in and then write an image.
+   public static void imageMagickBaseTest() throws Exception {
+      ImageInfo info = new ImageInfo("testImages/katakana.png");
+      MagickImage baseImage = new MagickImage(info);
+      baseImage.setFileName("testImage.png");
+      baseImage.writeImage(info);
    }
 
    public static void loggingTest() throws Exception {

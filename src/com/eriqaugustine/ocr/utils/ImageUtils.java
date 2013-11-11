@@ -47,6 +47,37 @@ public class ImageUtils {
    }
 
    /**
+    * Combine the images into a single image grid.
+    * This is intended for characters, so it assumes that all the characters are the same size.
+    */
+   public static MagickImage gridCombine(MagickImage[] images, int gridWidth) throws Exception {
+      assert(images.length > 0);
+
+      Dimension characterDimensions = images[0].getDimension();
+
+      // Give some padding.
+      int charWidth = characterDimensions.width + 30;
+      int charHeight = characterDimensions.height + 30;
+
+      int totalWidth = charWidth * gridWidth;
+      int totalHeight = charHeight * (int)Math.ceil(images.length / (double)gridWidth);
+
+      // Not all the images are exactly the same, so be safe.
+      MagickImage baseImage = blankImage(totalWidth * 2, totalHeight * 2);
+
+      for (int i = 0; i < images.length; i++) {
+         int row = i / gridWidth;
+         int col = i - (row * gridWidth);
+
+         overlayImage(baseImage, images[i],
+                      row * charHeight,
+                      col * charWidth);
+      }
+
+      return shrinkImage(baseImage);
+   }
+
+   /**
     * Overlay |overlay| over |base|.
     */
    public static MagickImage overlayImage(MagickImage baseImage, MagickImage overlayImage,
@@ -137,6 +168,13 @@ public class ImageUtils {
    /**
     * Make an empty white image.
     */
+   public static MagickImage blankImage(int imageWidth, int imageHeight) throws Exception {
+      byte[] pixels = blankPixels(imageWidth * imageHeight);
+      MagickImage rtn = new MagickImage();
+      rtn.constituteImage(imageWidth, imageHeight, "R", pixels);
+      return rtn;
+   }
+
    public static byte[] blankPixels(int imageLength) {
       byte[] rtn = new byte[imageLength];
 

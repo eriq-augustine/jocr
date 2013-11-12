@@ -26,13 +26,17 @@ public class ImageTranslator {
    private Translator trans;
 
    public ImageTranslator() throws Exception {
+      this(FONTS);
+   }
+
+   public ImageTranslator(String[] fonts) throws Exception {
       String trainingAlphabet = "";
-      for (int i = 0; i < FONTS.length; i++) {
+      for (int i = 0; i < fonts.length; i++) {
          trainingAlphabet += ALPHABET;
       }
 
-      classy = new PDCClassifier(CharacterImage.generateFontImages(ALPHABET, FONTS),
-                                 trainingAlphabet, true, 1);
+      classy = new PDCClassifier(CharacterImage.generateFontImages(ALPHABET, fonts),
+                                 trainingAlphabet, true, 1, fonts);
       trans = new Translator("ja", "en");
    }
 

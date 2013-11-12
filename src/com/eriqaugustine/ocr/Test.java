@@ -63,11 +63,11 @@ public class Test {
       //characterBreakupTest();
       //translateTest();
       //splitImage();
-      //imageTranslateTest();
+      imageTranslateTest();
       //volumeFillTest();
       //bubbleTrainingTest();
       //loggingTest();
-      imageMagickBaseTest();
+      //imageMagickBaseTest();
    }
 
    // Just do the most base image magick functionality. Read in and then write an image.
@@ -161,10 +161,15 @@ public class Test {
    public static void imageTranslateTest() throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "transTest");
 
-      ImageTranslator translator = new ImageTranslator();
-
-      //String[] images = new String[]{"testImages/page.png", "testImages/page2.jpg"};
+      /*
+      String[] images = new String[]{"testImages/page.png", "testImages/page2.jpg"};
       String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_022.jpg"};
+      */
+
+      String[] images = new String[]{"../jocr-reference/manga/Initial D/Vol 35/raw/File0114.jpg"};
+      String[] fonts = new String[]{"RyuminStd-Heavy-KO"};
+
+      ImageTranslator translator = new ImageTranslator(fonts);
 
       for (int i = 0; i < images.length; i++) {
          ImageInfo info = new ImageInfo(images[i]);
@@ -195,7 +200,7 @@ public class Test {
 
       PDCClassifier classy =
             new PDCClassifier(CharacterImage.generateFontImages(alphabet, fonts),
-                              trainingAlphabet, true, 1);
+                              trainingAlphabet, true, 1, fonts);
 
       File baseDir = new File("training/kana");
       File[] testFiles = baseDir.listFiles();
@@ -229,11 +234,6 @@ public class Test {
 
       String outDirectory = FileUtils.itterationDir("out", "characterBreakup");
 
-      /*
-      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-                                               alphabet, false, 1);
-      */
-
       // ImageInfo info = new ImageInfo("testImages/2Text.png");
       // ImageInfo info = new ImageInfo("testImages/1Text.png");
       ImageInfo info = new ImageInfo("testImages/partHiragana.png");
@@ -261,11 +261,6 @@ public class Test {
       String alphabet = " " + HIRAGANA + KATAKANA;
 
       String outDirectory = FileUtils.itterationDir("out", "gridBreakup");
-
-      /*
-      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-                                               alphabet, false, 1);
-      */
 
       // ImageInfo info = new ImageInfo("testImages/partHiragana.png");
       // ImageInfo info = new ImageInfo("testImages/2Text.png");
@@ -297,7 +292,8 @@ public class Test {
 
       PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
                                                //  alphabet, false, 1);
-                                               alphabet, true, 1);
+                                               alphabet, true, 1,
+                                               new String[]{CharacterUtils.DEFAULT_FONT_FAMILY});
 
       // Not exactly hiragana.
       String characters = "あいうえおかきくけこさしすせそたちつてとなにぬねの" +

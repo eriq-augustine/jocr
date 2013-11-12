@@ -42,9 +42,10 @@ public class PDCClassifier {
    private FastVector featureAttributes;
 
    public PDCClassifier(MagickImage[] characterImages,
-                        String characters) throws Exception {
+                        String characters,
+                        String[] fonts) throws Exception {
       this(characterImages, StringUtils.charSplitArray(characters),
-           DEFAULT_COMBINE_DIRECTIONS, DEFAULT_GROUP_SIZE);
+           DEFAULT_COMBINE_DIRECTIONS, DEFAULT_GROUP_SIZE, fonts);
    }
 
    /**
@@ -53,13 +54,15 @@ public class PDCClassifier {
     * |groupSize| is the size of groups of DCs in the same scanning set.
     * This is meant to reduce the number of features and mitigate noise.
     * A |groupSize| of 1 means no groping will occur.
+    * |fonts| are used as attributes to the classifier.
     */
    public PDCClassifier(MagickImage[] characterImages,
                         String characters,
                         boolean combineDirections,
-                        int groupSize) throws Exception {
+                        int groupSize,
+                        String[] fonts) throws Exception {
       this(characterImages, StringUtils.charSplitArray(characters),
-           combineDirections, groupSize);
+           combineDirections, groupSize, fonts);
    }
 
    // Suppress the classifier Class cast.
@@ -67,7 +70,8 @@ public class PDCClassifier {
    public PDCClassifier(MagickImage[] trainingImages,
                         String[] trainingCharacters,
                         boolean combineDirections,
-                        int groupSize) throws Exception {
+                        int groupSize,
+                        String[] fonts) throws Exception {
       assert(trainingImages.length > 0);
       assert(groupSize > 0);
       assert(PDC.getNumDCs() % groupSize == 0);
@@ -95,6 +99,7 @@ public class PDCClassifier {
       Map<String, String> attributes = new HashMap<String, String>();
       attributes.put("combine_directions", "" + this.combineDirections);
       attributes.put("group_size", "" + this.groupSize);
+      attributes.put("fonts", StringUtils.join(fonts, ", "));
 
       classifier = SerializedWekaClassifier.fetchClassifier(classifierClass, trainingSet,
                                                             true /* cache */,

@@ -27,4 +27,18 @@ public class StringUtils {
 
       return rtn;
    }
+
+   public static String join(String[] strs) {
+      return join(strs, ",");
+   }
+
+   public static String join(String[] strs, String  delim) {
+      String rtn = "";
+
+      for (String str : strs) {
+         rtn += str + delim;
+      }
+
+      return rtn.replaceFirst(delim + "$", "");
+   }
 }

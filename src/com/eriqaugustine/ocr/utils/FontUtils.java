@@ -55,6 +55,20 @@ public class FontUtils {
    }
 
    /**
+    * Get the names of the local fonts.
+    */
+   public static String[] getLocalFontNames() {
+      String[] fontPaths = getLocalFontPaths();
+      String[] rtn = new String[fontPaths.length];
+
+      for (int i = 0; i < fontPaths.length; i++) {
+         rtn[i] = getFontName(fontPaths[i]);
+      }
+
+      return rtn;
+   }
+
+   /**
     * Register all the project's local fonts.
     */
    public static void registerLocalFonts() {

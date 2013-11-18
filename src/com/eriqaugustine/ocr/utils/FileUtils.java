@@ -22,6 +22,21 @@ public class FileUtils {
    private static final String BUBBLE_TRAINING_IMAGES_DIR = "images";
    private static final String BUBBLE_TRAINING_DATA_FILE = "bubbles.txt";
 
+   public static String getBasename(String path) {
+      return getBasename(path, true);
+   }
+
+   /**
+    * Get the basename for a path.
+    */
+   public static String getBasename(String path, boolean includeExtension) {
+      if (includeExtension) {
+         return new File(path).getName();
+      }
+
+      return new File(path).getName().replaceFirst("\\.[^\\.]*$", "");
+   }
+
    /**
     * Create the "next" directory and return the path.
     * This is meant for when a series of tests are run.

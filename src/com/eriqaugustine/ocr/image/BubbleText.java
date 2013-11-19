@@ -1,5 +1,8 @@
 package com.eriqaugustine.ocr.image;
 
+import com.eriqaugustine.ocr.utils.ImageUtils;
+import com.eriqaugustine.ocr.utils.MathUtils;
+
 import magick.MagickImage;
 
 import java.awt.Dimension;
@@ -40,6 +43,10 @@ public class BubbleText {
 
       List<Rectangle> setBoundaries = discoverSets(image);
 
+      //TEST
+      if (1 == 1)
+         return;
+
       for (Rectangle setBoundary : setBoundaries) {
          Direction direction = guessDirection(image, setBoundary);
          textSets.add(gridBreakup(image, setBoundary, direction));
@@ -54,6 +61,9 @@ public class BubbleText {
 
       // First, find all the bounding boxes for non-whitespace objects (text).
       List<Rectangle> boundingRectangles = findBoundingRectangles(image);
+      //TEST
+      if (1 == 1)
+         return null;
       boolean[] checkedRectangles = new boolean[boundingRectangles.size()];
 
       int[][] boundsMap = mapBounds(image.getDimension(), boundingRectangles);
@@ -126,20 +136,134 @@ public class BubbleText {
    }
 
    /**
-    * Find all the rectangles that minimally bound non-whitespace.
-    */
-   private static List<Rectangle> findBoundingRectangles(MagickImage image) {
-      // TODO
-      return null;
-   }
-
-   /**
     * Map the bounding rectangles onto a map.
     * Each map location will hold -1 for nothing, otherwise the index of the bounding rectangle.
     */
    private static int[][] mapBounds(Dimension dimensions, List<Rectangle> boundingRectangles) {
       // TODO
       return null;
+   }
+
+   /**
+    * Find all the rectangles that minimally bound non-whitespace.
+    * Don't try to find adjacent rectangles or do any mergeing.
+    * Ideally, this will bound each and every character.
+    */
+   private static List<Rectangle> findBoundingRectangles(MagickImage image) throws Exception {
+      byte[] pixels = Filters.averageChannels(Filters.bwPixels(image), 3);
+      Dimension dimensions = image.getDimension();
+
+      List<int[]> rowStripes = findStripes(pixels, dimensions.width, true);
+      List<int[]> colStripes = findStripes(pixels, dimensions.width, false);
+
+      List<Rectangle> minimalRects = shrinkStripes(pixels, dimensions.width, rowStripes, colStripes);
+
+      return minimalRects;
+   }
+
+   /**
+    * Take in the stripes, and shrink them to minimal character bounds.
+    * Do the same kind of striping process that findStripes() uses,
+    * but only on intersection of stripes.
+    */
+   private static List<Rectangle> shrinkStripes(byte[] pixels, int width, List<int[]> rowStripes,
+                                                List<int[]> colStripes) {
+      List<Rectangle> rtn = new ArrayList<Rectangle>();
+
+      for (int[] rowStripe : rowStripes) {
+         for (int[] colStripe : colStripes) {
+            // We are NOT guarenteed that there is actual non-whitespace in here.
+            // There could even be multiple bounds in a single stripe intersection.
+            rtn.addAll(boundText(pixels, width, rowStripe, colStripe));
+         }
+      }
+
+      return rtn;
+   }
+
+   /**
+    * Shrink the intersection of a set of stripes to a single bounding box.
+    * NOTE(eriq): This does not handle the case where there are overlaps in text.
+    *  So, this will not actually find the minimal bounds.
+    *  Multiple character may be caught in a single.
+    *  But, you are guarenteed that all text will be captured.
+    * TODO(eriq): Someday actually find the minimal bounds.
+    */
+   private static List<Rectangle> boundText(byte[] pixels, int width, int[] rowStripe,
+                                            int[] colStripe) {
+      List<Rectangle> rtn = new ArrayList<Rectangle>();
+
+      int minRow = rowStripe[1];
+      int maxRow = rowStripe[0];
+      int minCol = colStripe[1];
+      int maxCol = colStripe[0];
+
+      for (int row = rowStripe[0]; row < rowStripe[1]; row++) {
+         for (int col = colStripe[0]; col < colStripe[1]; col++) {
+            if (pixels[MathUtils.rowColToIndex(row, col, width)] == 0) {
+               if (row < minRow) {
+                  minRow = row;
+               }
+
+               if (row > maxRow) {
+                  maxRow = row;
+               }
+
+               if (col < minCol) {
+                  minCol = col;
+               }
+
+               if (col > maxCol) {
+                  maxCol = col;
+               }
+            }
+         }
+      }
+
+      if (minRow < maxRow) {
+         rtn.add(new Rectangle(minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1));
+      }
+
+      return rtn;
+   }
+
+   /**
+    * Find the stripes of non-whitespace.
+    */
+   private static List<int[]> findStripes(byte[] pixels, int width, boolean horizontal) {
+      List<int[]> stripes = new ArrayList<int[]>();
+
+      int stripeStart = -1;
+
+      int outerEnd = horizontal ? pixels.length / width : width;
+      int innerEnd = horizontal ? width : pixels.length / width;
+
+      for (int outer = 0; outer < outerEnd; outer++) {
+         boolean hasContent = false;
+
+         for (int inner = 0; inner < innerEnd; inner++) {
+            int index = horizontal ? MathUtils.rowColToIndex(outer, inner, width) :
+                                     MathUtils.rowColToIndex(inner, outer, width);
+
+            if (pixels[index] == 0) {
+               hasContent = true;
+               break;
+            }
+         }
+
+         if (stripeStart == -1 && hasContent) {
+            stripeStart = outer;
+         } else if (stripeStart != -1 && !hasContent) {
+            stripes.add(new int[]{stripeStart, outer});
+            stripeStart = -1;
+         }
+      }
+
+      if (stripeStart != -1) {
+         stripes.add(new int[]{stripeStart, outerEnd});
+      }
+
+      return stripes;
    }
 
    /**

@@ -57,6 +57,23 @@ public class BubbleText {
          Direction direction = guessDirection(setImage);
          textSets.add(gridBreakup(setImage, direction));
       }
+
+      //TEST
+      for (TextSet textSet : textSets) {
+         System.out.println("No Furi");
+         for (MagickImage characterImage : textSet.noFuriganaText) {
+            System.out.println(ImageUtils.asciiImage(characterImage));
+            System.out.println("---------------------");
+         }
+
+         System.out.println("Replacement");
+         for (MagickImage characterImage : textSet.furiganaReplacementText) {
+            System.out.println(ImageUtils.asciiImage(characterImage));
+            System.out.println("---------------------");
+         }
+
+         System.out.println("IIIIIIIIIIIIII");
+      }
    }
 
    /**
@@ -463,32 +480,9 @@ public class BubbleText {
          }
       }
 
-      /*
-      //TEST
-      for (Map.Entry<Integer, List<Rectangle>> furiPair : furiganaMapping.entrySet()) {
-         System.out.println(ImageUtils.asciiImage(image.cropImage(fullCharacters.get(furiPair.getKey().intValue()))));
-         System.out.println("`````````````````");
-         for (Rectangle rect : furiPair.getValue()) {
-            System.out.println(ImageUtils.asciiImage(image.cropImage(rect)));
-            System.out.println(">>>>>>>>>>>>>>>>>");
-         }
-      }
-      */
-
       List<Rectangle> ordered = orderCharacters(fullCharacters);
 
-      //TEST
-      System.out.println("IIIIIIIIIIIIIIIIIIIII");
-      for (Rectangle rect : ordered) {
-         MagickImage cropImage = image.cropImage(rect);
-
-         //TEST
-         System.out.println(ImageUtils.asciiImage(cropImage));
-         System.out.println("KKKKKKKKKKKK");
-      }
-
-      //TEST
-      return null;
+      return new TextSet(image, ordered, furiganaMapping);
    }
 
    /**
@@ -637,23 +631,38 @@ public class BubbleText {
       /**
        * The entire set image (hopefully, the kanji and its covering furigana in the same image).
        */
-      public final MagickImage fullText;
+      public final MagickImage baseImage;
 
       /**
        * The set without any furigana.
        */
-      public final MagickImage[] noFuriganaText;
+      public final List<MagickImage> noFuriganaText;
 
       /**
        * The text with any furigana replacing the kanji it covers.
        */
-      public final MagickImage[] furiganaReplacementText;
+      public final List<MagickImage> furiganaReplacementText;
 
-      public TextSet(String fullText, String noFuriganaText, String furiganaReplacementText) {
-         // TODO
-         this.fullText = null;
-         this.noFuriganaText = null;
-         this.furiganaReplacementText = null;
+      public TextSet(MagickImage image,
+                     List<Rectangle> fullText,
+                     Map<Rectangle, List<Rectangle>> furiganaMapping) throws Exception {
+         baseImage = ImageUtils.copyImage(image);
+
+         noFuriganaText = new ArrayList<MagickImage>();
+         for (Rectangle rect : fullText) {
+            noFuriganaText.add(baseImage.cropImage(rect));
+         }
+
+         furiganaReplacementText = new ArrayList<MagickImage>();
+         for (Rectangle rect : fullText) {
+            if (furiganaMapping.containsKey(rect)) {
+               for (Rectangle furiRect : furiganaMapping.get(rect)) {
+                  furiganaReplacementText.add(baseImage.cropImage(furiRect));
+               }
+            } else {
+               furiganaReplacementText.add(baseImage.cropImage(rect));
+            }
+         }
       }
    }
 }

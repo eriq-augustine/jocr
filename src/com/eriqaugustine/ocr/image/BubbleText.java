@@ -1,5 +1,6 @@
 package com.eriqaugustine.ocr.image;
 
+import com.eriqaugustine.ocr.utils.GeoUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
@@ -9,6 +10,8 @@ import java.awt.Dimension;
 import java.awt.Rectangle;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.HashMap;
@@ -423,13 +426,6 @@ public class BubbleText {
    private static TextSet gridBreakup(MagickImage image, Direction direction) throws Exception {
       List<Rectangle> boundingRects = findBoundingRectangles(image);
 
-      for (Rectangle rect : boundingRects) {
-         MagickImage cropImage = image.cropImage(rect);
-
-         //TEST
-         System.out.println(ImageUtils.asciiImage(cropImage));
-         System.out.println("------------");
-      }
 
       List<Rectangle> furiganaCandidates = getFuriganaCandidates(boundingRects);
 
@@ -479,8 +475,17 @@ public class BubbleText {
       }
       */
 
-      // TODO(eriq): HERE.
       List<Rectangle> ordered = orderCharacters(fullCharacters);
+
+      //TEST
+      System.out.println("IIIIIIIIIIIIIIIIIIIII");
+      for (Rectangle rect : ordered) {
+         MagickImage cropImage = image.cropImage(rect);
+
+         //TEST
+         System.out.println(ImageUtils.asciiImage(cropImage));
+         System.out.println("KKKKKKKKKKKK");
+      }
 
       //TEST
       return null;
@@ -488,26 +493,86 @@ public class BubbleText {
 
    /**
     * Take all the bounding boxes for characters and order them in the proper reading order.
-    * Insert blank images for spaces/breaks.
     */
-   private static List<Rectangle> orderCharacters(List<Rectangle> charaters) {
-      /*
-      List<List<Rectangle>> stacks = getVerticalStacks(characters);
-
+   private static List<Rectangle> orderCharacters(List<Rectangle> characters) {
       List<Rectangle> rtn = new ArrayList<Rectangle>();
-      rtn
-      */
 
       // Find the vertical stacks (character with vertical overlap).
+      List<List<Rectangle>> stacks = findVerticalStacks(characters);
+
       // Order within vertical stacks (top to bottom).
+      for (List<Rectangle> stack : stacks) {
+         Collections.sort(stack, new Comparator<Rectangle>(){
+            public int compare(Rectangle a, Rectangle b) {
+               return a.y - b.y;
+            }
+         });
+      }
 
       // Order stacks horizontally.
       // Ensure no horizontal overlap.
+      Collections.sort(stacks, new Comparator<List<Rectangle>>(){
+         public int compare(List<Rectangle> a, List<Rectangle> b) {
+            int minA = -1;
+            for (Rectangle rect : a) {
+               if (minA == -1 || minA > rect.x) {
+                  minA = rect.x;
+               }
+            }
+
+            int minB = -1;
+            for (Rectangle rect : b) {
+               if (minB == -1 || minB > rect.x) {
+                  minB = rect.x;
+               }
+            }
+
+            // RTL
+            return minB - minA;
+         }
+      });
 
       // Add
+      for (List<Rectangle> stack : stacks) {
+         rtn.addAll(stack);
+      }
 
-      // TODO
-      return null;
+      return rtn;
+   }
+
+   /**
+    * Split the characters up by vertical stack.
+    * Destructive towards rects.
+    */
+   private static List<List<Rectangle>> findVerticalStacks(List<Rectangle> rects) {
+      List<List<Rectangle>> rtn = new ArrayList<List<Rectangle>>();
+
+      while (rects.size() > 0) {
+         List<Rectangle> newStack = new ArrayList<Rectangle>();
+         newStack.add(rects.remove(0));
+
+         boolean change = false;
+         do {
+            change = false;
+
+            for (int i = 0; i < newStack.size(); i++) {
+               Rectangle stackRect = newStack.get(i);
+
+               for (int j = rects.size() - 1; j >= 0; j--) {
+                  if (GeoUtils.hasHorizontalOverlap(rects.get(j), stackRect)) {
+                     change = true;
+
+                     // Don't bother breaking, can keep going.
+                     newStack.add(rects.remove(j));
+                  }
+               }
+            }
+         } while(change);
+
+         rtn.add(newStack);
+      }
+
+      return rtn;
    }
 
    /**

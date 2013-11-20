@@ -11,7 +11,9 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Queue;
+import java.util.Set;
 
 /**
  * A representation of text that appears inside of a bubble.
@@ -59,14 +61,13 @@ public class BubbleText {
    private static List<Rectangle> discoverSets(MagickImage image) throws Exception {
       // TODO(eriq): Remove noise before set discovery.
 
+      Dimension dimensions = image.getDimension();
+
       // First, find all the bounding boxes for non-whitespace objects (text).
       List<Rectangle> boundingRectangles = findBoundingRectangles(image);
-      //TEST
-      if (1 == 1)
-         return null;
       boolean[] checkedRectangles = new boolean[boundingRectangles.size()];
 
-      int[][] boundsMap = mapBounds(image.getDimension(), boundingRectangles);
+      int[] boundsMap = mapBounds(dimensions, boundingRectangles);
 
       List<List<Rectangle>> groups = new ArrayList<List<Rectangle>>();
 
@@ -88,6 +89,11 @@ public class BubbleText {
             int rectIndex = queue.remove().intValue();
             Rectangle rect = boundingRectangles.get(rectIndex);
 
+            // Skip already checked.
+            if (checkedRectangles[rectIndex]) {
+               continue;
+            }
+
             checkedRectangles[rectIndex] = true;
 
             // Add the rectangle to the group.
@@ -97,7 +103,7 @@ public class BubbleText {
             // Note: Some rectangles can slip through because they are inbetween two other
             //  rectangles. These will get caught and merged later when the bounding
             //  box for each group is negotiated.
-            queue.addAll(getAdjacentRectangles(rect, boundingRectangles, boundsMap));
+            queue.addAll(getAdjacentRectangles(rect, boundsMap, dimensions.width));
          }
 
          groups.add(group);
@@ -113,35 +119,158 @@ public class BubbleText {
     * Find any groups that overlap and merge them.
     */
    private static List<Rectangle> mergeOverlappingGroups(List<Rectangle> groups) {
-      // TODO
-      return null;
+      List<Rectangle> rtn = new ArrayList<Rectangle>(groups);
+      boolean change = false;
+
+      do {
+         change = false;
+
+         // No risks or ticks, just break on change.
+         for (int i = 0; i < rtn.size(); i++) {
+            for (int j = i + 1; j < rtn.size(); j++) {
+               if (rtn.get(i).intersects(rtn.get(j))) {
+                  change = true;
+
+                  // j is always > i, remove it first.
+                  rtn.add(rtn.remove(j).union(rtn.remove(i)));
+                  break;
+               }
+            }
+
+            if (change) {
+               break;
+            }
+         }
+
+      } while (change);
+
+      return rtn;
    }
 
    /**
     * Take in all the groups and merge their bounding boxes.
     */
    private static List<Rectangle> findGroupBounds(List<List<Rectangle>> groups) {
-      // TODO
-      return null;
+      List<Rectangle> rtn = new ArrayList<Rectangle>();
+
+      for (List<Rectangle> group : groups) {
+         int minRow = -1;
+         int maxRow = -1;
+         int minCol = -1;
+         int maxCol = -1;
+
+         for (Rectangle rect : group) {
+            if (minRow == -1) {
+               minRow = rect.y;
+               maxRow = rect.y + rect.height;
+               minCol = rect.x;
+               maxCol = rect.x + rect.width;
+            } else {
+               if (minRow > rect.y) {
+                  minRow = rect.y;
+               }
+
+               if (maxRow < rect.y + rect.height) {
+                  maxRow = rect.y + rect.height;
+               }
+
+               if (minCol > rect.x) {
+                  minCol = rect.x;
+               }
+
+               if (maxCol < rect.x + rect.width) {
+                  maxCol = rect.x + rect.width;
+               }
+            }
+         }
+
+         if (minRow != -1) {
+            rtn.add(new Rectangle(minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1));
+         }
+      }
+
+      return rtn;
    }
 
    /**
     * Find all the bounding rectangles that are laterially adjacent to |rect|.
     */
-   private static List<Integer> getAdjacentRectangles(Rectangle rect,
-                                                      List<Rectangle> boundingRectangles,
-                                                      int[][] boundsMap) {
-      // TODO
-      return null;
+   private static Set<Integer> getAdjacentRectangles(Rectangle rect, int[] boundsMap, int width) {
+      Set<Integer> neighbors = new HashSet<Integer>();
+
+      // Horizontal
+      for (int row = rect.y; row <= rect.y + rect.height; row++) {
+         // Right
+         for (int col = rect.x + rect.width + 1; col < width; col++) {
+            int val = boundsMap[MathUtils.rowColToIndex(row, col, width)];
+
+            if (val != -1) {
+               neighbors.add(new Integer(val));
+               break;
+            }
+         }
+
+         // Left
+         for (int col = rect.x - 1; col >= 0; col--) {
+            int val = boundsMap[MathUtils.rowColToIndex(row, col, width)];
+
+            if (val != -1) {
+               neighbors.add(new Integer(val));
+               break;
+            }
+         }
+      }
+
+      // Vertical
+      for (int col = rect.x; col <= rect.x + rect.width; col++) {
+         // Down
+         for (int row = rect.y + rect.height + 1; row < boundsMap.length / width; row++) {
+            int val = boundsMap[MathUtils.rowColToIndex(row, col, width)];
+
+            if (val != -1) {
+               neighbors.add(new Integer(val));
+               break;
+            }
+         }
+
+         // Up
+         for (int row = rect.y - 1; row >= 0; row--) {
+            int val = boundsMap[MathUtils.rowColToIndex(row, col, width)];
+
+            if (val != -1) {
+               neighbors.add(new Integer(val));
+               break;
+            }
+         }
+      }
+
+      return neighbors;
    }
 
    /**
-    * Map the bounding rectangles onto a map.
+    * Map the bounding rectangles onto a map of the image.
     * Each map location will hold -1 for nothing, otherwise the index of the bounding rectangle.
     */
-   private static int[][] mapBounds(Dimension dimensions, List<Rectangle> boundingRectangles) {
-      // TODO
-      return null;
+   private static int[] mapBounds(Dimension dimensions, List<Rectangle> boundingRectangles) {
+      int[] rtn = new int[dimensions.width * dimensions.height];
+
+      for (int i = 0; i < rtn.length; i++) {
+         rtn[i] = -1;
+      }
+
+      for (int i = 0; i < boundingRectangles.size(); i++) {
+         Rectangle rect = boundingRectangles.get(i);
+
+         for (int rowOffset = 0; rowOffset < rect.height; rowOffset++) {
+            for (int colOffset = 0; colOffset < rect.width; colOffset++) {
+               rtn[MathUtils.rowColToIndex(rect.y + rowOffset,
+                                           rect.x + colOffset,
+                                           dimensions.width)] = i;
+            }
+         }
+      }
+
+      return rtn;
    }
 
    /**

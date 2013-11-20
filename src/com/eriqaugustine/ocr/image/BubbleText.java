@@ -11,7 +11,9 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
@@ -19,7 +21,7 @@ import java.util.Set;
  * A representation of text that appears inside of a bubble.
  * There are a few important things to note when working with text from bubbles:
  *  - The text may be either LTR or Down.
- *    In manga, down is more common.
+ *    In manga, down is far more common.
  *  - There can be multiple "sets" of text per bubble.
  *    This is usually caused when multiple bubbles collide with no border.
  *    It is a fairly common artistic technique.
@@ -45,13 +47,12 @@ public class BubbleText {
 
       List<Rectangle> setBoundaries = discoverSets(image);
 
-      //TEST
-      if (1 == 1)
-         return;
-
       for (Rectangle setBoundary : setBoundaries) {
-         Direction direction = guessDirection(image, setBoundary);
-         textSets.add(gridBreakup(image, setBoundary, direction));
+         // HACK(eriq): ImageMagick fails when you try to crop a crop, so make a copy.
+         MagickImage setImage = ImageUtils.copyImage(image.cropImage(setBoundary));
+
+         Direction direction = guessDirection(setImage);
+         textSets.add(gridBreakup(setImage, direction));
       }
    }
 
@@ -397,10 +398,18 @@ public class BubbleText {
 
    /**
     * Guess the direction of the text.
+    * Look at the dimensions of the image and pick the longer side
+    *  (with a significant bias towards vertical).
+    * TODO(eriq): This is a pretty naive method.
     */
-   private static Direction guessDirection(MagickImage image, Rectangle setBoundary) {
-      // TODO
-      return null;
+   private static Direction guessDirection(MagickImage image) throws Exception {
+      Dimension dimensions = image.getDimension();
+
+      if (dimensions.height * 3 > dimensions.width) {
+         return Direction.DOWN;
+      }
+
+      return Direction.LTR;
    }
 
    /**
@@ -409,33 +418,171 @@ public class BubbleText {
     * fit in constant sized boxes.
     * Therefore, the image can be broken up into a grid and each position
     *  will represent a character, puncuation, or space.
+    * TODO(eriq): This totally ignores direction.
     */
-   private static TextSet gridBreakup(MagickImage image, Rectangle setBoundary,
-                                      Direction direction) {
+   private static TextSet gridBreakup(MagickImage image, Direction direction) throws Exception {
+      List<Rectangle> boundingRects = findBoundingRectangles(image);
+
+      for (Rectangle rect : boundingRects) {
+         MagickImage cropImage = image.cropImage(rect);
+
+         //TEST
+         System.out.println(ImageUtils.asciiImage(cropImage));
+         System.out.println("------------");
+      }
+
+      List<Rectangle> furiganaCandidates = getFuriganaCandidates(boundingRects);
+
+      // All the characters.
+      List<Rectangle> allCharacters = new ArrayList<Rectangle>(boundingRects);
+
+      // Characters minus furigana.
+      List<Rectangle> fullCharacters = new ArrayList<Rectangle>(boundingRects);
+      fullCharacters.removeAll(furiganaCandidates);
+
+      // Map a characters index to the furigana associated with it.
+      Map<Rectangle, List<Rectangle>> furiganaMapping = new HashMap<Rectangle, List<Rectangle>>();
+      // Note(eriq): This does not cover all combinations because failed candidates will
+      //  get added back into the full pool.
+      for (Rectangle candidate : furiganaCandidates) {
+         // If the candidate is really close to another character, then attach it.
+         // TODO(eriq): This only considers vertical.
+         Rectangle closest = getMostVerticalOverlapping(candidate, fullCharacters);
+
+         if (closest == null) {
+            // Add the failed candidate back to the pool.
+            fullCharacters.add(candidate);
+            continue;
+         }
+
+         // Look right of the full character.
+         if (candidate.x - (closest.x + closest.width) < closest.width / 2) {
+            if (!furiganaMapping.containsKey(closest)) {
+               furiganaMapping.put(closest, new ArrayList<Rectangle>());
+            }
+            furiganaMapping.get(closest).add(candidate);
+         } else {
+            // Add the failed candidate back to the pool.
+            fullCharacters.add(candidate);
+         }
+      }
+
+      /*
+      //TEST
+      for (Map.Entry<Integer, List<Rectangle>> furiPair : furiganaMapping.entrySet()) {
+         System.out.println(ImageUtils.asciiImage(image.cropImage(fullCharacters.get(furiPair.getKey().intValue()))));
+         System.out.println("`````````````````");
+         for (Rectangle rect : furiPair.getValue()) {
+            System.out.println(ImageUtils.asciiImage(image.cropImage(rect)));
+            System.out.println(">>>>>>>>>>>>>>>>>");
+         }
+      }
+      */
+
+      // TODO(eriq): HERE.
+      List<Rectangle> ordered = orderCharacters(fullCharacters);
+
+      //TEST
+      return null;
+   }
+
+   /**
+    * Take all the bounding boxes for characters and order them in the proper reading order.
+    * Insert blank images for spaces/breaks.
+    */
+   private static List<Rectangle> orderCharacters(List<Rectangle> charaters) {
+      /*
+      List<List<Rectangle>> stacks = getVerticalStacks(characters);
+
+      List<Rectangle> rtn = new ArrayList<Rectangle>();
+      rtn
+      */
+
+      // Find the vertical stacks (character with vertical overlap).
+      // Order within vertical stacks (top to bottom).
+
+      // Order stacks horizontally.
+      // Ensure no horizontal overlap.
+
+      // Add
+
       // TODO
       return null;
    }
 
    /**
+    * Find the most vertically overlapping rectangle.
+    * Note that the characters DO NOT have to horizontally overlap.
+    * Return null if there are no overlaps.
+    */
+   private static Rectangle getMostVerticalOverlapping(Rectangle target,
+                                                       List<Rectangle> candidates) {
+      int bestOverlap = 0;
+      int bestIndex = -1;
+
+      for (int i = 0; i < candidates.size(); i++) {
+         Rectangle candidate = candidates.get(i);
+
+         int top = Math.max(target.y, candidate.y);
+         int bottom = Math.min(target.y + target.height, candidate.y + candidate.height);
+
+         if (bottom - top > bestOverlap) {
+            bestOverlap = bottom - top;
+            bestIndex = i;
+         }
+      }
+
+      if (bestIndex == -1) {
+         return null;
+      }
+      
+      return candidates.get(bestIndex);
+   }
+
+   /**
+    * Find the character (bounding boxes) of potential furigana.
+    * Do this my looking at the width of the characters.
+    * Any character that is half the size of the median character is a candidate.
+    */
+   private static List<Rectangle> getFuriganaCandidates(List<Rectangle> characters) {
+      List<Rectangle> rtn = new ArrayList<Rectangle>();
+
+      double[] widths = new double[characters.size()];
+      for (int i = 0; i < characters.size(); i++) {
+         widths[i] = characters.get(i).width;
+      }
+
+      // Use median plz.
+      double medianWidth = MathUtils.median(widths);
+
+      for (Rectangle character : characters) {
+         if (character.width < medianWidth / 2.0) {
+            rtn.add(character);
+         }
+      }
+
+      return rtn;
+   }
+
+   /**
     * A container for a "set" of text.
     */
-   // TODO(eriq): Define the types. String and rect won't work.
    // TODO(eriq): Breakout into formal class?
    private static class TextSet {
       /**
-       * The entire set (including any kanji and furigana).
+       * The entire set image (hopefully, the kanji and its covering furigana in the same image).
        */
-      public final String fullText;
+      public final MagickImage fullText;
 
       /**
        * The set without any furigana.
        */
-      public final String noFuriganaText;
+      public final MagickImage[] noFuriganaText;
 
       /**
        * The text with any furigana replacing the kanji it covers.
        */
-      public final String furiganaReplacementText;
+      public final MagickImage[] furiganaReplacementText;
 
       public TextSet(String fullText, String noFuriganaText, String furiganaReplacementText) {
          // TODO

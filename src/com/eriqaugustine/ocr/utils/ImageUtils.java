@@ -47,6 +47,27 @@ public class ImageUtils {
    }
 
    /**
+    * Make a copy of an image.
+    * ImageMagick is pretty sketchy with copies, so dispatch and re-constitute it.
+    */
+   public static MagickImage copyImage(MagickImage baseImage) throws Exception {
+      Dimension baseDimensions = baseImage.getDimension();
+
+      byte[] basePixels = new byte[baseDimensions.width * baseDimensions.height * 3];
+      baseImage.dispatchImage(0, 0,
+                              baseDimensions.width, baseDimensions.height,
+                              "RGB",
+                              basePixels);
+
+      MagickImage newImage = blankImage(baseDimensions.width, baseDimensions.height);
+      newImage.constituteImage(baseDimensions.width, baseDimensions.height,
+                               "RGB",
+                               basePixels);
+
+      return newImage;
+   }
+
+   /**
     * Combine the images into a single image grid.
     * This is intended for characters, so it assumes that all the characters are the same size.
     */

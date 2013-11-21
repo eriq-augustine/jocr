@@ -12,10 +12,10 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -38,7 +38,6 @@ public class BubbleText {
       DOWN
    };
 
-   // TODO(eriq): Order the sets from right to left.
    private List<TextSet> textSets;
 
    /**
@@ -50,6 +49,14 @@ public class BubbleText {
 
       List<Rectangle> setBoundaries = discoverSets(image);
 
+      // Order the sets from RTL.
+      // Doesn't actually matter, but provide some consistency.
+      Collections.sort(setBoundaries, new Comparator<Rectangle>(){
+         public int compare(Rectangle a, Rectangle b) {
+            return b.x - a.x;
+         }
+      });
+
       for (Rectangle setBoundary : setBoundaries) {
          // HACK(eriq): ImageMagick fails when you try to crop a crop, so make a copy.
          MagickImage setImage = ImageUtils.copyImage(image.cropImage(setBoundary));
@@ -57,23 +64,10 @@ public class BubbleText {
          Direction direction = guessDirection(setImage);
          textSets.add(gridBreakup(setImage, direction));
       }
+   }
 
-      //TEST
-      for (TextSet textSet : textSets) {
-         System.out.println("No Furi");
-         for (MagickImage characterImage : textSet.noFuriganaText) {
-            System.out.println(ImageUtils.asciiImage(characterImage));
-            System.out.println("---------------------");
-         }
-
-         System.out.println("Replacement");
-         for (MagickImage characterImage : textSet.furiganaReplacementText) {
-            System.out.println(ImageUtils.asciiImage(characterImage));
-            System.out.println("---------------------");
-         }
-
-         System.out.println("IIIIIIIIIIIIII");
-      }
+   public List<TextSet> getTextSets() {
+      return textSets;
    }
 
    /**
@@ -306,7 +300,8 @@ public class BubbleText {
       List<int[]> rowStripes = findStripes(pixels, dimensions.width, true);
       List<int[]> colStripes = findStripes(pixels, dimensions.width, false);
 
-      List<Rectangle> minimalRects = shrinkStripes(pixels, dimensions.width, rowStripes, colStripes);
+      List<Rectangle> minimalRects = shrinkStripes(pixels, dimensions.width,
+                                                   rowStripes, colStripes);
 
       return minimalRects;
    }
@@ -473,7 +468,8 @@ public class BubbleText {
             if (!furiganaMapping.containsKey(closest)) {
                furiganaMapping.put(closest, new ArrayList<Rectangle>());
             }
-            furiganaMapping.get(closest).add(candidate);
+            furiganaMapping.get(closest).addAll(splitFurigana(image.cropImage(candidate),
+                                                              candidate));
          } else {
             // Add the failed candidate back to the pool.
             fullCharacters.add(candidate);
@@ -483,6 +479,68 @@ public class BubbleText {
       List<Rectangle> ordered = orderCharacters(fullCharacters);
 
       return new TextSet(image, ordered, furiganaMapping);
+   }
+
+   /**
+    * Potentially split a furigana into the individual kana.
+    * Furigana is special because multiple kana will uaually get in the same initial bounds
+    *  (since it is boarderd by a kangi).
+    * In addition, furigana should always (probably) have only one row/col.
+    * Tactic:
+    *  - Assume the the kana will be squareish, and use the width as the potential height.
+    *  - Find the horizontal stripes.
+    *  - Grow the current section starting from the top.
+    *     - On every addition, see if it is better to add the section or not
+    *       (better = closer to desired height).
+    *     - If better, add it. If not, then commit the current one as a kana, and build a new one.
+    * We need to go through all this trouble because of kana like 'こ'.
+    * Note: |furiganaImage| is an image that only contains the furigana's bounds.
+    *  BUT!, |furiganaBounds| is a GLOBAL rectangle that bounds the furigana.
+    *  The return is expected to be a global rectangle, not local to just the furigana.
+    * TODO(eriq): Does not consider direction.
+    */
+   private static List<Rectangle> splitFurigana(MagickImage furiganaImage,
+                                                Rectangle furiganaBounds) throws Exception {
+      List<Rectangle> rtn = new ArrayList<Rectangle>();
+
+      byte[] pixels = Filters.averageChannels(Filters.bwPixels(furiganaImage), 3);
+      Dimension dimensions = furiganaImage.getDimension();
+
+      // Assert that |furiganaImage| is local while |furiganaBounds| is global.
+      assert(dimensions.width == furiganaBounds.width);
+
+      int expectedHeight = dimensions.width;
+
+      List<int[]> rowStripes = findStripes(pixels, dimensions.width, true);
+
+      int currentStart = 0;
+      int currentEnd = 0;
+      while (rowStripes.size() > 0) {
+         int[] currentStripe = rowStripes.remove(0);
+
+         int currentDifference = Math.abs(expectedHeight - (currentEnd - currentStart + 1));
+         int newDifference = Math.abs(expectedHeight - (currentStripe[1] - currentStart + 1));
+
+         if (newDifference < currentDifference) {
+            // Add the current stripe.
+            currentEnd = currentStripe[1];
+         } else {
+            // The kana is done.
+            // Use |furiganaBounds| to offset this rectangle to the global image.
+            rtn.add(new Rectangle(furiganaBounds.x, furiganaBounds.y + currentStart,
+                                  furiganaBounds.width, currentEnd - currentStart + 1));
+
+            currentStart = currentStripe[0];
+            currentEnd = currentStripe[1];
+         }
+      }
+
+      if (currentStart != currentEnd) {
+         rtn.add(new Rectangle(furiganaBounds.x, furiganaBounds.y + currentStart,
+                               furiganaBounds.width, currentEnd - currentStart + 1));
+      }
+
+      return rtn;
    }
 
    /**
@@ -594,7 +652,7 @@ public class BubbleText {
       if (bestIndex == -1) {
          return null;
       }
-      
+
       return candidates.get(bestIndex);
    }
 
@@ -627,7 +685,7 @@ public class BubbleText {
     * A container for a "set" of text.
     */
    // TODO(eriq): Breakout into formal class?
-   private static class TextSet {
+   public static class TextSet {
       /**
        * The entire set image (hopefully, the kanji and its covering furigana in the same image).
        */

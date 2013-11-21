@@ -214,19 +214,25 @@ public class ImageUtils {
          pixels = Filters.averageChannels(pixels, numChannels);
       }
 
-      String rtn = "";
+      // One for each pixel plus newlines.
+      char[] rtn = new char[pixels.length + pixels.length / imageWidth];
+      int numNewlines = 0;
+
       // Make sure to use num values, not max value.
       double conversionRatio = 256.0 / ASCII_PLACEHOLDERS.length;
 
       for (int row = 0; row < pixels.length / imageWidth; row++) {
          for (int col = 0; col < imageWidth; col++) {
             int index = MathUtils.rowColToIndex(row, col, imageWidth);
-            rtn += ASCII_PLACEHOLDERS[(int)((0xFF & pixels[index]) / conversionRatio)];
+            rtn[index + numNewlines] =
+               ASCII_PLACEHOLDERS[(int)((0xFF & pixels[index]) / conversionRatio)];
          }
-         rtn += "\n";
+
+         rtn[(row * imageWidth) + numNewlines] = '\n';
+         numNewlines++;
       }
 
-      return rtn;
+      return new String(rtn);
    }
 
    /**

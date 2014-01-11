@@ -12,6 +12,7 @@ import java.util.List;
 
 /**
  * Namespace for images that only contain text.
+ * TODO(eriq): This class is deprecated. To be replaced by BubbleText.
  */
 public class TextImage {
    private static final double STRIPE_VARIANCE = 0.35;

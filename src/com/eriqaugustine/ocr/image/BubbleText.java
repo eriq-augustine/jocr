@@ -43,6 +43,7 @@ public class BubbleText {
    /**
     * Extract the text-parts (not ocr) from |image|.
     * |image| should be the inner portion of a bubble and only contain text.
+    * TODO(eriq): This should be static.
     */
    public BubbleText(MagickImage image) throws Exception {
       textSets = new ArrayList<TextSet>();

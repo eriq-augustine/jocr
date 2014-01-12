@@ -5,6 +5,7 @@ import com.eriqaugustine.ocr.image.TextImage;
 import com.eriqaugustine.ocr.pdc.PDCClassifier;
 
 import com.eriqaugustine.ocr.utils.CharacterUtils;
+import com.eriqaugustine.ocr.utils.FontUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 
 import com.eriqaugustine.ocr.utils.Props;
@@ -21,12 +22,14 @@ public class PDCTest {
    }
 
    public static void pdcTest() throws Exception {
+      FontUtils.registerLocalFonts();
+
       String alphabet = Props.getString("HIRAGANA");
 
       PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
                                                //  alphabet, false, 1);
                                                alphabet, true, 1,
-                                               new String[]{CharacterUtils.DEFAULT_FONT_FAMILY});
+                                             new String[]{CharacterUtils.DEFAULT_FONT_FAMILY});
 
       // Not exactly hiragana.
       String characters = "あいうえおかきくけこさしすせそたちつてとなにぬねの" +

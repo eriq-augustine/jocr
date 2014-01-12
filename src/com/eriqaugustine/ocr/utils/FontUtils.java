@@ -46,9 +46,10 @@ public class FontUtils {
 
       String[] fontPaths = getLocalFontPaths();
       for (String fontPath : fontPaths) {
-         System.out.println(fontPath);
-
          String fontName = getFontName(fontPath);
+
+         System.out.println(fontPath + " : " + fontName);
+
          registerFont(fontPath);
          showFontDialog(text, fontName);
       }

@@ -101,7 +101,7 @@ public class FontUtils {
       String[] fontFiles = fontDir.list(new FilenameFilter() {
          public boolean accept(File dir, String name) {
             String lName = name.toLowerCase();
-            return lName.endsWith(".ttf") || lName.endsWith(".otf");
+            return lName.endsWith(".ttf") || lName.endsWith(".otf") || lName.endsWith(".ttc");
          }
       });
 

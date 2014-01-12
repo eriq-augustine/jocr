@@ -149,7 +149,7 @@ public class FontUtils {
 
          return loadSuccess;
       } catch (Exception ex) {
-         logger.error("Unable to register font.", ex);
+         logger.error("Unable to register font at: " + fontPath, ex);
          return false;
       }
    }

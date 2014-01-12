@@ -36,22 +36,33 @@ public class FontUtils {
    };
 
    public static void main(String[] args) {
+      if (args.length != 1) {
+         System.out.println(
+            "USAGE: java FontUtils <OPERATION>\n" +
+            "Available operations: available, dialog");
+         return;
+      }
+
       registerLocalFonts();
 
-      String text = "アンタにこのセンスは わからないわ";
+      if (args[0].equals("available")) {
+         printAvailableFonts();
+      } else if (args[0].equals("dialog")) {
+         String text = "アンタにこのセンスは わからないわ";
 
-      // for (String font : FONTS) {
-      //    showFontDialog(String.format("%s:\n%s", font, text), font);
-      // }
+         // for (String font : FONTS) {
+         //    showFontDialog(String.format("%s:\n%s", font, text), font);
+         // }
 
-      String[] fontPaths = getLocalFontPaths();
-      for (String fontPath : fontPaths) {
-         String fontName = getFontName(fontPath);
+         String[] fontPaths = getLocalFontPaths();
+         for (String fontPath : fontPaths) {
+            String fontName = getFontName(fontPath);
 
-         System.out.println(fontPath + " : " + fontName);
+            System.out.println(fontPath + " : " + fontName);
 
-         registerFont(fontPath);
-         showFontDialog(text, fontName);
+            registerFont(fontPath);
+            showFontDialog(text, fontName);
+         }
       }
    }
 

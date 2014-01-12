@@ -141,7 +141,13 @@ public class FontUtils {
    public static boolean registerFont(String fontPath) {
       try {
          GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-         return ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File(fontPath)));
+         boolean loadSuccess = ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File(fontPath)));
+
+         if (!loadSuccess) {
+            logger.warn("Failed to load font at: " + fontPath);
+         }
+
+         return loadSuccess;
       } catch (Exception ex) {
          logger.error("Unable to register font.", ex);
          return false;

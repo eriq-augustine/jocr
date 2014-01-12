@@ -58,14 +58,11 @@ public class Test {
       //multiFontGenTest();
       //imageBreakdown();
       //densityComparisonTest();
-      //pdcTest();
       //gridBreakupTest();
       //translateTest();
-      //splitImage();
       //volumeFillTest();
       //bubbleTrainingTest();
       //loggingTest();
-      //imageMagickBaseTest();
    }
 
    // Just do the most base image magick functionality. Read in and then write an image.

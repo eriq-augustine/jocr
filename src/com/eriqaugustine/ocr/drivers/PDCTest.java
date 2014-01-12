@@ -13,7 +13,7 @@ import magick.ImageInfo;
 import magick.MagickImage;
 
 /**
- * A general testing driver.
+ * A test to see how PDC is doing on a simple test set.
  */
 public class PDCTest {
    public static void main(String[] args) throws Exception {

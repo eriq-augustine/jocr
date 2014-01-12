@@ -6,6 +6,9 @@ import com.eriqaugustine.ocr.utils.MathUtils;
 
 import magick.MagickImage;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.awt.Dimension;
 import java.awt.Rectangle;
 
@@ -33,6 +36,8 @@ import java.util.Set;
  *  (both kanji and kana).
  */
 public class BubbleText {
+   private static Logger logger = LogManager.getLogger(BubbleText.class.getName());
+
    private enum Direction {
       LTR,
       DOWN
@@ -43,9 +48,8 @@ public class BubbleText {
    /**
     * Extract the text-parts (not ocr) from |image|.
     * |image| should be the inner portion of a bubble and only contain text.
-    * TODO(eriq): This should be static.
     */
-   public BubbleText(MagickImage image) throws Exception {
+   private BubbleText(MagickImage image) throws Exception {
       textSets = new ArrayList<TextSet>();
 
       List<Rectangle> setBoundaries = discoverSets(image);
@@ -64,6 +68,17 @@ public class BubbleText {
 
          Direction direction = guessDirection(setImage);
          textSets.add(gridBreakup(setImage, direction));
+      }
+   }
+
+   // The public interface to get a BubbleText.
+   public static BubbleText constructBubbleText(MagickImage image) {
+      try {
+         BubbleText text = new BubbleText(image);
+         return text;
+      } catch (Exception ex) {
+         logger.error("Unable to construct a BubbleText.", ex);
+         return null;
       }
    }
 

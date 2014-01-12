@@ -33,7 +33,11 @@ public class BubbleTextTest {
       ImageInfo info = new ImageInfo(path);
       MagickImage image = new MagickImage(info);
 
-      BubbleText text = new BubbleText(image);
+      BubbleText text = BubbleText.constructBubbleText(image);
+      if (text == null) {
+         System.err.println("Could not construct BubbleText.");
+         return;
+      }
 
       for (int i = 0; i < text.getTextSets().size(); i++) {
          BubbleText.TextSet textSet = text.getTextSets().get(i);

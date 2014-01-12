@@ -60,7 +60,6 @@ public class Test {
       //densityComparisonTest();
       //pdcTest();
       //gridBreakupTest();
-      //characterBreakupTest();
       //translateTest();
       //splitImage();
       //volumeFillTest();
@@ -113,21 +112,6 @@ public class Test {
       }
 
       System.out.println(matrix.fullToString());
-   }
-
-   public static void splitImage() throws Exception {
-      String outDirectory = FileUtils.itterationDir("out", "splitImage");
-
-      // ImageInfo info = new ImageInfo("training/kana/hiragana.png");
-      ImageInfo info = new ImageInfo("testImages/katakana.png");
-      MagickImage baseImage = new MagickImage(info);
-
-      List<MagickImage> characterImages = TextImage.characterBreakup(baseImage);
-      for (int i = 0; i < characterImages.size(); i++) {
-         MagickImage image = characterImages.get(i);
-         image.setFileName(String.format("%s/%03d-breakup.png", outDirectory, i));
-         image.writeImage(info);
-      }
    }
 
    public static void volumeFillTest() throws Exception {
@@ -197,34 +181,6 @@ public class Test {
 
       int count = testFiles.length;
       System.err.println("Hits: " + hits + " / " + count + " (" + ((double)hits / count) + ")");
-   }
-
-   public static void characterBreakupTest() throws Exception {
-      String alphabet = " " + HIRAGANA + KATAKANA;
-
-      String outDirectory = FileUtils.itterationDir("out", "characterBreakup");
-
-      // ImageInfo info = new ImageInfo("testImages/2Text.png");
-      // ImageInfo info = new ImageInfo("testImages/1Text.png");
-      ImageInfo info = new ImageInfo("testImages/partHiragana.png");
-      // ImageInfo info = new ImageInfo("testImages/2ColVertical.png");
-      // ImageInfo info = new ImageInfo("testImages/2ColVerticalMissing.png");
-      MagickImage baseImage = new MagickImage(info);
-
-      List<MagickImage> characterImages = TextImage.characterBreakup(baseImage);
-      for (int i = 0; i < characterImages.size(); i++) {
-         MagickImage characterImage = characterImages.get(i);
-
-         characterImage.setFileName(String.format("%s/char-%02d.png",
-                                                  outDirectory,
-                                                  i));
-         characterImage.writeImage(new ImageInfo());
-
-         /*
-         String prediction = classy.classify(gridTextImage);
-         System.err.println(String.format("(%d, %d): %s", row, col, prediction));
-         */
-      }
    }
 
    public static void gridBreakupTest() throws Exception {

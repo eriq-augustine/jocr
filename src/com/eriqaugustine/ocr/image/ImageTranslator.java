@@ -46,9 +46,18 @@ public class ImageTranslator {
       for (BubbleDetection.BubbleInfo bubble : bubbles) {
          String text = "";
 
-         List<MagickImage> characterImages = TextImage.characterBreakup(bubble.image);
-         for (MagickImage image : characterImages) {
-            text += classy.classify(image);
+         BubbleText bubbleText = BubbleText.constructBubbleText(bubble.image);
+         if (bubbleText == null) {
+            // TODO(eriq): Add a metaword, or some indication of failure?
+            continue;
+         }
+
+         for (BubbleText.TextSet textSet : bubbleText.getTextSets()) {
+            for (MagickImage image : textSet.furiganaReplacementText) {
+               text += classy.classify(image);
+            }
+
+            text += " ";
          }
 
          logger.debug(text.trim());

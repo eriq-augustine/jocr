@@ -23,8 +23,9 @@ public class GenerateFontSheet {
          return;
       }
 
+      FontUtils.registerLocalFonts();
+
       if (args[0].equals("-")) {
-         FontUtils.registerLocalFonts();
          String[] fontNames = FontUtils.getLocalFontNames();
          for (String fontName : fontNames) {
             writeFontSheet(fontName, args[1] + File.separator + fontName + ".png");

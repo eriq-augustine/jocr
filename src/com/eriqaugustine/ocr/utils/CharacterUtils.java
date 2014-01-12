@@ -11,7 +11,7 @@ import java.awt.GraphicsEnvironment;
  * Utilities for character-based operations.
  */
 public class CharacterUtils {
-   public static final String DEFAULT_FONT_FAMILY = "RyuminStd-Bold-KS";
+   public static final String DEFAULT_FONT_FAMILY = "HGMinchoB";
 
    public static final int DEFAULT_FONT_SIZE = 128;
 

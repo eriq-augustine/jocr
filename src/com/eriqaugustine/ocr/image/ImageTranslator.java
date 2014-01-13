@@ -4,8 +4,6 @@ import com.eriqaugustine.ocr.pdc.PDCClassifier;
 import com.eriqaugustine.ocr.translate.Translator;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 
-import magick.MagickImage;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,7 +38,7 @@ public class ImageTranslator {
       trans = new Translator("ja", "en");
    }
 
-   public MagickImage translate(MagickImage baseImage) throws Exception {
+   public WrapImage translate(WrapImage baseImage) {
       BubbleDetection.BubbleInfo[] bubbles = BubbleDetection.extractBubblesWithInfo(baseImage);
 
       for (BubbleDetection.BubbleInfo bubble : bubbles) {
@@ -53,7 +51,7 @@ public class ImageTranslator {
          }
 
          for (BubbleText.TextSet textSet : bubbleText.getTextSets()) {
-            for (MagickImage image : textSet.furiganaReplacementText) {
+            for (WrapImage image : textSet.furiganaReplacementText) {
                text += classy.classify(image);
             }
 
@@ -64,8 +62,8 @@ public class ImageTranslator {
 
          String translation = trans.translate(text.trim());
 
-         MagickImage transBubble = ImageUtils.generateString(translation, false,
-                                                             bubble.width, bubble.height);
+         WrapImage transBubble = WrapImage.getStringImage(translation, false,
+                                                          bubble.width, bubble.height);
          baseImage = ImageUtils.overlayImage(baseImage, transBubble,
                                              bubble.startRow, bubble.startCol);
       }

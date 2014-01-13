@@ -60,8 +60,7 @@ public class Props {
       PropType prop = props.get(key);
 
       if (prop == null || !prop.isString()) {
-         logger.warn("Tried to get a property that does not exist: {}", key);
-         return null;
+         throw new PropDoesNotExistException(key);
       }
 
       return ((StringProp)prop).data;
@@ -103,6 +102,16 @@ public class Props {
       return Integer.parseInt(val);
    }
 
+   public static int getInt(String key) {
+      String val = getString(key);
+
+      if (val == null) {
+         throw new PropDoesNotExistException(key);
+      }
+
+      return Integer.parseInt(val);
+   }
+
    /**
     * Get a double value, or a default value if key is not in the properties.
     *
@@ -116,6 +125,16 @@ public class Props {
 
       if (val == null) {
          return defaultValue;
+      }
+
+      return Double.parseDouble(val);
+   }
+
+   public static double getDouble(String key) {
+      String val = getString(key);
+
+      if (val == null) {
+         throw new PropDoesNotExistException(key);
       }
 
       return Double.parseDouble(val);
@@ -136,6 +155,16 @@ public class Props {
 
       if (val == null) {
          return defaultValue;
+      }
+
+      return Boolean.parseBoolean(val);
+   }
+
+   public static boolean getBoolean(String key) {
+      String val = getString(key);
+
+      if (val == null) {
+         throw new PropDoesNotExistException(key);
       }
 
       return Boolean.parseBoolean(val);
@@ -258,6 +287,13 @@ public class Props {
       public ListProp(List<String> data) {
          super(false);
          this.data = data;
+      }
+   }
+
+   @SuppressWarnings("serial")
+   private static class PropDoesNotExistException extends RuntimeException {
+      public PropDoesNotExistException(String message) {
+         super(message);
       }
    }
 }

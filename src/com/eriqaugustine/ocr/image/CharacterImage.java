@@ -1,11 +1,9 @@
 package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.utils.CharacterUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.ListUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
-
-import magick.MagickImage;
+import com.eriqaugustine.ocr.utils.Props;
 
 import java.awt.Dimension;
 import java.util.ArrayList;
@@ -18,6 +16,7 @@ import java.util.Set;
  */
 public class CharacterImage {
    private static final int DEFAULT_POINT_SIZE = 2;
+
    private static final double DEFAULT_POINT_DENSITY = 0.75;
 
    private static final double DEFAULT_OVERLAP_PERCENT = 0.50;
@@ -363,18 +362,17 @@ public class CharacterImage {
     * Note: Because pixels are atomic, some pixels on the right and bottom edges may be lost.
     *  The alternative to losing pixels would be to have uneven regions.
     */
-   public static double[][] getDensityMap(MagickImage image,
+   public static double[][] getDensityMap(WrapImage image,
                                           int rows, int cols,
-                                          int whiteThreshold) throws Exception {
+                                          int whiteThreshold) {
       assert(rows > 0 && cols > 0);
 
       double[][] densityMap = new double[rows][cols];
 
-      Dimension dimensions = image.getDimension();
-      byte[] pixels = Filters.averageChannels(Filters.bwPixels(image), 3);
+      boolean[] pixels = image.getDiscretePixels();
 
-      int rowDelta = dimensions.height / rows;
-      int colDelta = dimensions.width / cols;
+      int rowDelta = image.height() / rows;
+      int colDelta = image.width() / cols;
 
       if (rowDelta == 0 || colDelta == 0) {
          return null;
@@ -383,7 +381,7 @@ public class CharacterImage {
       for (int row = 0; row < rows; row++) {
          for (int col = 0; col < cols; col++) {
             densityMap[row][col] =
-               ImageUtils.density(pixels, dimensions.width,
+               ImageUtils.density(pixels, image.width(),
                                   row * rowDelta, rowDelta,
                                   col * colDelta, colDelta,
                                   whiteThreshold);
@@ -393,38 +391,34 @@ public class CharacterImage {
       return densityMap;
    }
 
-   public static double[][] getDensityMap(MagickImage image,
-                                          int rows, int cols) throws Exception {
-      return getDensityMap(image, rows, cols, ImageUtils.DEFAULT_WHITE_THRESHOLD);
+   public static double[][] getDensityMap(WrapImage image,
+                                          int rows, int cols) {
+      return getDensityMap(image, rows, cols, Props.getInt("DEFAULT_WHITE_THRESHOLD"));
    }
 
    /**
     * Generate an image for every character in the string.
     * The index of the entry represents the character associated with it.
     */
-   public static MagickImage[] generateFontImages(String characters,
-                                                  String font) throws Exception {
-      MagickImage[] images = new MagickImage[characters.length()];
+   public static WrapImage[] generateFontImages(String characters, String font) {
+      WrapImage[] images = new WrapImage[characters.length()];
 
       for (int i = 0; i < characters.length(); i++) {
-         images[i] = CharacterUtils.generateCharacter(characters.charAt(i),
-                                                      true,
-                                                      font);
+         images[i] = WrapImage.getCharacterImage(characters.charAt(i), true, font);
       }
 
       return images;
    }
 
-   public static MagickImage[] generateFontImages(String characters) throws Exception {
-      return generateFontImages(characters, CharacterUtils.DEFAULT_FONT_FAMILY);
+   public static WrapImage[] generateFontImages(String characters) {
+      return generateFontImages(characters, Props.getString("DEFAULT_FONT_FAMILY", "IPAGothic"));
    }
 
-   public static MagickImage[] generateFontImages(String characters,
-                                                  String[] fonts) throws Exception {
-      MagickImage[] rtn = new MagickImage[characters.length() * fonts.length];
+   public static WrapImage[] generateFontImages(String characters, String[] fonts) {
+      WrapImage[] rtn = new WrapImage[characters.length() * fonts.length];
 
       for (int i = 0; i < fonts.length; i++) {
-         MagickImage[] images = generateFontImages(characters, fonts[i]);
+         WrapImage[] images = generateFontImages(characters, fonts[i]);
          ListUtils.fill(rtn, images, i * characters.length());
       }
 
@@ -436,8 +430,8 @@ public class CharacterImage {
     */
    public static double[][][] getFontDensityMaps(String characters,
                                                  int mapRows,
-                                                 int mapCols) throws Exception {
-      MagickImage[] characterImages = generateFontImages(characters);
+                                                 int mapCols) {
+      WrapImage[] characterImages = generateFontImages(characters);
       double[][][] maps = new double[characterImages.length][][];
 
       for (int i = 0; i < characterImages.length; i++) {

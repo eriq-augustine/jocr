@@ -1,15 +1,12 @@
 package com.eriqaugustine.ocr.image;
 
+import static com.eriqaugustine.ocr.image.WrapImage.Pixel;
 import com.eriqaugustine.ocr.math.BinaryConfusionMatrix;
 import com.eriqaugustine.ocr.utils.ColorUtils;
 import com.eriqaugustine.ocr.utils.FileUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
-import magick.ImageInfo;
-import magick.MagickImage;
-
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Point;
 import java.io.File;
 import java.util.ArrayList;
@@ -60,13 +57,12 @@ public class BubbleDetection {
     * Note: The training sets are constructed so that there are no two valid bubbles inside
     *  of a single training bounding box. So, if there are multiples, all but one are FP.
     */
-   public static MagickImage bubbleFillTest(String imageFile,
-                                            FileUtils.BubbleTrainingSet trainingData,
-                                            BinaryConfusionMatrix matrix) throws Exception {
+   public static WrapImage bubbleFillTest(String imageFile,
+                                          FileUtils.BubbleTrainingSet trainingData,
+                                          BinaryConfusionMatrix matrix) {
       String baseImageName = new File(imageFile).getName();
 
-      ImageInfo imageInfo = new ImageInfo(imageFile);
-      MagickImage image = new MagickImage(imageInfo);
+      WrapImage image = WrapImage.getImageFromFile(imageFile);
 
       List<Blob> bubbles = getBubbles(image);
 
@@ -112,19 +108,16 @@ public class BubbleDetection {
    /**
     * Get the raw blobs that represent the bubbles.
     */
-   public static List<Blob> getBubbles(MagickImage image) throws Exception {
-      image = image.blurImage(3, 1);
-      image = Filters.bw(image, 200);
+   public static List<Blob> getBubbles(WrapImage image) {
+      image = image.copy();
+      image.blur(3, 1);
 
-      byte[] rawPixels = Filters.averageChannels(Filters.bwPixels(image, 200), 3);
+      boolean[] rawPixels = image.getDiscretePixels(200);
 
-      image = image.edgeImage(3);
+      image.edge(3);
+      boolean[] edgedPixels = image.getDiscretePixels();
 
-      Dimension dimensions = image.getDimension();
-
-      byte[] edgedPixels = Filters.averageChannels(Filters.bwPixels(image), 3);
-
-      List<Blob> blobs = getBubbles(dimensions.width, edgedPixels, rawPixels);
+      List<Blob> blobs = getBubbles(image.width(), edgedPixels, rawPixels);
 
       return blobs;
    }
@@ -132,58 +125,45 @@ public class BubbleDetection {
    /**
     * Extract the pixels for each bubble and convert them to an image.
     */
-   public static MagickImage[] extractBubbles(MagickImage image) throws Exception {
+   public static WrapImage[] extractBubbles(WrapImage image) {
       BubbleInfo[] bubbles = extractBubblesWithInfo(image);
-      MagickImage[] images = new MagickImage[bubbles.length];
+      WrapImage[] images = new WrapImage[bubbles.length];
       for (int i = 0; i < bubbles.length; i++) {
          images[i] = bubbles[i].image;
       }
       return images;
    }
 
-   public static BubbleInfo[] extractBubblesWithInfo(MagickImage image) throws Exception {
+   public static BubbleInfo[] extractBubblesWithInfo(WrapImage image) {
       List<Blob> bubbles = getBubbles(image);
 
-      Dimension dimensions = image.getDimension();
-      byte[] pixels = new byte[dimensions.width * dimensions.height * 3];
-
-      image.dispatchImage(0, 0,
-                          dimensions.width, dimensions.height,
-                          "RGB",
-                          pixels);
+      Pixel[] pixels = image.getPixels();
 
       BubbleInfo[] infos = new BubbleInfo[bubbles.size()];
 
       int count = 0;
       for (Blob blob : bubbles) {
-         byte[] blobPixels = new byte[blob.getBoundingSize() * 3];
+         Pixel[] blobPixels = new Pixel[blob.getBoundingSize()];
          Map<Integer, int[]> bounds = blob.getBoundaries();
 
          int width = blob.getBoundingWidth();
 
          for (int row = blob.getMinRow(); row <= blob.getMaxRow(); row++) {
             for (int col = blob.getMinCol(); col <= blob.getMaxCol(); col++) {
-               int baseImageIndex = 3 * (row * dimensions.width + col);
-               int baseBlobIndex = 3 *
-                                   ((row - blob.getMinRow()) * width + (col - blob.getMinCol()));
+               int baseImageIndex = row * image.width() + col;
+               int baseBlobIndex = (row - blob.getMinRow()) * width + (col - blob.getMinCol());
 
                if (col < bounds.get(row)[0] || col > bounds.get(row)[1]) {
-                  blobPixels[baseBlobIndex + 0] = (byte)0xFF;
-                  blobPixels[baseBlobIndex + 1] = (byte)0xFF;
-                  blobPixels[baseBlobIndex + 2] = (byte)0xFF;
+                  blobPixels[baseBlobIndex] = new Pixel();
                } else {
-                  blobPixels[baseBlobIndex + 0] = pixels[baseImageIndex + 0];
-                  blobPixels[baseBlobIndex + 1] = pixels[baseImageIndex + 1];
-                  blobPixels[baseBlobIndex + 2] = pixels[baseImageIndex + 2];
+                  blobPixels[baseBlobIndex] = new Pixel(pixels[baseImageIndex]);
                }
             }
          }
 
-         MagickImage blobImage = new MagickImage();
-         blobImage.constituteImage(blob.getBoundingWidth(),
-                                   blob.getBoundingHeight(),
-                                   "RGB",
-                                   blobPixels);
+         WrapImage blobImage = WrapImage.getImageFromPixels(blobPixels,
+                                                            blob.getBoundingWidth(),
+                                                            blob.getBoundingHeight());
 
          infos[count++] = new BubbleInfo(blob.getMinRow(), blob.getMinCol(),
                                          blob.getBoundingWidth(), blob.getBoundingHeight(),
@@ -199,28 +179,18 @@ public class BubbleDetection {
     *  only two colors, true black and true white.
     * White pixels are edges.
     */
-   public static MagickImage fillBubbles(MagickImage image) throws Exception {
+   public static WrapImage fillBubbles(WrapImage image) {
       List<Blob> bubbles = getBubbles(image);
       return colorBubbles(image, bubbles);
    }
 
-   public static MagickImage colorBubbles(MagickImage image,
-                                          List<Blob> bubbles) throws Exception {
-      Dimension dimensions = image.getDimension();
-      byte[] pixels = new byte[dimensions.width * dimensions.height * 3];
-
-      image.dispatchImage(0, 0,
-                          dimensions.width, dimensions.height,
-                          "RGB",
-                          pixels);
+   public static WrapImage colorBubbles(WrapImage image, List<Blob> bubbles) {
+      Pixel[] pixels = image.getPixels();
 
       // Fill the blobs.
       fillBlobs(pixels, bubbles, null);
 
-      MagickImage newImage = new MagickImage();
-      newImage.constituteImage(dimensions.width, dimensions.height,
-                               "RGB",
-                               pixels);
+      WrapImage newImage = WrapImage.getImageFromPixels(pixels, image.width(), image.height());
 
       return newImage;
    }
@@ -228,24 +198,22 @@ public class BubbleDetection {
    /**
     * Modify |pixels| to fill in all the blobs as red.
     */
-   private static void fillBlobs(byte[] pixels, List<Blob> blobs) {
+   private static void fillBlobs(Pixel[] pixels, List<Blob> blobs) {
       fillBlobs(pixels, blobs, new Color(255, 0, 0));
    }
 
    /**
     * If |color| is null, then pick a different colot every time.
     */
-   private static void fillBlobs(byte[] pixels, List<Blob> blobs, Color color) {
+   private static void fillBlobs(Pixel[] pixels, List<Blob> blobs, Color color) {
       for (Blob blob : blobs) {
          Color activeColor = color != null ? color : ColorUtils.nextColor();
 
          for (Integer index : blob.getPoints()) {
-            int pixelIndex = index.intValue() * 3;
+            int pixelIndex = index.intValue();
 
             // Mark the blobs as red.
-            pixels[pixelIndex + 0] = (byte)activeColor.getRed();
-            pixels[pixelIndex + 1] = (byte)activeColor.getGreen();
-            pixels[pixelIndex + 2] = (byte)activeColor.getBlue();
+            pixels[pixelIndex] = new Pixel(activeColor);
          }
       }
    }
@@ -253,7 +221,7 @@ public class BubbleDetection {
    /**
     * Get all the blobs.
     */
-   private static List<Blob> getRawBlobs(int width, byte[] pixels) {
+   private static List<Blob> getRawBlobs(int width, boolean[] pixels) {
       List<Blob> allBlobs = new ArrayList<Blob>();
 
       boolean[] visited = new boolean[pixels.length];
@@ -266,7 +234,7 @@ public class BubbleDetection {
 
       // Fill the visited pixels with edges.
       for (int i = 0; i < visited.length; i++) {
-         if ((0xFF & pixels[i]) == 255) {
+         if (!pixels[i]) {
             visited[i] = true;
          }
       }
@@ -316,8 +284,7 @@ public class BubbleDetection {
    /**
     * Get the bubbles (callouts with text).
     */
-   private static List<Blob> getBubbles(int width, byte[] edgedPixels,
-                                        byte[] rawPixels) {
+   private static List<Blob> getBubbles(int width, boolean[] edgedPixels, boolean[] rawPixels) {
       assert(edgedPixels.length == rawPixels.length);
 
       List<Blob> allBlobs = getRawBlobs(width, edgedPixels);
@@ -345,7 +312,7 @@ public class BubbleDetection {
       for (Blob blob : allBlobs) {
          int blackCount = 0;
          for (Integer point : blob.getPoints()) {
-            if (rawPixels[point.intValue()] == 0) {
+            if (rawPixels[point.intValue()]) {
                blackCount++;
             }
          }
@@ -410,7 +377,7 @@ public class BubbleDetection {
     */
    private static void resolveParentage(List<Blob> kids,
                                         List<Blob> possibleParents,
-                                        byte[] edgedPixels,
+                                        boolean[] edgedPixels,
                                         int imageWidth) {
       for (Blob kidCandidate : kids) {
          int[][] outline = kidCandidate.approximateOutline();
@@ -429,7 +396,7 @@ public class BubbleDetection {
 
                // Move out from the outline.
                while (inBoundsAdjacent(base, index, imageWidth, edgedPixels.length)) {
-                  if (edgedPixels[index] == 0) {
+                  if (edgedPixels[index]) {
                      // Found another blob.
                      Blob blob = getBlobWithPixel(possibleParents, index);
 
@@ -533,9 +500,9 @@ public class BubbleDetection {
       public final int startCol;
       public final int width;
       public final int height;
-      public final MagickImage image;
+      public final WrapImage image;
 
-      public BubbleInfo(int startRow, int startCol, int width, int height, MagickImage image) {
+      public BubbleInfo(int startRow, int startCol, int width, int height, WrapImage image) {
          this.startRow = startRow;
          this.startCol = startCol;
          this.width = width;

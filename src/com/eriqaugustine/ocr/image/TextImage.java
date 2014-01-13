@@ -3,8 +3,6 @@ package com.eriqaugustine.ocr.image;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
-import magick.MagickImage;
-
 import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.util.ArrayList;
@@ -24,25 +22,23 @@ public class TextImage {
     * Therefore, the image can be broken up into a grid and each position
     *  will represent a character, puncuation, or space.
     */
-   public static MagickImage[][] gridBreakup(MagickImage image) throws Exception {
-      MagickImage shrinkImage = ImageUtils.shrinkImage(image);
-      Dimension dimensions = shrinkImage.getDimension();
+   public static WrapImage[][] gridBreakup(WrapImage image) {
+      WrapImage shrinkImage = image.shrink();
 
-      if (dimensions.width == 0 && dimensions.height == 0) {
-         return new MagickImage[0][0];
+      if (image.isEmpty()) {
+         return new WrapImage[0][0];
       }
 
-      // Note: bw pixels pulls out three values for each pixel.
-      byte[] pixels = Filters.averageChannels(Filters.bwPixels(shrinkImage), 3);
+      byte[] pixels = image.getAveragePixels();
 
       // [[rowStart, rowEnd], ...]
-      List<int[]> rows = findStripes(pixels, dimensions.width, true);
-      List<int[]> cols = findStripes(pixels, dimensions.width, false);
+      List<int[]> rows = findStripes(pixels, image.width(), true);
+      List<int[]> cols = findStripes(pixels, image.width(), false);
 
       rows = normalizeStripes(rows);
       cols = normalizeStripes(cols);
 
-      MagickImage[][] images = new MagickImage[rows.size()][cols.size()];
+      WrapImage[][] images = new WrapImage[rows.size()][cols.size()];
 
       for (int i = 0; i < rows.size(); i++) {
          for (int j = 0; j < cols.size(); j++) {
@@ -50,7 +46,7 @@ public class TextImage {
                                            rows.get(i)[0],
                                            cols.get(j)[1] - cols.get(j)[0] + 1,
                                            rows.get(i)[1] - rows.get(i)[0] + 1);
-            images[i][j] = ImageUtils.shrinkImage(shrinkImage.cropImage(rect));
+            images[i][j] = image.crop(rect).shrink();
          }
       }
 

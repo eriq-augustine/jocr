@@ -4,12 +4,9 @@ import com.eriqaugustine.ocr.utils.GeoUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
-import magick.MagickImage;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.awt.Dimension;
 import java.awt.Rectangle;
 
 import java.util.ArrayList;
@@ -49,7 +46,7 @@ public class BubbleText {
     * Extract the text-parts (not ocr) from |image|.
     * |image| should be the inner portion of a bubble and only contain text.
     */
-   private BubbleText(MagickImage image) throws Exception {
+   private BubbleText(WrapImage image) {
       textSets = new ArrayList<TextSet>();
 
       List<Rectangle> setBoundaries = discoverSets(image);
@@ -63,8 +60,7 @@ public class BubbleText {
       });
 
       for (Rectangle setBoundary : setBoundaries) {
-         // HACK(eriq): ImageMagick fails when you try to crop a crop, so make a copy.
-         MagickImage setImage = ImageUtils.copyImage(image.cropImage(setBoundary));
+         WrapImage setImage = image.crop(setBoundary);
 
          Direction direction = guessDirection(setImage);
          textSets.add(gridBreakup(setImage, direction));
@@ -72,7 +68,7 @@ public class BubbleText {
    }
 
    // The public interface to get a BubbleText.
-   public static BubbleText constructBubbleText(MagickImage image) {
+   public static BubbleText constructBubbleText(WrapImage image) {
       try {
          BubbleText text = new BubbleText(image);
          return text;
@@ -89,16 +85,14 @@ public class BubbleText {
    /**
     * Find the sets of text in the bubble.
     */
-   private static List<Rectangle> discoverSets(MagickImage image) throws Exception {
+   private static List<Rectangle> discoverSets(WrapImage image) {
       // TODO(eriq): Remove noise before set discovery.
-
-      Dimension dimensions = image.getDimension();
 
       // First, find all the bounding boxes for non-whitespace objects (text).
       List<Rectangle> boundingRectangles = findBoundingRectangles(image);
       boolean[] checkedRectangles = new boolean[boundingRectangles.size()];
 
-      int[] boundsMap = mapBounds(dimensions, boundingRectangles);
+      int[] boundsMap = mapBounds(image.width(), image.height(), boundingRectangles);
 
       List<List<Rectangle>> groups = new ArrayList<List<Rectangle>>();
 
@@ -134,7 +128,7 @@ public class BubbleText {
             // Note: Some rectangles can slip through because they are inbetween two other
             //  rectangles. These will get caught and merged later when the bounding
             //  box for each group is negotiated.
-            queue.addAll(getAdjacentRectangles(rect, boundsMap, dimensions.width));
+            queue.addAll(getAdjacentRectangles(rect, boundsMap, image.width()));
          }
 
          groups.add(group);
@@ -282,8 +276,8 @@ public class BubbleText {
     * Map the bounding rectangles onto a map of the image.
     * Each map location will hold -1 for nothing, otherwise the index of the bounding rectangle.
     */
-   private static int[] mapBounds(Dimension dimensions, List<Rectangle> boundingRectangles) {
-      int[] rtn = new int[dimensions.width * dimensions.height];
+   private static int[] mapBounds(int width, int height, List<Rectangle> boundingRectangles) {
+      int[] rtn = new int[width * height];
 
       for (int i = 0; i < rtn.length; i++) {
          rtn[i] = -1;
@@ -296,7 +290,7 @@ public class BubbleText {
             for (int colOffset = 0; colOffset < rect.width; colOffset++) {
                rtn[MathUtils.rowColToIndex(rect.y + rowOffset,
                                            rect.x + colOffset,
-                                           dimensions.width)] = i;
+                                           width)] = i;
             }
          }
       }
@@ -309,15 +303,13 @@ public class BubbleText {
     * Don't try to find adjacent rectangles or do any mergeing.
     * Ideally, this will bound each and every character.
     */
-   private static List<Rectangle> findBoundingRectangles(MagickImage image) throws Exception {
-      byte[] pixels = Filters.averageChannels(Filters.bwPixels(image), 3);
-      Dimension dimensions = image.getDimension();
+   private static List<Rectangle> findBoundingRectangles(WrapImage image) {
+      boolean[] pixels = image.getDiscretePixels();
 
-      List<int[]> rowStripes = findStripes(pixels, dimensions.width, true);
-      List<int[]> colStripes = findStripes(pixels, dimensions.width, false);
+      List<int[]> rowStripes = findStripes(pixels, image.width(), true);
+      List<int[]> colStripes = findStripes(pixels, image.width(), false);
 
-      List<Rectangle> minimalRects = shrinkStripes(pixels, dimensions.width,
-                                                   rowStripes, colStripes);
+      List<Rectangle> minimalRects = shrinkStripes(pixels, image.width(), rowStripes, colStripes);
 
       return minimalRects;
    }
@@ -327,7 +319,8 @@ public class BubbleText {
     * Do the same kind of striping process that findStripes() uses,
     * but only on intersection of stripes.
     */
-   private static List<Rectangle> shrinkStripes(byte[] pixels, int width, List<int[]> rowStripes,
+   private static List<Rectangle> shrinkStripes(boolean[] pixels, int width,
+                                                List<int[]> rowStripes,
                                                 List<int[]> colStripes) {
       List<Rectangle> rtn = new ArrayList<Rectangle>();
 
@@ -350,7 +343,8 @@ public class BubbleText {
     *  But, you are guarenteed that all text will be captured.
     * TODO(eriq): Someday actually find the minimal bounds.
     */
-   private static List<Rectangle> boundText(byte[] pixels, int width, int[] rowStripe,
+   private static List<Rectangle> boundText(boolean[] pixels, int width,
+                                            int[] rowStripe,
                                             int[] colStripe) {
       List<Rectangle> rtn = new ArrayList<Rectangle>();
 
@@ -361,7 +355,7 @@ public class BubbleText {
 
       for (int row = rowStripe[0]; row < rowStripe[1]; row++) {
          for (int col = colStripe[0]; col < colStripe[1]; col++) {
-            if (pixels[MathUtils.rowColToIndex(row, col, width)] == 0) {
+            if (pixels[MathUtils.rowColToIndex(row, col, width)]) {
                if (row < minRow) {
                   minRow = row;
                }
@@ -391,7 +385,7 @@ public class BubbleText {
    /**
     * Find the stripes of non-whitespace.
     */
-   private static List<int[]> findStripes(byte[] pixels, int width, boolean horizontal) {
+   private static List<int[]> findStripes(boolean[] pixels, int width, boolean horizontal) {
       List<int[]> stripes = new ArrayList<int[]>();
 
       int stripeStart = -1;
@@ -406,7 +400,7 @@ public class BubbleText {
             int index = horizontal ? MathUtils.rowColToIndex(outer, inner, width) :
                                      MathUtils.rowColToIndex(inner, outer, width);
 
-            if (pixels[index] == 0) {
+            if (pixels[index]) {
                hasContent = true;
                break;
             }
@@ -433,10 +427,8 @@ public class BubbleText {
     *  (with a significant bias towards vertical).
     * TODO(eriq): This is a pretty naive method.
     */
-   private static Direction guessDirection(MagickImage image) throws Exception {
-      Dimension dimensions = image.getDimension();
-
-      if (dimensions.height * 3 > dimensions.width) {
+   private static Direction guessDirection(WrapImage image) {
+      if (image.height() * 3 > image.width()) {
          return Direction.DOWN;
       }
 
@@ -451,9 +443,8 @@ public class BubbleText {
     *  will represent a character, puncuation, or space.
     * TODO(eriq): This totally ignores direction.
     */
-   private static TextSet gridBreakup(MagickImage image, Direction direction) throws Exception {
+   private static TextSet gridBreakup(WrapImage image, Direction direction) {
       List<Rectangle> boundingRects = findBoundingRectangles(image);
-
 
       List<Rectangle> furiganaCandidates = getFuriganaCandidates(boundingRects);
 
@@ -484,8 +475,7 @@ public class BubbleText {
             if (!furiganaMapping.containsKey(closest)) {
                furiganaMapping.put(closest, new ArrayList<Rectangle>());
             }
-            furiganaMapping.get(closest).addAll(splitFurigana(image.cropImage(candidate),
-                                                              candidate));
+            furiganaMapping.get(closest).addAll(splitFurigana(image.crop(candidate), candidate));
          } else {
             // Add the failed candidate back to the pool.
             fullCharacters.add(candidate);
@@ -515,19 +505,18 @@ public class BubbleText {
     *  The return is expected to be a global rectangle, not local to just the furigana.
     * TODO(eriq): Does not consider direction.
     */
-   private static List<Rectangle> splitFurigana(MagickImage furiganaImage,
-                                                Rectangle furiganaBounds) throws Exception {
+   private static List<Rectangle> splitFurigana(WrapImage furiganaImage,
+                                                Rectangle furiganaBounds) {
       List<Rectangle> rtn = new ArrayList<Rectangle>();
 
-      byte[] pixels = Filters.averageChannels(Filters.bwPixels(furiganaImage), 3);
-      Dimension dimensions = furiganaImage.getDimension();
+      boolean[] pixels = furiganaImage.getDiscretePixels();
 
       // Assert that |furiganaImage| is local while |furiganaBounds| is global.
-      assert(dimensions.width == furiganaBounds.width);
+      assert(furiganaImage.width() == furiganaBounds.width);
 
-      int expectedHeight = dimensions.width;
+      int expectedHeight = furiganaImage.width();
 
-      List<int[]> rowStripes = findStripes(pixels, dimensions.width, true);
+      List<int[]> rowStripes = findStripes(pixels, furiganaImage.width(), true);
 
       int currentStart = 0;
       int currentEnd = 0;
@@ -705,36 +694,36 @@ public class BubbleText {
       /**
        * The entire set image (hopefully, the kanji and its covering furigana in the same image).
        */
-      public final MagickImage baseImage;
+      public final WrapImage baseImage;
 
       /**
        * The set without any furigana.
        */
-      public final List<MagickImage> noFuriganaText;
+      public final List<WrapImage> noFuriganaText;
 
       /**
        * The text with any furigana replacing the kanji it covers.
        */
-      public final List<MagickImage> furiganaReplacementText;
+      public final List<WrapImage> furiganaReplacementText;
 
-      public TextSet(MagickImage image,
+      public TextSet(WrapImage image,
                      List<Rectangle> fullText,
-                     Map<Rectangle, List<Rectangle>> furiganaMapping) throws Exception {
-         baseImage = ImageUtils.copyImage(image);
+                     Map<Rectangle, List<Rectangle>> furiganaMapping) {
+         baseImage = image.copy();
 
-         noFuriganaText = new ArrayList<MagickImage>();
+         noFuriganaText = new ArrayList<WrapImage>();
          for (Rectangle rect : fullText) {
-            noFuriganaText.add(baseImage.cropImage(rect));
+            noFuriganaText.add(baseImage.crop(rect));
          }
 
-         furiganaReplacementText = new ArrayList<MagickImage>();
+         furiganaReplacementText = new ArrayList<WrapImage>();
          for (Rectangle rect : fullText) {
             if (furiganaMapping.containsKey(rect)) {
                for (Rectangle furiRect : furiganaMapping.get(rect)) {
-                  furiganaReplacementText.add(baseImage.cropImage(furiRect));
+                  furiganaReplacementText.add(baseImage.crop(furiRect));
                }
             } else {
-               furiganaReplacementText.add(baseImage.cropImage(rect));
+               furiganaReplacementText.add(baseImage.crop(rect));
             }
          }
       }

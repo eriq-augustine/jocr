@@ -2,10 +2,8 @@ package com.eriqaugustine.ocr.drivers;
 
 import com.eriqaugustine.ocr.image.BubbleDetection;
 import com.eriqaugustine.ocr.image.ImageTranslator;
+import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.FileUtils;
-
-import magick.ImageInfo;
-import magick.MagickImage;
 
 /**
  * Translate a single image (page).
@@ -29,18 +27,14 @@ public class ImageTranslationTest {
       ImageTranslator translator = new ImageTranslator(fonts);
 
       for (int i = 0; i < images.length; i++) {
-         ImageInfo info = new ImageInfo(images[i]);
-         MagickImage baseImage = new MagickImage(info);
-         baseImage.setFileName(outDirectory + "/transTest-" + i + "-0-base.png");
-         baseImage.writeImage(new ImageInfo());
+         WrapImage baseImage = WrapImage.getImageFromFile(images[i]);
+         baseImage.write(outDirectory + "/transTest-" + i + "-0-base.png");
 
-         MagickImage bubbles = BubbleDetection.fillBubbles(baseImage);
-         bubbles.setFileName(outDirectory + "/transTest-" + i + "-88-base.png");
-         bubbles.writeImage(info);
+         WrapImage bubbles = BubbleDetection.fillBubbles(baseImage);
+         bubbles.write(outDirectory + "/transTest-" + i + "-88-base.png");
 
-         MagickImage transImage = translator.translate(baseImage);
-         transImage.setFileName(outDirectory + "/transTest-" + i + "-99-trans.png");
-         transImage.writeImage(new ImageInfo());
+         WrapImage transImage = translator.translate(baseImage);
+         transImage.write(outDirectory + "/transTest-" + i + "-99-trans.png");
       }
    }
 }

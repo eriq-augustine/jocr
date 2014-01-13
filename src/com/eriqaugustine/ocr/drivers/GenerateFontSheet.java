@@ -1,12 +1,10 @@
 package com.eriqaugustine.ocr.drivers;
 
 import com.eriqaugustine.ocr.image.CharacterImage;
+import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.FontUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.Props;
-
-import magick.ImageInfo;
-import magick.MagickImage;
 
 import java.io.File;
 
@@ -40,10 +38,9 @@ public class GenerateFontSheet {
 
       String kana = Props.getString("HIRAGANA") + "    " + Props.getString("KATAKANA");
 
-      MagickImage[] images = CharacterImage.generateFontImages(kana, fontName);
+      WrapImage[] images = CharacterImage.generateFontImages(kana, fontName);
 
-      MagickImage sheet = ImageUtils.gridCombine(images, 5);
-      sheet.setFileName(outFile);
-      sheet.writeImage(new ImageInfo());
+      WrapImage sheet = ImageUtils.gridCombine(images, 5);
+      sheet.write(outFile);
    }
 }

@@ -1,11 +1,9 @@
 package com.eriqaugustine.ocr.pdc;
 
-import com.eriqaugustine.ocr.image.Filters;
+import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.ListUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
-
-import magick.MagickImage;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -62,9 +60,11 @@ public final class PDC {
     * Run PDC on an image.
     * |image| must be already be binary.
     */
-   public static PDCInfo pdc(MagickImage baseImage) throws Exception {
-      MagickImage scaleImage = ImageUtils.scaleImage(baseImage, SCALE_SIZE, SCALE_SIZE);
-      boolean[] discretePixels = Filters.discretizePixels(scaleImage);
+   public static PDCInfo pdc(WrapImage image) {
+      image = image.copy();
+      image.scale(SCALE_SIZE, SCALE_SIZE);
+
+      boolean[] discretePixels = image.getDiscretePixels();
 
       List<Integer> peripherals = new ArrayList<Integer>(SCALE_SIZE *
                                                          NUM_CARDINAL_SCAN_DIRECTIONS *
@@ -120,12 +120,11 @@ public final class PDC {
          }
       }
 
-      return new PDCInfo(baseImage, scaleImage,
-                         NUM_LAYERS,
+      return new PDCInfo(image, NUM_LAYERS,
                          lengths, ListUtils.toIntArray(peripherals));
    }
 
-   public static PDCInfo[] pdc(MagickImage[] images) throws Exception {
+   public static PDCInfo[] pdc(WrapImage[] images) {
       PDCInfo[] rtn = new PDCInfo[images.length];
       for (int i = 0; i < images.length; i++) {
          rtn[i] = pdc(images[i]);

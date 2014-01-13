@@ -1,14 +1,23 @@
 package com.eriqaugustine.ocr.image;
 
+import com.eriqaugustine.ocr.utils.MathUtils;
+import com.eriqaugustine.ocr.utils.Props;
+
 import magick.DrawInfo;
 import magick.ImageInfo;
+import magick.MagickException;
 import magick.MagickImage;
 import magick.PixelPacket;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.Color;
 import java.awt.Rectangle;
+import java.awt.Dimension;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A wrapper for whatever image library/representation that we are using.
@@ -16,7 +25,7 @@ import java.awt.Rectangle;
  * This class strives to throw as few errors as possible during normal operations.
  *
  * This class will continually cache the image data in different forms.
- * You can clean it up by calling dump().
+ * You can clean it up by calling clearCache().
  *
  * WrapImages are mutable. In fact, the mutable behavior is strongly encouraged.
  * Most transformation methods will just return the status of the operation.
@@ -27,28 +36,46 @@ import java.awt.Rectangle;
  *
  * Note that the mutable transformation will clear the cached data before the transform starts.
  * Even if it fails, the cache will get cleared.
+ *
+ * When working with discrete pixels, white is nothing (false).
  */
 public class WrapImage {
    private static Logger logger = LogManager.getLogger(WrapImage.class.getName());
 
    private MagickImage internalImage;
 
-   // TODO(eriq): Cache
-   private byte[] cahcePixels;
-   private boolean[] cacheDiscretePixels;
+   private int imageWidth;
+   private int imageHeight;
+
+   private Pixel[] cachePixels;
+   // {<threshold>: discretePixels}
+   private Map<Integer, boolean[]> cacheDiscretePixels;
 
    /**
     * Call the static constructors for access.
     */
    private WrapImage() {
       internalImage = null;
+
+      imageWidth = 0;
+      imageHeight = 0;
+
+      cachePixels = null;
+      cacheDiscretePixels = null;
    }
 
    /**
     * The WrapImage now owns the MagickImage.
     */
-   private WrapImage(MagickImage image) {
+   private WrapImage(MagickImage image) throws MagickException {
       internalImage = image;
+
+      Dimension dimensions = image.getDimension();
+      imageWidth = dimensions.width;
+      imageHeight = dimensions.height;
+
+      cachePixels = null;
+      cacheDiscretePixels = new HashMap<Integer, boolean[]>();
    }
 
    // BEGIN Static contructors.
@@ -56,7 +83,6 @@ public class WrapImage {
    /**
     * Get an image without any content.
     * Any operations on an empty image will return empty variants (empty images, empty arrays, etc).
-    * This is the only way to get an image that will return true from isEmpty().
     */
    public static WrapImage getEmptyImage() {
       return new WrapImage();
@@ -71,56 +97,184 @@ public class WrapImage {
          ImageInfo info = new ImageInfo(filename);
          MagickImage image = new MagickImage(info);
          return new WrapImage(image);
-      } catch (Exception ex) {
+      } catch (MagickException ex) {
          logger.error("Could not load image from file.", ex);
          return null;
       }
    }
 
    /**
-    * NOTE(eriq): You can wrap images from wide (> 1) chanels, but you
-    * will only be able to get pixels back in a single chanel.
+    * NOTE(eriq): You can wrap images from non RGB channels, but they
+    * will be converted to RGB and stay like that.
     */
-   public static WrapImage getImageFromPixels(byte[] pixels,
+   public static WrapImage getImageFromPixels(byte[] channelPixels,
                                               int width, int height,
-                                              int numChannels) {
-      // TODO(eriq):
-      return null;
+                                              String channelMap) {
+      assert(channelPixels.length == (width * height * channelMap.length()));
+      assert(channelMap.length() > 0);
+
+      if (channelPixels.length == 0) {
+         return getEmptyImage();
+      }
+
+      try {
+         MagickImage newImage = new MagickImage();
+         newImage.constituteImage(width, height, channelMap, channelPixels);
+         return new WrapImage(newImage);
+      } catch (MagickException ex) {
+         logger.error("Could not load image from pixels.", ex);
+         return null;
+      }
    }
 
    /**
     * getImageFromPixels() overload for single channel images.
     */
-   public static WrapImage getImageFromPixels(byte[] pixels,
-                                              int width, int height) {
-      return getImageFromPixels(pixels, width, height, 1);
+   public static WrapImage getImageFromPixels(byte[] pixels, int width, int height) {
+      return getImageFromPixels(pixels, width, height, "I");
+   }
+
+   public static WrapImage getImageFromPixels(Pixel[] pixels, int width, int height) {
+      return getImageFromPixels(pixelsToRGBChannel(pixels), width, height, "RGB");
    }
 
    /**
     * Get an image that is only white.
-    * This is NOT an empty image.
+    * This is NOT an empty image (unless |width| or |height| are 0).
     */
    public static WrapImage getBlankImage(int width, int height) {
-      // TODO(eriq):
-      return null;
+      assert(width >= 0 && height >= 0);
+
+      if (width == 0 || height == 0) {
+         return getEmptyImage();
+      }
+
+      byte[] pixels = new byte[width * height];
+
+      for (int i = 0; i < pixels.length; i++) {
+         pixels[i] = (byte)0xFF;
+      }
+
+      return getImageFromPixels(pixels, width, height);
    }
+
+   /**
+    * Generate an image for |character|.
+    * The image will have a white backgrond with |character| in black.
+    */
+   public static WrapImage getCharacterImage(char character,
+                                             boolean shrink,
+                                             int fontSize,
+                                             String fontFamily,
+                                             int threshold) {
+      if (character == ' ') {
+         return getBlankImage(fontSize, fontSize);
+      }
+
+      try {
+         int sideLength = fontSize;
+
+         MagickImage image = new MagickImage();
+         byte[] pixels = new byte[sideLength * sideLength * 3];
+         for (int i = 0; i < pixels.length; i++) {
+            pixels[i] = (byte)0xFF;
+         }
+         image.constituteImage(sideLength, sideLength, "RGB", pixels);
+
+         ImageInfo drawInfo = new ImageInfo();
+         DrawInfo draw = new DrawInfo(drawInfo);
+
+         draw.setOpacity(0);
+         draw.setGeometry("+0+0");
+         draw.setGravity(magick.GravityType.CenterGravity);
+
+         draw.setFill(new PixelPacket(0, 0, 0, 0));
+         draw.setPointsize(fontSize);
+         draw.setFont(fontFamily);
+         draw.setText("" + character);
+
+         image.annotateImage(draw);
+
+         WrapImage rtn = new WrapImage(image);
+
+         if (shrink) {
+            rtn = rtn.shrink(threshold);
+         }
+
+         return rtn;
+      } catch (MagickException ex) {
+         logger.error("Unable to create a character image.", ex);
+         return null;
+      }
+   }
+
+   public static WrapImage getCharacterImage(char character,
+                                             boolean shrink,
+                                             int fontSize,
+                                             String fontFamily) {
+      return getCharacterImage(character, shrink,
+                               fontSize,
+                               fontFamily,
+                               Props.getInt("DEFAULT_WHITE_THRESHOLD", 150));
+   }
+
+   public static WrapImage getCharacterImage(char character,
+                                             boolean shrink,
+                                             String fontFamily) {
+      return getCharacterImage(character, shrink,
+                               Props.getInt("DEFAULT_FONT_SIZE", 128),
+                               fontFamily,
+                               Props.getInt("DEFAULT_WHITE_THRESHOLD", 150));
+   }
+
+   public static WrapImage getCharacterImage(char character,
+                                             boolean shrink) {
+      return getCharacterImage(character, shrink,
+                               Props.getInt("DEFAULT_FONT_SIZE", 128),
+                               Props.getString("DEFAULT_FONT_FAMILY", "IPAGothic"),
+                               Props.getInt("DEFAULT_WHITE_THRESHOLD", 150));
+   }
+
+   /**
+    * Get an image that containts |content|.
+    * ImageMagick is strange and easiest way to get word wrap is to use the "caption" feature.
+    * The same tactic as getCharacterImage().
+    */
+   public static WrapImage getStringImage(String content, boolean shrink,
+                                          int maxWidth, int maxHeight) {
+      try {
+         ImageInfo info = new ImageInfo("caption: " + content);
+         info.setSize(String.format("%dx%d", maxWidth, maxHeight));
+         info.setFont("Arial");
+         MagickImage image = new MagickImage(info);
+
+         WrapImage rtn = new WrapImage(image);
+
+         if (shrink) {
+            rtn = rtn.shrink();
+         }
+
+         return rtn;
+      } catch (MagickException ex) {
+         logger.error("Could not create an image from a string.", ex);
+         return null;
+      }
+   }
+
 
    // END Static Constructors.
 
    public int width() {
-      // TODO(eriq)
-      return -1;
+      return imageWidth;
    }
 
    public int height() {
-      // TODO(eriq)
-      return -1;
+      return imageHeight;
    }
 
    // The number of pixels in this image.
    public int length() {
-      // TODO(eriq)
-      return -1;
+      return imageWidth * imageHeight;
    }
 
    /**
@@ -128,15 +282,48 @@ public class WrapImage {
     * Typically, one would want much more than just a single pixel.
     * So, this method will cache the entire image's pixels unless you
     * explicitly prevent it with |noCache|.
+    * Note that |noCache| is only a request and can be ignored.
     */
-   public byte getPixel(int row, int col, boolean noCache) {
-      // TODO(eriq)
-      return -1;
+   public Pixel getPixel(int row, int col, boolean noCache) {
+      if (col < 0 || row < 0 ||
+          col >= imageWidth || row >= imageHeight) {
+         throw new IndexOutOfBoundsException();
+      }
+
+      if (noCache) {
+         try {
+            return new Pixel(internalImage.getOnePixel(col, row));
+         } catch (MagickException ex) {
+            logger.warn("Could not get a single pixel.", ex);
+            // Let it fall through to the cache version.
+         }
+      }
+
+      loadPixelCache();
+
+      return cachePixels[MathUtils.rowColToIndex(row, col, imageWidth)];
    }
 
    public boolean getDiscretePixel(int row, int col, int threshold, boolean noCache) {
-      // TODO(eriq)
-      return false;
+      if (col < 0 || row < 0 ||
+          col >= imageWidth || row >= imageHeight) {
+         throw new IndexOutOfBoundsException();
+      }
+
+      if (noCache) {
+         try {
+            PixelPacket pixel = internalImage.getOnePixel(col, row);
+            return (new Pixel(internalImage.getOnePixel(col, row))).average() <= threshold;
+         } catch (MagickException ex) {
+            logger.warn("Could not get a single discrete pixel.", ex);
+            // Let it fall through to the cache version.
+         }
+      }
+
+      loadDiscretePixelCache(threshold);
+
+      int index = MathUtils.rowColToIndex(row, col, imageWidth);
+      return cacheDiscretePixels.get(new Integer(threshold))[index];
    }
 
    /**
@@ -144,8 +331,12 @@ public class WrapImage {
     * The new image will not have any cached data.
     */
    public WrapImage copy() {
-      // TODO(eriq)
-      return null;
+      if (isEmpty()) {
+         return getEmptyImage();
+      }
+
+      loadPixelCache();
+      return getImageFromPixels(cachePixels, imageWidth, imageHeight);
    }
 
    /**
@@ -154,29 +345,68 @@ public class WrapImage {
     * and return it in this method. This means that the pixel cache will be emptied, but no
     * copies will be made.
     * The cache is guarenteed to be correct, it is purely a speed issue.
-    * NOTE(eriq): We are not going to support multi-chanel pixel arrays at this time.
-    * (eg. arrays of pixels that contains values for R, G, and B.)
-    * Most of our work will be in BW. Even when we do work with color, it will be minimal.
-    * One byte per pixel is more than enough for us.
     */
-   public byte[] getPixels(boolean fromCache) {
-      // TODO(eriq):
-      return null;
+   public Pixel[] getPixels(boolean fromCache) {
+      if (isEmpty()) {
+         return new Pixel[0];
+      }
+
+      if (fromCache && cachePixels != null) {
+         Pixel[] rtn = cachePixels;
+         cachePixels = null;
+         return rtn;
+      }
+
+      return extractPixels();
    }
 
    /**
     * Simple version of getPixels() that does not take from the cache.
     */
-   public byte[] getPixels() {
+   public Pixel[] getPixels() {
       return getPixels(false);
+   }
+
+   public byte[] getAveragePixels() {
+      if (isEmpty()) {
+         return new byte[0];
+      }
+
+      loadPixelCache();
+
+      byte[] rtn = new byte[cachePixels.length];
+      for (int i = 0; i < rtn.length; i++) {
+         rtn[i] = cachePixels[i].average();
+      }
+
+      return rtn;
    }
 
    /**
     * Get the discrete pixels for this image.
+    * See getPixels() for all the notes on this.
+    */
+   public boolean[] getDiscretePixels(int threshold, boolean fromCache) {
+      if (isEmpty()) {
+         return new boolean[0];
+      }
+
+      if (fromCache && cacheDiscretePixels.containsKey(new Integer(threshold))) {
+         return cacheDiscretePixels.remove(new Integer(threshold));
+      }
+
+      return extractDiscretePixels(extractPixels(), threshold);
+   }
+
+   /**
+    * Simple version of getDiscretePixels() that does not take from the cache.
     */
    public boolean[] getDiscretePixels(int threshold) {
-      // TODO(eriq):
-      return null;
+      return getDiscretePixels(threshold, false);
+   }
+
+   public boolean[] getDiscretePixels() {
+      return getDiscretePixels(Props.getInt("DEFAULT_WHITE_THRESHOLD", 150), false);
    }
 
    /**
@@ -184,8 +414,33 @@ public class WrapImage {
     * The image type is infered from the extension.
     */
    public boolean write(String filename) {
-      // TODO(eriq):
-      return false;
+      if (isEmpty()) {
+         try {
+            ImageInfo info = new ImageInfo(filename);
+            MagickImage image = new MagickImage(info);
+
+            image.constituteImage(1, 1, "RGB",
+                                  new byte[]{(byte)0xFF, (byte)0xFF, (byte)0xFF});
+            image.setFileName(filename);
+            image.writeImage(info);
+
+            return true;
+         } catch (MagickException ex) {
+            logger.error("Unable to write empty image.", ex);
+            return false;
+         }
+      }
+
+      try {
+         ImageInfo info = new ImageInfo(filename);
+         internalImage.setFileName(filename);
+         internalImage.writeImage(info);
+      } catch (MagickException ex) {
+         logger.error("Unable to write image.", ex);
+         return false;
+      }
+
+      return true;
    }
 
    /**
@@ -196,67 +451,376 @@ public class WrapImage {
       return internalImage == null;
    }
 
-   /**
-    * Dump all of the internal cache that this image holds.
-    */
-   public void dump() {
-      // TODO(eriq)
-   }
-
-   // Iterators
-   // TODO(eriq)
-
    // Transformations
    // Writer of transformation functions sould take great care to handle the caches
    // properly. Most mutable transformation will invalidate the cache, so they will need
    // to be cleared AT THE BEGINNING of the method.
-   // Mutable methods should return a status (preferably a boolean),
+   // Mutable methods should return a status (preferably a boolean);
    // immutable methods should return the new WrapImage.
+   // Mutable operations on an empty image will return false;
+   // imutable opertions on an empty image will return another empty image.
 
    // Mutable Transformations
 
-   public boolean blur(double raduis, double sigma) {
-      // TODO(eriq): shallow wrap
-      return false;
-   }
+   public boolean blur(double radius, double sigma) {
+      if (isEmpty()) {
+         return false;
+      }
 
-   /**
-    * Convert this image to black and white.
-    * This is not the fake black and white that uses grey.
-    * This will fully discretize the image.
-    */
-   public boolean bw(int threshold) {
-      // TODO(eriq):
-      return false;
+      clearCache();
+
+      try {
+         internalImage = internalImage.blurImage(radius, sigma);
+      } catch (MagickException ex) {
+         logger.error("Unable to blur image.", ex);
+         return false;
+      }
+
+      return true;
    }
 
    /**
     * Find the edges in an image.
     * This will convert the image into bw where black pixels are edges and white is the rest.
     */
-   public boolean edge(double raduis) {
-      // TODO(eriq): shallow
-      return false;
+   public boolean edge(double radius) {
+      if (isEmpty()) {
+         return false;
+      }
+
+      clearCache();
+
+      try {
+         internalImage = internalImage.edgeImage(radius);
+      } catch (MagickException ex) {
+         logger.error("Unable to edge image.", ex);
+         return false;
+      }
+
+      return true;
    }
+
+   public boolean scale(int newWidth, int newHeight) {
+      if (isEmpty()) {
+         return false;
+      }
+
+      clearCache();
+
+      try {
+         internalImage = internalImage.scaleImage(newWidth, newHeight);
+
+         Dimension dimensions = internalImage.getDimension();
+         imageWidth = dimensions.width;
+         imageHeight = dimensions.height;
+      } catch (MagickException ex) {
+         logger.error("Unable to scale image.", ex);
+         return false;
+      }
+
+      return true;
+   }
+
+   // Immutable Transformations
 
    /**
     * This is NOT a scale.
     * This method removes any border (white-only area) that the image has.
     */
-   public boolean shrink(int threshold) {
-      // TODO(eriq)
-      return false;
+   public WrapImage shrink(int threshold) {
+      if (isEmpty()) {
+         return getEmptyImage();
+      }
+
+      loadPixelCache();
+
+      int minRow = forwardScanRows(threshold);
+      int maxRow = backScanRows(threshold);
+      int minCol = forwardScanCols(threshold);
+      int maxCol = backScanCols(threshold);
+
+      if (minRow == -1 || maxRow == -1 || minCol == -1 || maxCol == -1) {
+         return getEmptyImage();
+      }
+
+      return crop(new Rectangle(minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1));
    }
 
-   public boolean scale(int newWidth, int newHeight) {
-      // TODO(eriq): shallow
-      return false;
+   public WrapImage shrink() {
+      return shrink(Props.getInt("DEFAULT_WHITE_THRESHOLD", 150));
    }
 
-   // Immutable Transformations
+   public WrapImage crop(Rectangle bounds) {
+      if (isEmpty()) {
+         return getEmptyImage();
+      }
 
-   public WrapImage crap(Rectangle bounds) {
-      // TODO(eriq):
-      return null;
+      assert(bounds.x >= 0 && bounds.y >= 0);
+
+      try {
+         // ImageMagick is pretty flaky about crops of crops, so just make a full copy.
+         MagickImage image = copy().internalImage.cropImage(bounds);
+         return new WrapImage(image);
+      } catch (MagickException ex) {
+         logger.error("Could not crop image.", ex);
+         return null;
+      }
+   }
+
+   // Cache operations
+
+   /**
+    * Dump all of the internal cache that this image holds.
+    */
+   public void clearCache() {
+      cachePixels = null;
+      cacheDiscretePixels = new HashMap<Integer, boolean[]>();
+   }
+
+   /**
+    * Load up the cache from the internal image.
+    * Will not load if there is already something in the cache.
+    * It is best to call this in every method that will use the cache.
+    */
+   private void loadPixelCache() {
+      if (isEmpty() || cachePixels != null) {
+         return;
+      }
+
+      cachePixels = extractPixels();
+   }
+
+   /**
+    * Load up the cache from the internal image.
+    * Will not load if there is already something in the cache.
+    * It is best to call this in every method that will use the cache.
+    */
+   private void loadDiscretePixelCache(int threshold) {
+      if (isEmpty() || cacheDiscretePixels.containsKey(new Integer(threshold))) {
+         return;
+      }
+
+      loadPixelCache();
+
+      cacheDiscretePixels.put(new Integer(threshold),
+                              extractDiscretePixels(cachePixels, threshold));
+   }
+
+   // Non-Static Utilities
+
+   /**
+    * A simple forward scan of this image.
+    */
+   public int forwardScanRows(int threshold) {
+      if (isEmpty()) {
+         return -1;
+      }
+
+      loadPixelCache();
+      return scanRows(cachePixels, imageWidth, threshold, 0, imageHeight - 1, 1);
+   }
+
+   /**
+    * A simple backwards scan of this image.
+    */
+   public int backScanRows(int threshold) {
+      if (isEmpty()) {
+         return -1;
+      }
+
+      loadPixelCache();
+      return scanRows(cachePixels, imageWidth, threshold, imageHeight - 1, 0, -1);
+   }
+
+   public int forwardScanCols(int threshold) {
+      if (isEmpty()) {
+         return -1;
+      }
+
+      loadPixelCache();
+      return scanCols(cachePixels, imageWidth, threshold, 0, imageWidth - 1, 1);
+   }
+
+   public int backScanCols(int threshold) {
+      if (isEmpty()) {
+         return -1;
+      }
+
+      loadPixelCache();
+      return scanCols(cachePixels, imageWidth, threshold, imageWidth - 1, 0, -1);
+   }
+
+   // Static Utilities
+
+   /**
+    * Returns an "RGB" array of pixels.
+    */
+   public static byte[] pixelsToRGBChannel(Pixel[] pixels) {
+      byte[] channelPixels = new byte[pixels.length * 3];
+
+      for (int i = 0; i < channelPixels.length; i += 3) {
+         channelPixels[i + 0] = pixels[i / 3].red;
+         channelPixels[i + 1] = pixels[i / 3].green;
+         channelPixels[i + 2] = pixels[i / 3].blue;
+      }
+
+      return channelPixels;
+   }
+
+   /**
+    * Convert an "RGB" pixel array to a Pixel array.
+    */
+   public static Pixel[] rgbChannelToPixels(byte[] channelPixels) {
+      assert(channelPixels.length % 3 == 0);
+
+      Pixel[] pixels = new Pixel[channelPixels.length / 3];
+
+      for (int i = 0; i < channelPixels.length; i += 3) {
+         pixels[i / 3] = new Pixel(channelPixels[i + 0],
+                                   channelPixels[i + 1],
+                                   channelPixels[i + 2]);
+      }
+
+      return pixels;
+   }
+
+   /**
+    * Find the first occurance of a non-white pixel (this is inclusive).
+    * Will return a number between rowStart and rowEnd (inclusivley) or -1.
+    * If there is no occurance of a non-white pixel, then -1 is returned.
+    * Note that the bounds are handled differently because this can go backwards.
+    */
+   public static int scanRows(Pixel[] pixels, int width, int threshold,
+                              int rowStart, int rowEnd, int rowStep) {
+      assert((Math.abs(rowEnd - rowStart) + 1) % Math.abs(rowStep) == 0);
+
+      for (int row = rowStart; row != rowEnd + rowStep; row += rowStep) {
+         for (int col = 0; col < width; col++) {
+            int index = MathUtils.rowColToIndex(row, col, width);
+            if ((0xFF & pixels[index].average()) <= threshold) {
+               return row;
+            }
+         }
+      }
+
+      return -1;
+   }
+
+   public static int scanCols(Pixel[] pixels, int width, int threshold,
+                              int colStart, int colEnd, int colStep) {
+      assert((Math.abs(colEnd - colStart) + 1) % Math.abs(colStep) == 0);
+
+      for (int col = colStart; col != colEnd + colStep; col += colStep) {
+         for (int row = 0; row < pixels.length / width; row++) {
+            int index = MathUtils.rowColToIndex(row, col, width);
+            if ((0xFF & pixels[index].average()) <= threshold) {
+               return col;
+            }
+         }
+      }
+
+      return -1;
+   }
+
+   // Support Classes
+
+   /**
+    * These will get thrown in place of MagicExceptions in the case of
+    * a non-recoverable, unexpected exception during image operations when
+    * a return status is not appropriate.
+    * These should be very rare.
+    */
+   @SuppressWarnings("serial")
+   public class RuntimeImageException extends RuntimeException {
+      public MagickException magickException;
+
+      public RuntimeImageException(String message, MagickException magickException) {
+         super(message);
+         this.magickException = magickException;
+      }
+
+      public RuntimeImageException(String message) {
+         super(message);
+      }
+   }
+
+   public static class Pixel {
+      public byte red;
+      public byte green;
+      public byte blue;
+
+      public Pixel(byte red, byte green, byte blue) {
+         this.red = red;
+         this.green = green;
+         this.blue = blue;
+      }
+
+      /**
+       * Just a white pixel.
+       */
+      public Pixel() {
+         this(0xFF, 0xFF, 0xFF);
+      }
+
+      public Pixel(int red, int green, int blue) {
+         this((byte)red, (byte)green, (byte)blue);
+      }
+
+      public Pixel(Pixel pixel) {
+         this(pixel.red, pixel.green, pixel.blue);
+      }
+
+      public Pixel(Color color) {
+         this(color.getRed(), color.getGreen(), color.getBlue());
+      }
+
+      public Pixel(PixelPacket pixelPacket) {
+         this(pixelPacket.getRed(), pixelPacket.getGreen(), pixelPacket.getBlue());
+      }
+
+      /**
+       * Get the average intensity value for this pixel.
+       * Return is byte, and not float on purpose.
+       */
+      public byte average() {
+         return (byte)((red + green + blue) / 3);
+      }
+   }
+
+   // Deep Internals
+
+   private Pixel[] extractPixels() {
+      byte[] channelPixels = new byte[length() * 3];
+
+      try {
+         internalImage.dispatchImage(0, 0, imageWidth, imageHeight, "RGB", channelPixels);
+      } catch (MagickException ex) {
+         logger.error("Could not dispatch image for cache.", ex);
+         throw new RuntimeImageException("Could not dispatch image for cache.", ex);
+      }
+
+      return rgbChannelToPixels(channelPixels);
+   }
+
+   private boolean[] extractDiscretePixels(Pixel[] pixels, int threshold) {
+      boolean[] discretePixels = new boolean[pixels.length];
+
+      for (int i = 0; i < discretePixels.length; i++) {
+         discretePixels[i] = (0xFF & pixels[i].average()) <= threshold;
+      }
+
+      return discretePixels;
+   }
+
+   /**
+    * Make this image an empty image.
+    */
+   private void makeEmpty() {
+      clearCache();
+
+      imageWidth = 0;
+      imageHeight = 0;
+
+      internalImage = null;
    }
 }

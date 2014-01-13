@@ -1,8 +1,7 @@
 package com.eriqaugustine.ocr.pdc;
 
+import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.MathUtils;
-
-import magick.MagickImage;
 
 import java.awt.Dimension;
 import java.util.ArrayList;
@@ -12,16 +11,12 @@ import java.util.List;
  * Contains all the information necessary after a PDC analysis of an image.
  */
 public class PDCInfo {
-   private final MagickImage baseImage;
-   private final MagickImage scaleImage;
+   private final WrapImage image;
 
    private final int numLayers;
 
    private final int[][] lengths;
    private final int[] peripherals;
-
-   private Dimension baseDimensions;
-   private Dimension scaleDimensions;
 
    private DCFeature[] fullPDCs;
    private DCFeature[] halfPDCs;
@@ -31,18 +26,13 @@ public class PDCInfo {
     * This should be fast, since all DC calculations are lazy.
     * A null length means that there was no peripheral point.
     */
-   public PDCInfo(MagickImage baseImage, MagickImage scaleImage,
+   public PDCInfo(WrapImage image,
                   int numLayers,
-                  int[][] lengths, int[] peripherals) throws Exception {
-      this.baseImage = baseImage;
-      this.scaleImage = scaleImage;
+                  int[][] lengths, int[] peripherals) {
+      this.image = image;
       this.numLayers = numLayers;
       this.lengths = lengths;
       this.peripherals = peripherals;
-
-      // Get these early so we can avoid exceptions later.
-      baseDimensions = baseImage.getDimension();
-      scaleDimensions = scaleImage.getDimension();
 
       fullPDCs = null;
       halfPDCs = null;
@@ -59,12 +49,12 @@ public class PDCInfo {
     * This will reduce the feature set and help handle noise.
     */
    public double[] fullGroupedDimensions(int groupSize) {
-      assert(scaleDimensions.width % groupSize == 0);
+      assert(image.width() % groupSize == 0);
       return averageDimensions(fullPDCDimensions(), groupSize, PDC.PDC_DIRECTION_DELTAS.length);
    }
 
    public double[] halfGroupedDimensions(int groupSize) {
-      assert(scaleDimensions.width % groupSize == 0);
+      assert(image.width() % groupSize == 0);
       return averageDimensions(halfPDCDimensions(),
                                groupSize,
                                PDC.PDC_DIRECTION_DELTAS.length / 2);

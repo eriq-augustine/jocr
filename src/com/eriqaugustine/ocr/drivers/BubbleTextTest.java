@@ -1,10 +1,8 @@
 package com.eriqaugustine.ocr.drivers;
 
 import com.eriqaugustine.ocr.image.BubbleText;
+import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.FileUtils;
-
-import magick.ImageInfo;
-import magick.MagickImage;
 
 import java.io.File;
 import java.util.Arrays;
@@ -30,8 +28,7 @@ public class BubbleTextTest {
    private static void testFile(String outDir, File file, int count) throws Exception {
       String path = file.getAbsolutePath();
 
-      ImageInfo info = new ImageInfo(path);
-      MagickImage image = new MagickImage(info);
+      WrapImage image = WrapImage.getImageFromFile(path);
 
       BubbleText text = BubbleText.constructBubbleText(image);
       if (text == null) {
@@ -42,22 +39,19 @@ public class BubbleTextTest {
       for (int i = 0; i < text.getTextSets().size(); i++) {
          BubbleText.TextSet textSet = text.getTextSets().get(i);
 
-         MagickImage baseSet = textSet.baseImage;
-         baseSet.setFileName(String.format("%s/%02d-%02d-00-base.png", outDir, count, i));
-         baseSet.writeImage(new ImageInfo());
+         WrapImage baseSet = textSet.baseImage;
+         baseSet.write(String.format("%s/%02d-%02d-00-base.png", outDir, count, i));
 
          for (int j = 0; j < textSet.noFuriganaText.size(); j++) {
-            MagickImage characterImage = textSet.noFuriganaText.get(j);
-            characterImage.setFileName(String.format("%s/%02d-%02d-01-%02d-no-furi.png",
-                                                     outDir, count, i, j));
-            characterImage.writeImage(new ImageInfo());
+            WrapImage characterImage = textSet.noFuriganaText.get(j);
+            characterImage.write(String.format("%s/%02d-%02d-01-%02d-no-furi.png",
+                                               outDir, count, i, j));
          }
 
          for (int j = 0; j < textSet.furiganaReplacementText.size(); j++) {
-            MagickImage characterImage = textSet.furiganaReplacementText.get(j);
-            characterImage.setFileName(String.format("%s/%02d-%02d-02-%02d-replacement.png",
-                                                     outDir, count, i, j));
-            characterImage.writeImage(new ImageInfo());
+            WrapImage characterImage = textSet.furiganaReplacementText.get(j);
+            characterImage.write(String.format("%s/%02d-%02d-02-%02d-replacement.png",
+                                               outDir, count, i, j));
          }
       }
    }

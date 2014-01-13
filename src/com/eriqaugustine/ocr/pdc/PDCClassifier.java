@@ -1,9 +1,8 @@
 package com.eriqaugustine.ocr.pdc;
 
+import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.StringUtils;
-
-import magick.MagickImage;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,7 +40,7 @@ public class PDCClassifier {
 
    private FastVector featureAttributes;
 
-   public PDCClassifier(MagickImage[] characterImages,
+   public PDCClassifier(WrapImage[] characterImages,
                         String characters,
                         String[] fonts) throws Exception {
       this(characterImages, StringUtils.charSplitArray(characters),
@@ -56,7 +55,7 @@ public class PDCClassifier {
     * A |groupSize| of 1 means no groping will occur.
     * |fonts| are used as attributes to the classifier.
     */
-   public PDCClassifier(MagickImage[] characterImages,
+   public PDCClassifier(WrapImage[] characterImages,
                         String characters,
                         boolean combineDirections,
                         int groupSize,
@@ -67,7 +66,7 @@ public class PDCClassifier {
 
    // Suppress the classifier Class cast.
    @SuppressWarnings("unchecked")
-   public PDCClassifier(MagickImage[] trainingImages,
+   public PDCClassifier(WrapImage[] trainingImages,
                         String[] trainingCharacters,
                         boolean combineDirections,
                         int groupSize,
@@ -111,9 +110,9 @@ public class PDCClassifier {
       }
    }
 
-   public String classify(MagickImage image) throws Exception {
+   public String classify(WrapImage image) {
       // First, check for an empty images (space).
-      if (ImageUtils.isEmptyImage(image)) {
+      if (image.isEmpty()) {
          return " ";
       }
 
@@ -127,7 +126,7 @@ public class PDCClassifier {
       }
    }
 
-   private Instance prepUnclassed(MagickImage image) throws Exception {
+   private Instance prepUnclassed(WrapImage image) {
       PDCInfo info = PDC.pdc(image);
 
       assert(info.numPoints() == numDCs);
@@ -169,8 +168,8 @@ public class PDCClassifier {
       return instances.instance(0);
    }
 
-   private Instances prepTraining(MagickImage[] trainingImages,
-                                  String[] trainingCharacters) throws Exception {
+   private Instances prepTraining(WrapImage[] trainingImages,
+                                  String[] trainingCharacters) {
       Instances trainingSet = new Instances("PDCInstances",
                                             featureAttributes,
                                             trainingCharacters.length);

@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.pdc;
+package com.eriqaugustine.ocr.classifier;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,39 +40,44 @@ public abstract class VectorClassifier<ToClassify> {
 
    private final int featureVectorLength;
 
-   protected VectorClassifier(List<ToClassify> trainingContents,
-                              List<String> trainingClasses,
-                              int featureVectorLength,
-                              String defaultClass,
-                              Map<String, String> classifierAttributes) throws Exception {
-      this(trainingContents,
-           trainingClasses,
-           featureVectorLength,
-           defaultClass,
-           "weka.classifiers.functions.SMO" /* classifier */,
-           "" /* notes */,
-           classifierAttributes,
-           true /* use cache */);
-   }
-
    /**
     * |featureVectorLength| is the length of the vector that will be obtained from getFeatureValues().
     */
-   // Suppress the classifier Class cast.
-   @SuppressWarnings("unchecked")
-   protected VectorClassifier(List<ToClassify> trainingContents,
-                              List<String> trainingClasses,
-                              int featureVectorLength,
-                              String defaultClass,
-                              String wekaClassifier,
-                              String classifierNotes,
-                              Map<String, String> classifierAttributes,
-                              boolean useCache) throws Exception {
-      assert(trainingContents.size() > 0);
-      assert(trainingContents.size() == trainingClasses.size());
-
+   protected VectorClassifier(int featureVectorLength,
+                              String defaultClass) {
       this.defaultClass = defaultClass;
       this.featureVectorLength = featureVectorLength;
+
+      this.classifier = null;
+      this.classes = null;
+      this.featureAttributes = null;
+   }
+
+   protected boolean train(List<ToClassify> trainingContents,
+                           List<String> trainingClasses,
+                           Map<String, String> classifierAttributes) {
+      return train(trainingContents,
+                   trainingClasses,
+                   "weka.classifiers.functions.SMO" /* classifier */,
+                   "" /* notes */,
+                   classifierAttributes,
+                   true /* use cache */);
+   }
+
+   /**
+    * Train the classifier.
+    * This needs to be done before any classification attempt.
+    */
+   // Suppress the classifier Class cast.
+   @SuppressWarnings("unchecked")
+   protected boolean train(List<ToClassify> trainingContents,
+                           List<String> trainingClasses,
+                           String wekaClassifier,
+                           String classifierNotes,
+                           Map<String, String> classifierAttributes,
+                           boolean useCache) {
+      assert(trainingContents.size() > 0);
+      assert(trainingContents.size() == trainingClasses.size());
 
       Set<String> seenClasses = new HashSet<String>();
       for (String seenClass : trainingClasses) {
@@ -88,19 +93,26 @@ public abstract class VectorClassifier<ToClassify> {
 
       Instances trainingSet = prepTraining(trainingContents, trainingClasses);
 
-      Class<? extends Classifier> classifierClass =
-            (Class<? extends Classifier>)Class.forName(wekaClassifier);
+      try {
+         Class<? extends Classifier> classifierClass =
+               (Class<? extends Classifier>)Class.forName(wekaClassifier);
 
-      classifier = SerializedWekaClassifier.fetchClassifier(classifierClass,
-                                                            trainingSet,
-                                                            useCache,
-                                                            classifierAttributes,
-                                                            classifierNotes);
+         classifier = SerializedWekaClassifier.fetchClassifier(classifierClass,
+                                                               trainingSet,
+                                                               useCache,
+                                                               classifierAttributes,
+                                                               classifierNotes);
+      } catch (Exception ex) {
+         logger.error("Unable to make a classifier.", ex);
+         return false;
+      }
 
       if (classifier == null) {
-         logger.fatal("Unable to make a classifier.");
-         System.exit(1);
+         logger.error("Unable to make a classifier.");
+         return false;
       }
+
+      return true;
    }
 
    /**
@@ -115,6 +127,11 @@ public abstract class VectorClassifier<ToClassify> {
    protected abstract double[] getFeatureValues(ToClassify objToClassify);
 
    public String classify(ToClassify objToClassify) {
+      if (classifier == null) {
+         logger.error("Attempting to use an untrained classfiier.");
+         throw new RuntimeException("Attempting to use an untrained classfiier.");
+      }
+
       // First, check for an empty object.
       if (isEmpty(objToClassify)) {
          return defaultClass;

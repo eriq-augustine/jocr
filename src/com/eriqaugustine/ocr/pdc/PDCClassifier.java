@@ -1,5 +1,6 @@
 package com.eriqaugustine.ocr.pdc;
 
+import com.eriqaugustine.ocr.classifier.SerializedWekaClassifier;
 import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 import com.eriqaugustine.ocr.utils.StringUtils;
@@ -160,7 +161,7 @@ public class PDCClassifier {
                                                                128,
                                                                DEFUALT_REGIONS_PER_SIDE);
       for (int i = 0; i < characterDensities.length; i++) {
-         instance.setValue(1 + dcFeatures.length, characterDensities[i]);
+         instance.setValue(1 + dcFeatures.length + i, characterDensities[i]);
       }
 
       instances.add(instance);

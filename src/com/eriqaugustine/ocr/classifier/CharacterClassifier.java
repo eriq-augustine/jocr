@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.pdc;
+package com.eriqaugustine.ocr.classifier;
 
 import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.StringUtils;
@@ -16,16 +16,20 @@ import java.util.Map;
 public abstract class CharacterClassifier extends VectorClassifier<WrapImage> {
    private static Logger logger = LogManager.getLogger(CharacterClassifier.class.getName());
 
-   public CharacterClassifier(List<WrapImage> characterImages,
-                              String characters,
-                              String[] fonts,
-                              int featureVectorLength,
-                              Map<String, String> classifierAttributes) throws Exception {
-      super(characterImages,
-            StringUtils.charSplit(characters),
-            featureVectorLength,
-            " ", // A space is the default class.
-            MapUtils.inlinePut(classifierAttributes, "fonts", StringUtils.join(fonts, ", ")));
+   public CharacterClassifier(int featureVectorLength) {
+      super(featureVectorLength, " "); // A space is the default class.
+   }
+
+   /**
+    * @inheritDoc
+    */
+   protected boolean train(List<WrapImage> characterImages,
+                           String characters,
+                           String[] fonts,
+                           Map<String, String> classifierAttributes) {
+      return train(characterImages,
+                   StringUtils.charSplit(characters),
+                   MapUtils.inlinePut(classifierAttributes, "fonts", StringUtils.join(fonts, ", ")));
    }
 
    /**

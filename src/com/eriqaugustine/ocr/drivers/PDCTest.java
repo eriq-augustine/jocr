@@ -3,7 +3,9 @@ package com.eriqaugustine.ocr.drivers;
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.TextImage;
 import com.eriqaugustine.ocr.image.WrapImage;
-import com.eriqaugustine.ocr.pdc.PDCClassifier;
+
+// import com.eriqaugustine.ocr.pdc.PDCClassifier;
+import com.eriqaugustine.ocr.classifier.PDCClassifier;
 
 import com.eriqaugustine.ocr.utils.FontUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;

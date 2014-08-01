@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.pdc;
+package com.eriqaugustine.ocr.classifier;
 
 import com.eriqaugustine.ocr.utils.Props;
 

@@ -1,6 +1,7 @@
 package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.pdc.PDCClassifier;
+import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.PDCClassifier;
 import com.eriqaugustine.ocr.translate.Translator;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 
@@ -20,7 +21,7 @@ public class ImageTranslator {
    private static final String ALPHABET = com.eriqaugustine.ocr.Test.HIRAGANA +
                                           com.eriqaugustine.ocr.Test.KATAKANA;
 
-   private PDCClassifier classy;
+   private CharacterClassifier classy;
    private Translator trans;
 
    public ImageTranslator() throws Exception {

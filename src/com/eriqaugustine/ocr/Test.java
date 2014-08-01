@@ -6,8 +6,8 @@ import com.eriqaugustine.ocr.image.ImageTranslator;
 import com.eriqaugustine.ocr.image.TextImage;
 import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.math.BinaryConfusionMatrix;
-import com.eriqaugustine.ocr.pdc.PDC;
-import com.eriqaugustine.ocr.pdc.PDCClassifier;
+import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.PDCClassifier;
 import com.eriqaugustine.ocr.pdc.PDCInfo;
 import com.eriqaugustine.ocr.utils.FileUtils;
 import com.eriqaugustine.ocr.utils.FontUtils;
@@ -129,7 +129,7 @@ public class Test {
          trainingAlphabet += alphabet;
       }
 
-      PDCClassifier classy =
+      CharacterClassifier classy =
             new PDCClassifier(CharacterImage.generateFontImages(alphabet, fonts),
                               trainingAlphabet, true, 1, fonts);
 

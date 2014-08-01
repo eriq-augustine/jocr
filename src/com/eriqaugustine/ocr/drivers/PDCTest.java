@@ -1,11 +1,11 @@
 package com.eriqaugustine.ocr.drivers;
 
+import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.PDCClassifier;
+
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.TextImage;
 import com.eriqaugustine.ocr.image.WrapImage;
-
-// import com.eriqaugustine.ocr.pdc.PDCClassifier;
-import com.eriqaugustine.ocr.classifier.PDCClassifier;
 
 import com.eriqaugustine.ocr.utils.FontUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
@@ -25,10 +25,10 @@ public class PDCTest {
 
       String alphabet = Props.getString("HIRAGANA");
 
-      PDCClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
-                                               //  alphabet, false, 1);
-                                               alphabet, true, 1,
-                                             new String[]{Props.getString("DEFAULT_FONT_FAMILY")});
+      CharacterClassifier classy = new PDCClassifier(CharacterImage.generateFontImages(alphabet),
+                                                     //  alphabet, false, 1);
+                                                     alphabet, true, 1,
+                                                     new String[]{Props.getString("DEFAULT_FONT_FAMILY")});
 
       // Not exactly hiragana.
       String characters = "あいうえおかきくけこさしすせそたちつてとなにぬねの" +

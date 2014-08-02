@@ -22,7 +22,7 @@ public class PDCClassifier extends CharacterClassifier {
 
    private static final int DEFAULT_GROUP_SIZE = 1;
    private static final boolean DEFAULT_COMBINE_DIRECTIONS = false;
-   private static final int DEFUALT_REGIONS_PER_SIDE = 5;
+   private static final int DEFUALT_REGIONS_PER_SIDE = 8;
 
    private final int groupSize;
    private final boolean combineDirections;
@@ -51,8 +51,6 @@ public class PDCClassifier extends CharacterClassifier {
     * A |groupSize| of 1 means no groping will occur.
     * |fonts| are used as attributes to the classifier.
     */
-   // Suppress the classifier Class cast.
-   @SuppressWarnings("unchecked")
    public PDCClassifier(List<WrapImage> trainingImages,
                         String trainingCharacters,
                         boolean combineDirections,

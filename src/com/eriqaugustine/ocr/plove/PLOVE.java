@@ -28,6 +28,18 @@ public final class PLOVE {
    private static final int DIRECTION_HORIZONTAL = 3; // -
 
    /**
+    * The Y deltas for the order to scan for connecting information.
+    * Once a fg point is found, the scan stops.
+    */
+   private static final int[] CONNECTING_SCAN_ORDER_Y = {1, 0, 0, -1, 1, 1, -1, -1};
+
+   /**
+    * The X deltas for the order to scan for connecting information.
+    * Once a fg point is found, the scan stops.
+    */
+   private static final int[] CONNECTING_SCAN_ORDER_X = {0, 1, -1, 0, 1, -1, 1, -1};
+
+   /**
     * This is a static-only class, don't construct.
     */
    private PLOVE() {
@@ -57,8 +69,9 @@ public final class PLOVE {
 
       List<Integer> peripherals = ImageUtils.getPeripheralPoints(discretePixels, SCALE_SIZE,
                                                                  NUM_LAYERS, true);
-
       assert(peripherals.size() * 4 == getNumberOfFeatures());
+
+      int[] connectingInfo = getConnectingInformation(discretePixels, SCALE_SIZE);
 
       double[] features = new double[getNumberOfFeatures()];
 
@@ -73,7 +86,8 @@ public final class PLOVE {
                features[(i * 4) + j] = 0;
             }
          } else {
-            ploveDirectionalComponents(directionalComponents, discretePixels,
+            ploveDirectionalComponents(directionalComponents,
+                                       discretePixels, connectingInfo,
                                        SCALE_SIZE, peripherals.get(i).intValue());
 
             for (int j = 0; j < 4; j++) {
@@ -94,6 +108,70 @@ public final class PLOVE {
    }
 
    /**
+    * Get the connecting information for an image.
+    * The authors call this "connecting information", but the name and the process are
+    * not very descriptive.
+    * For each fg point, we assign it a direction.
+    * This is supposed to be that points "connecting information".
+    * To get the connecting information, we open a 3x3 window around the point,
+    * then look in a very specific order for other fg points in the window.
+    * The first fg point to appear claims the direction for that point.
+    * The order was not specified in the paper.
+    * The only other P-LOVE implementation I found has the following order
+    * (if the point is centered at (0,0) on a cartesian plane (x,y):
+    *  (0,-1), (1,0), (-1,0), (0,1), (1,-1), (-1,-1), (1,1), (-1,1).
+    * Points that do not have connecting information will get a -1.
+    */
+   private static int[] getConnectingInformation(
+         boolean[] discretePixels,
+         int imageSideLength) {
+      int[] rtn = new int[discretePixels.length];
+
+      int dx;
+      int dy;
+      int direction;
+
+      for (int y = 0; y < imageSideLength; y++) {
+         for (int x = 0; x < imageSideLength; x++) {
+            // Start the point as having no connecting information.
+            rtn[MathUtils.rowColToIndex(y, x, imageSideLength)] = -1;
+
+            // Skip if not a fg point.
+            if (!discretePixels[MathUtils.rowColToIndex(y, x, imageSideLength)]) {
+               continue;
+            }
+
+            // Scan for another fg point in the specified order.
+            for (int i = 0; i < CONNECTING_SCAN_ORDER_Y.length; i++) {
+               dy = CONNECTING_SCAN_ORDER_Y[i];
+               dx = CONNECTING_SCAN_ORDER_X[i];
+
+               // If we are inbounds and on a fg point.
+               if (MathUtils.inBounds(y + dy, x + dx, imageSideLength, imageSideLength * imageSideLength)
+                     && discretePixels[MathUtils.rowColToIndex(y + dy, x + dx, imageSideLength)]) {
+
+                  // Find what direction this fg point lies on.
+                  if (dy == 0) {
+                     direction = DIRECTION_HORIZONTAL;
+                  } else if (dx == 0) {
+                     direction = DIRECTION_VERTICAL;
+                  } else if (dx + dy == 0) {
+                     direction = DIRECTION_SLASH;
+                  } else {
+                     direction = DIRECTION_BACK_SLASH;
+                  }
+
+                  rtn[MathUtils.rowColToIndex(y, x, imageSideLength)] = direction;
+                  break;
+               }
+            }
+         }
+      }
+
+      return rtn;
+   }
+
+   /**
     * Get the directional components for a single peripheral pixel.
     * The results will be filled into |directionalComponents|.
     * |discretePixels| should represent a |imageSideLength| x |imageSideLength| image.
@@ -101,6 +179,7 @@ public final class PLOVE {
    private static void ploveDirectionalComponents(
          double[] directionalComponents,
          boolean[] discretePixels,
+         int[] connectingInfo,
          int imageSideLength,
          int point) {
       assert(directionalComponents.length == 4);
@@ -125,29 +204,18 @@ public final class PLOVE {
             newY = y + dy;
             newX = x + dx;
 
-            // Skip out-of-bounds, the actual peripheral point we are looking at, and bg pixels.
-            if ((dy == 0 && dx == 0)
-                  || !MathUtils.inBounds(newY, newX, imageSideLength, imageSideLength)
-                  ) { // || !discretePixels[MathUtils.rowColToIndex(newY, newX, imageSideLength)]) {
+            // Skip out-of-bounds and pixels that have no connecting information.
+            // Note that we are including the current point.
+            if (!MathUtils.inBounds(newY, newX, imageSideLength, imageSideLength * imageSideLength)
+                  || connectingInfo[MathUtils.rowColToIndex(newY, newX, imageSideLength)] == -1) {
                continue;
             }
 
-            if (discretePixels[MathUtils.rowColToIndex(newY, newX, imageSideLength)]) {
-               // Find what direction this fg point lies on.
-               if (dy == 0) {
-                  direction = DIRECTION_HORIZONTAL;
-               } else if (dx == 0) {
-                  direction = DIRECTION_VERTICAL;
-               } else if (dx + dy == 0) {
-                  direction = DIRECTION_SLASH;
-               } else {
-                  direction = DIRECTION_BACK_SLASH;
-               }
+            // Add one to the directional component for every point in the window that has
+            //  a connecting information that matches that direction.
+            directionalComponents[connectingInfo[MathUtils.rowColToIndex(newY, newX, imageSideLength)]]++;
 
-               // Add one for every fg pixel in that direction.
-               directionalComponents[direction]++;
-            }
-
+            // Count one for every fg point in the window that has connecting information.
             count++;
          }
       }
@@ -156,24 +224,9 @@ public final class PLOVE {
          return;
       }
 
-      // TEST
-      System.err.println("^^^");
-      System.err.println("[" + directionalComponents[0] +
-                         ", " + directionalComponents[1] +
-                         ", " + directionalComponents[2] +
-                         ", " + directionalComponents[3] + "]");
-
       // Normalize the directions' contributions by the number of actual fg points seen.
       for (int i = 0; i < 4; i++) {
          directionalComponents[i] /= (double)count;
       }
-
-      // TEST
-      System.err.println(directionalComponents);
-      System.err.println("[" + directionalComponents[0] +
-                         ", " + directionalComponents[1] +
-                         ", " + directionalComponents[2] +
-                         ", " + directionalComponents[3] + "]");
-      System.err.println("vvv");
    }
 }

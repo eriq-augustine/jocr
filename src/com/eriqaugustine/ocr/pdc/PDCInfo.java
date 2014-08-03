@@ -16,7 +16,7 @@ public class PDCInfo {
    private final int numLayers;
 
    private final int[][] lengths;
-   private final int[] peripherals;
+   private final List<Integer> peripherals;
 
    private DCFeature[] fullPDCs;
    private DCFeature[] halfPDCs;
@@ -28,11 +28,11 @@ public class PDCInfo {
     */
    public PDCInfo(WrapImage image,
                   int numLayers,
-                  int[][] lengths, int[] peripherals) {
+                  int[][] lengths, List<Integer> peripherals) {
       this.image = image;
       this.numLayers = numLayers;
       this.lengths = lengths;
-      this.peripherals = peripherals;
+      this.peripherals = new ArrayList<Integer>(peripherals);
 
       fullPDCs = null;
       halfPDCs = null;

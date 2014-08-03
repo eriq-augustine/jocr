@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * A class to handle the functionality for PDC (Peripheral Direction Contributivities).
- * See papers in articels.
+ * See papers in articles.
  */
 public final class PDC {
    public static final int SCALE_SIZE = 64;

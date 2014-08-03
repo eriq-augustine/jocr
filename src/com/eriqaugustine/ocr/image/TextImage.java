@@ -38,6 +38,8 @@ public class TextImage {
       rows = normalizeStripes(rows);
       cols = normalizeStripes(cols);
 
+      List<WrapImage> crops;
+      List<Rectangle> bounds = new ArrayList<Rectangle>();
       WrapImage[][] images = new WrapImage[rows.size()][cols.size()];
 
       for (int i = 0; i < rows.size(); i++) {
@@ -46,7 +48,15 @@ public class TextImage {
                                            rows.get(i)[0],
                                            cols.get(j)[1] - cols.get(j)[0] + 1,
                                            rows.get(i)[1] - rows.get(i)[0] + 1);
-            images[i][j] = image.crop(rect).shrink();
+            bounds.add(rect);
+         }
+      }
+
+      crops = image.crop(bounds);
+
+      for (int i = 0; i < rows.size(); i++) {
+         for (int j = 0; j < cols.size(); j++) {
+            images[i][j] = crops.get(MathUtils.rowColToIndex(i, j, cols.size()));
          }
       }
 

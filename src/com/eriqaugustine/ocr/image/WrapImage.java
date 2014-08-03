@@ -16,7 +16,9 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.Dimension;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -565,6 +567,39 @@ public class WrapImage {
          logger.error("Could not crop image.", ex);
          return null;
       }
+   }
+
+   /**
+    * We need a special crop method for many crops at once because ImageMagick cannot crop a crop.
+    * So, if the base image is large, we would have to make many copies of it.
+    * Instead, we will make one copy and then crop that many times.
+    */
+   public List<WrapImage> crop(List<Rectangle> bounds) {
+      List<WrapImage> rtn = new ArrayList<WrapImage>();
+
+      if (isEmpty()) {
+         for (int i = 0; i < bounds.size(); i++) {
+            rtn.add(getEmptyImage());
+         }
+         return rtn;
+      }
+
+      MagickImage copyImage = copy().internalImage;
+
+      for (Rectangle bound : bounds) {
+         assert(bound.x >= 0 && bound.y >= 0);
+
+         try {
+            // ImageMagick is pretty flaky about crops of crops, so just make a full copy.
+            MagickImage image = copyImage.cropImage(bound);
+            rtn.add(new WrapImage(image));
+         } catch (MagickException ex) {
+            logger.error("Could not crop image.", ex);
+            rtn.add(getEmptyImage());
+         }
+      }
+
+      return rtn;
    }
 
    // Cache operations

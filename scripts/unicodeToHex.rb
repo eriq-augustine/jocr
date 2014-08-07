@@ -1,9 +1,8 @@
 # Convert a unicode string (the first arg) to a hex string.
 
-input = ARGV.shift
-
-input.each_char{|char|
-   print "\\u#{char.unpack('U*')[0]}"
+ARGV.each{|line|
+   line.strip().each_char{|char|
+      print "\\u#{char.unpack('U*')[0].to_s(16)}"
+   }
+   puts ''
 }
-
-puts ''

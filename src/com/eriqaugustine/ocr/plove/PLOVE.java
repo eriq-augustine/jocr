@@ -62,18 +62,26 @@ public final class PLOVE {
     * |image| must be already be binary.
     */
    public static double[] plove(WrapImage image) {
+      double[] features = new double[getNumberOfFeatures()];
+
+      // We may accidentally get empty images in our training set.
+      // Durring real classification, empty images should get cut out earlier.
+      if (image.isEmpty()) {
+         for (int i = 0; i < features.length; i++) {
+            features[i] = 0;
+         }
+         return features;
+      }
+
       image = image.copy();
       image.scale(SCALE_SIZE, SCALE_SIZE);
       boolean[] discretePixels = image.getDiscretePixels();
-
 
       List<Integer> peripherals = ImageUtils.getPeripheralPoints(discretePixels, SCALE_SIZE,
                                                                  NUM_LAYERS, true);
       assert(peripherals.size() * 4 == getNumberOfFeatures());
 
       int[] connectingInfo = getConnectingInformation(discretePixels, SCALE_SIZE);
-
-      double[] features = new double[getNumberOfFeatures()];
 
       // The directional comonents for each peripheral point.
       // We will reuse instead of re-allocate.

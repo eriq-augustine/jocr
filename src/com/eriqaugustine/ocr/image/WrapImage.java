@@ -280,6 +280,13 @@ public class WrapImage {
    }
 
    /**
+    * Clear out the image and make it empty.
+    */
+   public void clear() {
+      makeEmpty();
+   }
+
+   /**
     * Get a single pixel from the image.
     * Typically, one would want much more than just a single pixel.
     * So, this method will cache the entire image's pixels unless you

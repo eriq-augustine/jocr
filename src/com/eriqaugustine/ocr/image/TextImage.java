@@ -56,7 +56,7 @@ public class TextImage {
 
       for (int i = 0; i < rows.size(); i++) {
          for (int j = 0; j < cols.size(); j++) {
-            images[i][j] = crops.get(MathUtils.rowColToIndex(i, j, cols.size()));
+            images[i][j] = crops.get(MathUtils.rowColToIndex(i, j, cols.size())).shrink();
          }
       }
 

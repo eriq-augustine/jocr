@@ -1,5 +1,11 @@
 package com.eriqaugustine.ocr.classifier;
 
+// TEST
+import com.eriqaugustine.ocr.classifier.reducer.NoReducer;
+import com.eriqaugustine.ocr.classifier.reducer.ChangingValueReducer;
+import com.eriqaugustine.ocr.classifier.reducer.FeatureVectorReducer;
+import com.eriqaugustine.ocr.classifier.reducer.KLTReducer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,6 +32,8 @@ public abstract class VectorClassifier<ToClassify> {
 
    private Classifier classifier;
 
+   private FeatureVectorReducer reducer;
+
    /**
     * All the possible classes except the default class.
     * WEKA wants FastVector over List, but it will be contained to this class only.
@@ -38,15 +46,26 @@ public abstract class VectorClassifier<ToClassify> {
 
    private final String defaultClass;
 
-   private final int featureVectorLength;
+   protected final int featureVectorLength;
+
+   // TODO(eriq): We no longer need to pass in featureVectorLength since the reducer can tell us.
+   protected VectorClassifier(int featureVectorLength,
+                              String defaultClass) {
+      // TEST
+      // this(featureVectorLength, defaultClass, new NoReducer(featureVectorLength));
+      // this(featureVectorLength, defaultClass, new ChangingValueReducer(featureVectorLength));
+      this(featureVectorLength, defaultClass, new KLTReducer(featureVectorLength));
+   }
 
    /**
     * |featureVectorLength| is the length of the vector that will be obtained from getFeatureValues().
     */
    protected VectorClassifier(int featureVectorLength,
-                              String defaultClass) {
+                              String defaultClass,
+                              FeatureVectorReducer reducer) {
       this.defaultClass = defaultClass;
       this.featureVectorLength = featureVectorLength;
+      this.reducer = reducer;
 
       this.classifier = null;
       this.classes = null;
@@ -89,7 +108,7 @@ public abstract class VectorClassifier<ToClassify> {
          classes.addElement(seenClass);
       }
 
-      featureAttributes = getFeatureAttributes();
+      // |featureAttributes| will be initialized AFTER training reduction.
 
       Instances trainingSet = prepTraining(trainingContents, trainingClasses);
 
@@ -148,9 +167,11 @@ public abstract class VectorClassifier<ToClassify> {
    }
 
    private Instance prepUnclassed(ToClassify objToClassify) {
-      double[] featureValues = getFeatureValues(objToClassify);
+      return prepUnclassed(reducer.reduceSample(getFeatureValues(objToClassify)));
+   }
 
-      assert(featureValues.length == featureVectorLength);
+   private Instance prepUnclassed(double[] featureValues) {
+      assert(featureValues.length == reducer.getOutputSize());
 
       Instances instances = new Instances("Unclassified", featureAttributes, 1);
       instances.setClassIndex(0);
@@ -169,13 +190,20 @@ public abstract class VectorClassifier<ToClassify> {
 
    private Instances prepTraining(List<ToClassify> trainingContents,
                                   List<String> trainingClasses) {
+      // Collect all the features in one place so we can possibly reduce them.
+      // The first thing we need to do is reduce the training set so the reducer has full information.
+      double[][] trainingFeatures = reducer.reduceTraining(getAllTrainingFeatures(trainingContents));
+
+      // Get the featureAttributes AFTER reduction because we will not know how many feature we will have.
+      featureAttributes = getFeatureAttributes();
+
       Instances trainingSet = new Instances("VectorInstances",
                                             featureAttributes,
-                                            trainingContents.size());
+                                            trainingFeatures.length);
       trainingSet.setClassIndex(0);
 
-      for (int i = 0; i < trainingContents.size(); i++) {
-         Instance instance = prepUnclassed(trainingContents.get(i));
+      for (int i = 0; i < trainingFeatures.length; i++) {
+         Instance instance = prepUnclassed(trainingFeatures[i]);
          // Set the class value.
          instance.setValue((Attribute)featureAttributes.elementAt(0), trainingClasses.get(i));
 
@@ -183,6 +211,20 @@ public abstract class VectorClassifier<ToClassify> {
       }
 
       return trainingSet;
+   }
+
+   /**
+    * Get all the features for a training set.
+    * This is its own method so that subclasses have a chance to override.
+    */
+   protected double[][] getAllTrainingFeatures(List<ToClassify> trainingContents) {
+      double[][] rtn = new double[trainingContents.size()][];
+
+      for (int i = 0; i < trainingContents.size(); i++) {
+         rtn[i] = getFeatureValues(trainingContents.get(i));
+      }
+
+      return rtn;
    }
 
    /**
@@ -198,11 +240,11 @@ public abstract class VectorClassifier<ToClassify> {
     * Use getFeatureAttributeName() to give custom names for attributes.
     */
    private FastVector getFeatureAttributes() {
-      FastVector features = new FastVector(1 + featureVectorLength);
+      FastVector features = new FastVector(1 + reducer.getOutputSize());
 
       features.addElement(new Attribute("document_class", classes));
 
-      for (int i = 0; i < featureVectorLength; i++) {
+      for (int i = 0; i < reducer.getOutputSize(); i++) {
          features.addElement(new Attribute(getFeatureAttributeName(i)));
       }
 

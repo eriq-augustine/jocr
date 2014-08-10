@@ -89,4 +89,42 @@ public class MathUtils {
          return (vals[vals.length / 2] + vals[vals.length / 2 - 1]) / 2;
       }
    }
+
+   // TEST
+   public static void main(String[] args) {
+      double[] test = {
+         8.855947, 13.944415, 15.279197, 4.588160, 13.861727, 3.319060, 13.071810,
+         2.722658, 12.490826, 2.379061, 12.345440, 2.085090, 11.962393, 1.717368,
+         11.672187, 1.625521, 11.570918, 1.480610, 11.367888, 1.332107};
+      rank(test);
+   }
+
+   /**
+    * Get back an array that gives a rank [0, N) for each location in the array.
+    * The largest value will get a rank of 0.
+    * Ties will get an arbitrary ordering.
+    */
+   public static int[] rank(double[] vals) {
+      double[] sorted = Arrays.copyOf(vals, vals.length);
+
+      int[] rtn = new int[vals.length];
+      for (int i = 0; i < vals.length; i++) {
+         rtn[i] = -1;
+      }
+
+      Arrays.sort(sorted);
+
+      int count = 0;
+      for (int i = sorted.length - 1; i >= 0; i--) {
+         // Find the matching value in |vals| that has not been used yet.
+         for (int j = 0; j < vals.length; j++) {
+            if (doubleEquals(sorted[i], vals[j]) && rtn[j] == -1) {
+               rtn[j] = count++;
+               break;
+            }
+         }
+      }
+
+      return rtn;
+   }
 }

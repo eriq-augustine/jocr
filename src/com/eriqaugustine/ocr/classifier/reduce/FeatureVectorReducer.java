@@ -35,6 +35,47 @@ public abstract class FeatureVectorReducer {
       return outputSize;
    }
 
+   /**
+    * These integer versions are not reccomended because of precision problems.
+    */
+   public int[] reduceSample(int[] data) {
+      double[] doubleData = new double[data.length];
+      for (int i = 0; i < data.length; i++) {
+         doubleData[i] = (double)data[i];
+      }
+
+      double[] resultData = reduceSample(doubleData);
+      int[] rtn = new int[resultData.length];
+
+      for (int i = 0; i < resultData.length; i++) {
+         rtn[i] = (int)resultData[i];
+      }
+
+      return rtn;
+   }
+
+   public int[][] reduceTraining(int[][] data) {
+      double[][] doubleData = new double[data.length][];
+      for (int i = 0; i < data.length; i++) {
+         doubleData[i] = new double[data[i].length];
+         for (int j = 0; j < data[i].length; j++) {
+            doubleData[i][j] = (double)data[i][j];
+         }
+      }
+
+      double[][] resultData = reduceTraining(doubleData);
+      int[][] rtn = new int[resultData.length][];
+
+      for (int i = 0; i < resultData.length; i++) {
+         rtn[i] = new int[resultData[i].length];
+         for (int j = 0; j < resultData[i].length; j++) {
+            rtn[i][j] = (int)resultData[i][j];
+         }
+      }
+
+      return rtn;
+   }
+
    public abstract double[] reduceSample(double[] data);
    public abstract double[][] reduceTraining(double[][] data);
 }

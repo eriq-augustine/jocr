@@ -60,6 +60,66 @@ public class MathUtils {
       return sum / vals.length;
    }
 
+   public static double min(double[] vals) {
+      if (vals.length == 0) {
+         return Double.NaN;
+      }
+
+      double[] range = range(vals);
+      return range[0];
+   }
+
+   public static double max(double[] vals) {
+      if (vals.length == 0) {
+         return Double.NaN;
+      }
+
+      double[] range = range(vals);
+      return range[1];
+   }
+
+   /**
+    * Get the range of an array.
+    * will return null if the array is empty.
+    * Will return a double[2] (min at 0, max at 1).
+    */
+   public static double[] range(double[] vals) {
+      if (vals.length == 0) {
+         return null;
+      }
+
+      double[] rtn = {vals[0], vals[0]};
+
+      for (int i = 1; i < vals.length; i++) {
+         if (rtn[0] > vals[i]) {
+            rtn[0] = vals[i];
+         } else if (rtn[1] < vals[i]) {
+            rtn[1] = vals[i];
+         }
+      }
+
+      return rtn;
+   }
+
+   /**
+    * |vals| is const.
+    */
+   public static double variance(double[] vals) {
+      if (vals.length == 0) {
+         return Double.NaN;
+      }
+
+      double mean = mean(vals);
+
+      double[] deviations = new double[vals.length];
+
+      for (int i = 0; i < vals.length; i++) {
+         deviations[i] = Math.pow(vals[i] - mean, 2);
+      }
+
+      return mean(deviations);
+   }
+
    /**
     * |vals| is const.
     */

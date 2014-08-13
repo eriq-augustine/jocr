@@ -5,6 +5,7 @@ import com.eriqaugustine.ocr.classifier.reducer.NoReducer;
 import com.eriqaugustine.ocr.classifier.reducer.ChangingValueReducer;
 import com.eriqaugustine.ocr.classifier.reducer.FeatureVectorReducer;
 import com.eriqaugustine.ocr.classifier.reducer.KLTReducer;
+import com.eriqaugustine.ocr.classifier.reducer.EntropyReducer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,8 +54,9 @@ public abstract class VectorClassifier<ToClassify> {
                               String defaultClass) {
       // TEST
       // this(featureVectorLength, defaultClass, new NoReducer(featureVectorLength));
+      this(featureVectorLength, defaultClass, new EntropyReducer(featureVectorLength));
       // this(featureVectorLength, defaultClass, new ChangingValueReducer(featureVectorLength));
-      this(featureVectorLength, defaultClass, new KLTReducer(featureVectorLength));
+      // this(featureVectorLength, defaultClass, new KLTReducer(featureVectorLength));
    }
 
    /**

@@ -18,7 +18,9 @@ public class PLOVEClassifierTest extends ClassifierTest {
       CharacterClassifier classy =
          new PLOVEClassifier(trainingContents,
                              trainingClasses,
-                             new String[]{Props.getString("DEFAULT_FONT_FAMILY")});
+                             // new String[]{Props.getString("DEFAULT_FONT_FAMILY")});
+                             // new String[]{"IPAGothic", "HGMinchoB", "RyuminStd-Regular-KS", "FutoMinA101Pro-Bold"});
+                             Props.getList("CLASSIFIER_TRAINING_FONTS").toArray(new String[0]));
 
       classifierTest(classy, true);
    }

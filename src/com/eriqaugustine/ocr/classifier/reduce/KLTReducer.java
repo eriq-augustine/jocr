@@ -21,7 +21,7 @@ public class KLTReducer extends FeatureVectorReducer {
 
    private static final int DEFAULT_FEATURE_SET_SIZE = 128;
 
-   public FeatureVectorReducer changingValueReducer;
+   private FeatureVectorReducer changingValueReducer;
 
    /**
     * A matrix that will transform a feature vector (each row is a document, and each column is a feature)

@@ -23,8 +23,9 @@ public class EntropyReducer extends FeatureVectorReducer {
    private static Logger logger = LogManager.getLogger(EntropyReducer.class.getName());
 
    // TEST
-   // private static final int DEFAULT_FEATURE_SET_SIZE = 128;
    private static final int DEFAULT_FEATURE_SET_SIZE = 2660;
+   // private static final int DEFAULT_FEATURE_SET_SIZE = 128;
+
    private static final int DEFAULT_NUM_BUCKETS = 10;
 
    /**
@@ -80,8 +81,8 @@ public class EntropyReducer extends FeatureVectorReducer {
       int[][] discretizedData = changingValueReducer.reduceTraining(discretizeTrainingData(data), trainingClasses);
 
       // Now that we know the size of the reduced features, initialize them.
-      activeFeatures = new boolean[discretizedData.length];
-      for (int i = 0; i < discretizedData.length; i++) {
+      activeFeatures = new boolean[discretizedData[0].length];
+      for (int i = 0; i < activeFeatures.length; i++) {
          activeFeatures[i] = false;
       }
 
@@ -97,6 +98,11 @@ public class EntropyReducer extends FeatureVectorReducer {
          double currentDatasetEntropy = datasetEntropy(trainingClasses);
 
          for (int i = 0; i < discretizedData[0].length; i++) {
+            // Skip attributes that have been emptied out.
+            if (discretizedData[0][i] == -1) {
+               continue;
+            }
+
             gainRatio = informationGainRatio(discretizedData, trainingClasses, i, currentDatasetEntropy);
 
             if (maxIndex == -1 || gainRatio > maxGainRatio) {
@@ -198,7 +204,7 @@ public class EntropyReducer extends FeatureVectorReducer {
          }
 
          if (datasetSize > 0) {
-            splitEntropy += ((datasetSize / data.length) * MathUtils.log2(datasetSize / data.length));
+            splitEntropy += (((double)datasetSize / data.length) * MathUtils.log2((double)datasetSize / data.length));
          }
       }
 

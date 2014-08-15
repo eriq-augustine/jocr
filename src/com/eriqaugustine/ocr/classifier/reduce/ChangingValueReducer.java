@@ -60,9 +60,6 @@ public class ChangingValueReducer extends FeatureVectorReducer {
       // Set the output size.
       super.outputSize = numKeepFeatures;
 
-      // TEST
-      System.err.println("TEST0: " + numKeepFeatures);
-
       // Reduce each training vector.
       double[][] rtn = new double[data.length][];
       for (int i = 0; i < data.length; i++) {

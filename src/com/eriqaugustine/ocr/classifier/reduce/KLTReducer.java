@@ -54,11 +54,11 @@ public class KLTReducer extends FeatureVectorReducer {
       return finalData.getRow(0);
    }
 
-   public double[][] reduceTraining(double[][] data) {
+   public double[][] reduceTraining(double[][] data, String[] classLabels) {
       assert(data.length > 0);
       assert(data[0].length == super.inputSize);
 
-      double[][] reducedData = changingValueReducer.reduceTraining(data);
+      double[][] reducedData = changingValueReducer.reduceTraining(data, classLabels);
 
       RealMatrix dataMatrix = new Array2DRowRealMatrix(reducedData);
       RealMatrix centeredData = dataMatrix.subtract(getMeanMatrix(dataMatrix));

@@ -46,6 +46,13 @@ public class MathUtils {
    }
 
    /**
+    * Log base 2.
+    */
+   public static double log2(double val) {
+      return Math.log(val) / Math.log(2);
+   }
+
+   /**
     * |vals| is const.
     */
    public static double mean(double[] vals) {

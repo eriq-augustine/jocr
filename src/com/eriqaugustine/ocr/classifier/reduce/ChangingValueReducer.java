@@ -37,7 +37,7 @@ public class ChangingValueReducer extends FeatureVectorReducer {
       return rtn;
    }
 
-   public double[][] reduceTraining(double[][] data) {
+   public double[][] reduceTraining(double[][] data, String[] classLabels) {
       assert(data.length > 0);
       assert(data[0].length == super.inputSize);
 

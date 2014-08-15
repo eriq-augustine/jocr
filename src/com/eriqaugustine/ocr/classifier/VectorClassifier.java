@@ -194,7 +194,7 @@ public abstract class VectorClassifier<ToClassify> {
                                   List<String> trainingClasses) {
       // Collect all the features in one place so we can possibly reduce them.
       // The first thing we need to do is reduce the training set so the reducer has full information.
-      double[][] trainingFeatures = reducer.reduceTraining(getAllTrainingFeatures(trainingContents));
+      double[][] trainingFeatures = reducer.reduceTraining(getAllTrainingFeatures(trainingContents), trainingClasses.toArray(new String[0]));
 
       // Get the featureAttributes AFTER reduction because we will not know how many feature we will have.
       featureAttributes = getFeatureAttributes();

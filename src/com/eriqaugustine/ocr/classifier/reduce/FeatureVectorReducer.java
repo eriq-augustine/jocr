@@ -54,7 +54,7 @@ public abstract class FeatureVectorReducer {
       return rtn;
    }
 
-   public int[][] reduceTraining(int[][] data) {
+   public int[][] reduceTraining(int[][] data, String[] classLabels) {
       double[][] doubleData = new double[data.length][];
       for (int i = 0; i < data.length; i++) {
          doubleData[i] = new double[data[i].length];
@@ -63,7 +63,7 @@ public abstract class FeatureVectorReducer {
          }
       }
 
-      double[][] resultData = reduceTraining(doubleData);
+      double[][] resultData = reduceTraining(doubleData, classLabels);
       int[][] rtn = new int[resultData.length][];
 
       for (int i = 0; i < resultData.length; i++) {
@@ -77,5 +77,5 @@ public abstract class FeatureVectorReducer {
    }
 
    public abstract double[] reduceSample(double[] data);
-   public abstract double[][] reduceTraining(double[][] data);
+   public abstract double[][] reduceTraining(double[][] data, String[] classLabels);
 }

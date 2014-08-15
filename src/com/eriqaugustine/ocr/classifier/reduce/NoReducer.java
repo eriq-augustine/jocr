@@ -14,7 +14,7 @@ public class NoReducer extends FeatureVectorReducer {
       return data;
    }
 
-   public double[][] reduceTraining(double[][] data) {
+   public double[][] reduceTraining(double[][] data, String[] classLabels) {
       assert(data.length > 0);
       assert(data[0].length == super.inputSize);
 

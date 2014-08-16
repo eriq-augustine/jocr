@@ -23,10 +23,13 @@ public class EntropyReducer extends FeatureVectorReducer {
    private static Logger logger = LogManager.getLogger(EntropyReducer.class.getName());
 
    // TEST
-   private static final int DEFAULT_FEATURE_SET_SIZE = 2660;
-   // private static final int DEFAULT_FEATURE_SET_SIZE = 128;
+   // private static final int DEFAULT_FEATURE_SET_SIZE = 2660;
+   // private static final int DEFAULT_FEATURE_SET_SIZE = 2048;
+   private static final int DEFAULT_FEATURE_SET_SIZE = 256;
 
-   private static final int DEFAULT_NUM_BUCKETS = 10;
+   // TEST
+   // private static final int DEFAULT_NUM_BUCKETS = 10;
+   private static final int DEFAULT_NUM_BUCKETS = 50;
 
    /**
     * The attributes that will be kept.
@@ -35,6 +38,7 @@ public class EntropyReducer extends FeatureVectorReducer {
     */
    private boolean[] activeFeatures;
 
+   // TODO(eriq): Does not need to be member data.
    private double[] trainingRange;
 
    private int numBuckets;
@@ -77,6 +81,9 @@ public class EntropyReducer extends FeatureVectorReducer {
       assert(data.length > 0);
       assert(data[0].length == super.inputSize);
       assert(data.length == trainingClasses.length);
+
+      // TEST
+      System.err.println("TEST0: " + data.length);
 
       int[][] discretizedData = changingValueReducer.reduceTraining(discretizeTrainingData(data), trainingClasses);
 
@@ -133,17 +140,19 @@ public class EntropyReducer extends FeatureVectorReducer {
     * In addition to returning discretized data, this will populate |trainingRange|.
     */
    private int[][] discretizeTrainingData(double[][] data) {
-      trainingRange = new double[2];
+      assert(data.length > 0);
+
+      trainingRange = MathUtils.range(data[0]);
 
       double[] rowRange;
-      for (int i = 0; i < data.length; i++) {
+      for (int i = 1; i < data.length; i++) {
          rowRange = MathUtils.range(data[i]);
 
-         if (rowRange[0] <= trainingRange[0]) {
+         if (rowRange[0] < trainingRange[0]) {
             trainingRange[0] = rowRange[0];
          }
 
-         if (rowRange[1] >= trainingRange[1]) {
+         if (rowRange[1] > trainingRange[1]) {
             trainingRange[1] = rowRange[1];
          }
       }
@@ -161,10 +170,10 @@ public class EntropyReducer extends FeatureVectorReducer {
 
       for (int i = 0; i < data.length; i++) {
          if (data[i] < trainingRange[0]) {
-            data[i] = 0;
+            rtn[i] = 0;
          // The subtraction is just to protect against an unlikely divide-by-zero.
          } else if (data[i] >= (trainingRange[1] - 0.000001)) {
-            data[i] = numBuckets - 1;
+            rtn[i] = numBuckets - 1;
          } else {
            rtn[i] = (int)(((data[i] - trainingRange[0]) / (trainingRange[1] - trainingRange[0])) * numBuckets);
          }

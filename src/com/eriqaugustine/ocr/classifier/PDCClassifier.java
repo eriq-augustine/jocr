@@ -27,20 +27,8 @@ public class PDCClassifier extends CharacterClassifier {
    private final int groupSize;
    private final boolean combineDirections;
 
-   public PDCClassifier(WrapImage[] characterImages,
-                        String characters,
-                        String[] fonts) throws Exception {
-      this(Arrays.asList(characterImages), characters,
-           DEFAULT_COMBINE_DIRECTIONS, DEFAULT_GROUP_SIZE, fonts);
-   }
-
-   public PDCClassifier(WrapImage[] characterImages,
-                        String characters,
-                        boolean combineDirections,
-                        int groupSize,
-                        String[] fonts) throws Exception {
-      this(Arrays.asList(characterImages), characters,
-           combineDirections, groupSize, fonts);
+   public PDCClassifier(String characters, String[] fonts) throws Exception {
+      this(characters, DEFAULT_COMBINE_DIRECTIONS, DEFAULT_GROUP_SIZE, fonts);
    }
 
    /**
@@ -51,8 +39,7 @@ public class PDCClassifier extends CharacterClassifier {
     * A |groupSize| of 1 means no groping will occur.
     * |fonts| are used as attributes to the classifier.
     */
-   public PDCClassifier(List<WrapImage> trainingImages,
-                        String trainingCharacters,
+   public PDCClassifier(String trainingCharacters,
                         boolean combineDirections,
                         int groupSize,
                         String[] fonts) throws Exception {
@@ -65,7 +52,6 @@ public class PDCClassifier extends CharacterClassifier {
       this.groupSize = groupSize;
 
       boolean res = train(
-            trainingImages,
             trainingCharacters,
             fonts,
             MapUtils.inlinePut(MapUtils.inlinePut(

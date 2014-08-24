@@ -16,8 +16,7 @@ public class RegionClassifierTest extends ClassifierTest {
 
    private void run() throws Exception {
       CharacterClassifier classy =
-         new RegionClassifier(trainingContents,
-                              trainingClasses,
+         new RegionClassifier(trainingCharacters,
                               8,
                               new String[]{Props.getString("DEFAULT_FONT_FAMILY")});
 

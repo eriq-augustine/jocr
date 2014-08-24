@@ -17,13 +17,11 @@ import com.eriqaugustine.ocr.utils.Props;
  */
 public abstract class KanjiClassifierTest {
    // Suggested training set.
-   protected final String trainingClasses;
-   protected final WrapImage[] trainingContents;
+   protected final String trainingCharacters;
 
    protected KanjiClassifierTest() {
-      // trainingClasses = Props.getString("KYOIKU_FIRST_GRADE");
-      trainingClasses = Props.getString("KYOIKU_FULL");
-      trainingContents = CharacterImage.generateFontImages(trainingClasses);
+      // trainingCharacters = Props.getString("KYOIKU_FIRST_GRADE");
+      trainingCharacters = Props.getString("KYOIKU_FULL");
    }
 
    protected void classifierTest(CharacterClassifier classy) throws Exception {

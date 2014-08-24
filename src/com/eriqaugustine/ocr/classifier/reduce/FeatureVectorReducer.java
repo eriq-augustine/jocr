@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.classifier.reducer;
+package com.eriqaugustine.ocr.classifier.reduce;
 
 /**
  * Reduce a feature set down to the important features.

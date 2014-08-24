@@ -17,19 +17,17 @@ import com.eriqaugustine.ocr.utils.Props;
  */
 public abstract class ClassifierTest {
    // Suggested training set.
-   protected final String trainingClasses;
-   protected final WrapImage[] trainingContents;
+   protected final String trainingCharacters;
 
    protected ClassifierTest() {
-      trainingClasses = Props.getString("HIRAGANA");
-      trainingContents = CharacterImage.generateFontImages(trainingClasses);
+      trainingCharacters = Props.getString("HIRAGANA");
    }
 
-   protected void classifierTest(CharacterClassifier classy) throws Exception {
-      classifierTest(classy, false);
+   protected double classifierTest(CharacterClassifier classy) throws Exception {
+      return classifierTest(classy, false);
    }
 
-   protected void classifierTest(CharacterClassifier classy, boolean verbose) throws Exception {
+   protected double classifierTest(CharacterClassifier classy, boolean verbose) throws Exception {
       FontUtils.registerLocalFonts();
 
       // Not exactly hiragana.
@@ -65,6 +63,9 @@ public abstract class ClassifierTest {
          }
       }
 
-      System.err.println("Hits: " + hits + " / " + count + " (" + ((double)hits / count) + ")");
+      double accuracy = (double)hits / count;
+      System.err.println("Hits: " + hits + " / " + count + " (" + accuracy + ")");
+
+      return accuracy;
    }
 }

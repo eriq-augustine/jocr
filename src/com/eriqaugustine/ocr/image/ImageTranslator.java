@@ -28,14 +28,18 @@ public class ImageTranslator {
       this(FONTS);
    }
 
+   public ImageTranslator(CharacterClassifier classy) throws Exception {
+      this.classy = classy;
+      trans = new Translator("ja", "en");
+   }
+
    public ImageTranslator(String[] fonts) throws Exception {
       String trainingAlphabet = "";
       for (int i = 0; i < fonts.length; i++) {
          trainingAlphabet += ALPHABET;
       }
 
-      classy = new PDCClassifier(CharacterImage.generateFontImages(ALPHABET, fonts),
-                                 trainingAlphabet, true, 1, fonts);
+      classy = new PDCClassifier(trainingAlphabet, true, 1, fonts);
       trans = new Translator("ja", "en");
    }
 

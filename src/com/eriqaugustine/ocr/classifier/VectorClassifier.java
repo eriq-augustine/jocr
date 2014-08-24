@@ -1,11 +1,11 @@
 package com.eriqaugustine.ocr.classifier;
 
 // TEST
-import com.eriqaugustine.ocr.classifier.reducer.NoReducer;
-import com.eriqaugustine.ocr.classifier.reducer.ChangingValueReducer;
-import com.eriqaugustine.ocr.classifier.reducer.FeatureVectorReducer;
-import com.eriqaugustine.ocr.classifier.reducer.KLTReducer;
-import com.eriqaugustine.ocr.classifier.reducer.EntropyReducer;
+import com.eriqaugustine.ocr.classifier.reduce.NoReducer;
+import com.eriqaugustine.ocr.classifier.reduce.ChangingValueReducer;
+import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
+import com.eriqaugustine.ocr.classifier.reduce.KLTReducer;
+import com.eriqaugustine.ocr.classifier.reduce.EntropyReducer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +30,8 @@ import java.util.Set;
  */
 public abstract class VectorClassifier<ToClassify> {
    private static Logger logger = LogManager.getLogger(VectorClassifier.class.getName());
+
+   private static final String DEFAULT_WEKA_CLASSIFIER = "weka.classifiers.lazy.IBk";
 
    private Classifier classifier;
 
@@ -74,15 +76,34 @@ public abstract class VectorClassifier<ToClassify> {
       this.featureAttributes = null;
    }
 
+   /**
+    * Train the classifier.
+    * The classifier is no good before it is trained.
+    * Common WEKA classifiers:
+    *  - weka.classifiers.functions.SMO
+    *  - weka.classifiers.lazy.IBk
+    *  - weka.classifiers.bayes.NaiveBayes
+    *  - weka.classifiers.trees.J48
+    */
    protected boolean train(List<ToClassify> trainingContents,
                            List<String> trainingClasses,
                            Map<String, String> classifierAttributes) {
       return train(trainingContents,
                    trainingClasses,
-                   "weka.classifiers.functions.SMO" /* classifier */,
-                   "" /* notes */,
+                   DEFAULT_WEKA_CLASSIFIER,
+                   classifierAttributes);
+   }
+
+   protected boolean train(List<ToClassify> trainingContents,
+                           List<String> trainingClasses,
+                           String wekaClassifier,
+                           Map<String, String> classifierAttributes) {
+      return train(trainingContents,
+                   trainingClasses,
+                   wekaClassifier,
+                   "",
                    classifierAttributes,
-                   true /* use cache */);
+                   true);
    }
 
    /**

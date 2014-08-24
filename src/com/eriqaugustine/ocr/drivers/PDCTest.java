@@ -16,8 +16,7 @@ public class PDCTest extends ClassifierTest {
 
    private void run() throws Exception {
       CharacterClassifier classy =
-         new PDCClassifier(trainingContents,
-                           trainingClasses,
+         new PDCClassifier(trainingCharacters,
                            true,
                            1,
                            new String[]{Props.getString("DEFAULT_FONT_FAMILY")});

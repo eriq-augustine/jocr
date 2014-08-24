@@ -22,19 +22,8 @@ public class RegionClassifier extends CharacterClassifier {
 
    private final int regionsPerSide;
 
-   public RegionClassifier(WrapImage[] characterImages,
-                           String characters,
-                           String[] fonts) throws Exception {
-      this(Arrays.asList(characterImages), characters,
-           DEFAULT_REGIONS_PER_SIDE, fonts);
-   }
-
-   public RegionClassifier(WrapImage[] characterImages,
-                           String characters,
-                           int regionsPerSide,
-                           String[] fonts) throws Exception {
-      this(Arrays.asList(characterImages), characters,
-           regionsPerSide, fonts);
+   public RegionClassifier(String characters, String[] fonts) throws Exception {
+      this(characters, DEFAULT_REGIONS_PER_SIDE, fonts);
    }
 
    /**
@@ -45,8 +34,7 @@ public class RegionClassifier extends CharacterClassifier {
     * A |groupSize| of 1 means no groping will occur.
     * |fonts| are used as attributes to the classifier.
     */
-   public RegionClassifier(List<WrapImage> trainingImages,
-                           String trainingCharacters,
+   public RegionClassifier(String trainingCharacters,
                            int regionsPerSide,
                            String[] fonts) throws Exception {
       super((int)(Math.pow(regionsPerSide, 2)));
@@ -56,7 +44,6 @@ public class RegionClassifier extends CharacterClassifier {
       this.regionsPerSide = regionsPerSide;
 
       boolean res = train(
-            trainingImages,
             trainingCharacters,
             fonts,
             MapUtils.inlinePut(

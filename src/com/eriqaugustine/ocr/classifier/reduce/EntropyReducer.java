@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.classifier.reducer;
+package com.eriqaugustine.ocr.classifier.reduce;
 
 import com.eriqaugustine.ocr.utils.MathUtils;
 
@@ -22,14 +22,18 @@ import java.util.Map;
 public class EntropyReducer extends FeatureVectorReducer {
    private static Logger logger = LogManager.getLogger(EntropyReducer.class.getName());
 
+   // The best set from a brute force test.
+   private static final int DEFAULT_FEATURE_SET_SIZE = 1300;
+   private static final int DEFAULT_NUM_BUCKETS = 2;
+
    // TEST
    // private static final int DEFAULT_FEATURE_SET_SIZE = 2660;
    // private static final int DEFAULT_FEATURE_SET_SIZE = 2048;
-   private static final int DEFAULT_FEATURE_SET_SIZE = 256;
+   // private static final int DEFAULT_FEATURE_SET_SIZE = 512;
 
    // TEST
    // private static final int DEFAULT_NUM_BUCKETS = 10;
-   private static final int DEFAULT_NUM_BUCKETS = 50;
+   // private static final int DEFAULT_NUM_BUCKETS = 5;
 
    /**
     * The attributes that will be kept.
@@ -37,9 +41,6 @@ public class EntropyReducer extends FeatureVectorReducer {
     * NOT the original data.
     */
    private boolean[] activeFeatures;
-
-   // TODO(eriq): Does not need to be member data.
-   private double[] trainingRange;
 
    private int numBuckets;
 
@@ -55,7 +56,6 @@ public class EntropyReducer extends FeatureVectorReducer {
 
       this.numBuckets = numBuckets;
       changingValueReducer = new ChangingValueReducer(inputSize);
-      trainingRange = null;
    }
 
    public double[] reduceSample(double[] data) {
@@ -81,9 +81,6 @@ public class EntropyReducer extends FeatureVectorReducer {
       assert(data.length > 0);
       assert(data[0].length == super.inputSize);
       assert(data.length == trainingClasses.length);
-
-      // TEST
-      System.err.println("TEST0: " + data.length);
 
       int[][] discretizedData = changingValueReducer.reduceTraining(discretizeTrainingData(data), trainingClasses);
 
@@ -136,13 +133,10 @@ public class EntropyReducer extends FeatureVectorReducer {
       return rtn;
    }
 
-   /**
-    * In addition to returning discretized data, this will populate |trainingRange|.
-    */
    private int[][] discretizeTrainingData(double[][] data) {
       assert(data.length > 0);
 
-      trainingRange = MathUtils.range(data[0]);
+      double[] trainingRange = MathUtils.range(data[0]);
 
       double[] rowRange;
       for (int i = 1; i < data.length; i++) {
@@ -159,23 +153,23 @@ public class EntropyReducer extends FeatureVectorReducer {
 
       int[][] rtn = new int[data.length][];
       for (int i = 0; i < data.length; i++) {
-         rtn[i] = discretizeData(data[i]);
+         rtn[i] = discretizeData(data[i], trainingRange);
       }
 
       return rtn;
    }
 
-   private int[] discretizeData(double[] data) {
+   private int[] discretizeData(double[] data, double[] range) {
       int[] rtn = new int[data.length];
 
       for (int i = 0; i < data.length; i++) {
-         if (data[i] < trainingRange[0]) {
+         if (data[i] < range[0]) {
             rtn[i] = 0;
          // The subtraction is just to protect against an unlikely divide-by-zero.
-         } else if (data[i] >= (trainingRange[1] - 0.000001)) {
+         } else if (data[i] >= (range[1] - 0.000001)) {
             rtn[i] = numBuckets - 1;
          } else {
-           rtn[i] = (int)(((data[i] - trainingRange[0]) / (trainingRange[1] - trainingRange[0])) * numBuckets);
+           rtn[i] = (int)(((data[i] - range[0]) / (range[1] - range[0])) * numBuckets);
          }
       }
 
@@ -217,7 +211,7 @@ public class EntropyReducer extends FeatureVectorReducer {
          }
       }
 
-      splitEntropy *= -1;
+      splitEntropy *= -1.0;
 
       return informationGain(data, classLabels, attributeIndex, dataEntropy) / splitEntropy;
    }

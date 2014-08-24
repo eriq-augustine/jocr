@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.classifier.reducer;
+package com.eriqaugustine.ocr.classifier.reduce;
 
 import com.eriqaugustine.ocr.utils.MathUtils;
 
@@ -19,7 +19,10 @@ import org.apache.logging.log4j.Logger;
 public class KLTReducer extends FeatureVectorReducer {
    private static Logger logger = LogManager.getLogger(KLTReducer.class.getName());
 
-   private static final int DEFAULT_FEATURE_SET_SIZE = 128;
+   // TEST
+   // private static final int DEFAULT_FEATURE_SET_SIZE = 128;
+   // private static final int DEFAULT_FEATURE_SET_SIZE = 1024;
+   private static final int DEFAULT_FEATURE_SET_SIZE = 1000;
 
    private FeatureVectorReducer changingValueReducer;
 
@@ -61,64 +64,27 @@ public class KLTReducer extends FeatureVectorReducer {
       double[][] reducedData = changingValueReducer.reduceTraining(data, classLabels);
 
       RealMatrix dataMatrix = new Array2DRowRealMatrix(reducedData);
-      RealMatrix centeredData = dataMatrix.subtract(getMeanMatrix(dataMatrix));
+
+      // NOTE(eriq): The math says that we should first center our data.
+      //  But, centering the data (subtracting the mean) gives up much worse results...
+      // RealMatrix centeredData = dataMatrix.subtract(getMeanMatrix(dataMatrix));
+      RealMatrix centeredData = dataMatrix;
 
       Covariance covariance = new Covariance(reducedData);
       EigenDecomposition eigenDecomp = new EigenDecomposition(covariance.getCovarianceMatrix());
-
-      // TEST
-      System.err.println("TEST00");
-
-      /*
-      double[] eigenValues = eigenDecomp.getRealEigenvalues();
-      for (int i = 0; i < eigenValues.length; i++) {
-         System.err.print(eigenValues[i] + ", ");
-      }
-      System.err.println();
-      */
-
-      System.err.println("TEST01");
-
-      /*
-      //TEST
-      Jama.EigenvalueDecomposition jmaDecomp = new Jama.EigenvalueDecomposition(new Jama.Matrix(covariance.getCovarianceMatrix().getData()));
-      double[] jmaEigen = jmaDecomp.getRealEigenvalues();
-      for(int i = 0; i < jmaEigen.length; i++){
-         System.err.print(jmaEigen[i] + ", ");
-      }
-      System.err.println();
-      */
-
-      //TEST
-      /*
-      RealMatrix covMatrix = covariance.getCovarianceMatrix();
-      for (int i = 0; i < covMatrix.getColumnDimension(); i++) {
-         EigenDecomposition eigenDecomp2 = new EigenDecomposition(covMatrix.getColumnMatrix(i));
-         double[] eigen = eigenDecomp2.getRealEigenvalues();
-         System.err.println(eigen.length + ": " + eigen[0]);
-      }
-      */
-
-      System.err.println("TEST02");
 
       // Get the eigen vectors.
       // Transpose them (each eigen vector is now in a row).
       // Take the top |reducedFeatureVectorLength| vectors.
       // TODO(eriq): Verify |reducedFeatureVectorLength| > |num reduced features|.
-      transformationMatrix = eigenDecomp.getV().transpose();
+      // NOTE(eriq): Are the eigen vectors along the vertical or horizontal.
+      // transformationMatrix = eigenDecomp.getV().transpose();
+      transformationMatrix = eigenDecomp.getV();
 
       // Get only the top |super.outputSize| eigen vectors.
       transformationMatrix = transformationMatrix.getSubMatrix(0, super.outputSize - 1, 0, reducedData[0].length - 1);
 
-      //TEST
-      System.err.println("TEST03");
-      System.err.println("Row: " + transformationMatrix.getRowDimension() + ", Col: " + transformationMatrix.getColumnDimension());
-      System.err.println("Row: " + centeredData.getRowDimension() + ", Col: " + centeredData.getColumnDimension());
-
       RealMatrix finalData = transformationMatrix.multiply(centeredData.transpose()).transpose();
-
-      // TEST
-      System.err.println("TEST09");
 
       return finalData.getData();
    }

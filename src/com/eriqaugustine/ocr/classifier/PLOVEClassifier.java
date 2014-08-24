@@ -1,5 +1,6 @@
 package com.eriqaugustine.ocr.classifier;
 
+import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
 import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.plove.PLOVE;
 
@@ -16,21 +17,18 @@ import java.util.List;
 public class PLOVEClassifier extends CharacterClassifier {
    private static Logger logger = LogManager.getLogger(PLOVEClassifier.class.getName());
 
-   public PLOVEClassifier(
-         WrapImage[] characterImages,
-         String characters,
-         String[] fonts) throws Exception {
-      this(Arrays.asList(characterImages), characters, fonts);
+   public PLOVEClassifier(String trainingCharacters, String[] fonts, FeatureVectorReducer reduce) throws Exception {
+      super(PLOVE.getNumberOfFeatures(), reduce);
+      train(trainingCharacters, fonts);
    }
 
-   public PLOVEClassifier(
-         List<WrapImage> trainingImages,
-         String trainingCharacters,
-         String[] fonts) throws Exception {
+   public PLOVEClassifier(String trainingCharacters, String[] fonts) throws Exception {
       super(PLOVE.getNumberOfFeatures());
+      train(trainingCharacters, fonts);
+   }
 
+   private void train(String trainingCharacters, String[] fonts) throws Exception {
       boolean res = train(
-            trainingImages,
             trainingCharacters,
             fonts,
             new HashMap<String, String>()

@@ -35,7 +35,19 @@ public class Props {
    private static Map<String, PropType> props = new HashMap<String, PropType>();
 
    static {
-      File file = new File(DEFAULT_CONFIG_FILE);
+      init();
+   }
+
+   public static void init() {
+      init(DEFAULT_CONFIG_FILE);
+   }
+
+   /**
+    * Initialize the Props with a properties file.
+    * As long as you are using the default.
+    */
+   public static void init(String propFile) {
+      File file = new File(propFile);
       if (file.exists() && file.isFile()) {
          readFile(file.getAbsolutePath());
       }
@@ -241,7 +253,7 @@ public class Props {
             }
          }
       } catch (Exception ex) {
-            logger.fatal("Error getting properties from: {}.", fileName);
+            logger.fatal("Error getting properties from: {}.", fileName, ex);
          return false;
       }
 

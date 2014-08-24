@@ -130,8 +130,7 @@ public class Test {
       }
 
       CharacterClassifier classy =
-            new PDCClassifier(CharacterImage.generateFontImages(alphabet, fonts),
-                              trainingAlphabet, true, 1, fonts);
+            new PDCClassifier(trainingAlphabet, true, 1, fonts);
 
       File baseDir = new File("training/kana");
       File[] testFiles = baseDir.listFiles();

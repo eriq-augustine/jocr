@@ -5,6 +5,15 @@ import com.eriqaugustine.ocr.image.ImageTranslator;
 import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.FileUtils;
 
+import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.PLOVEClassifier;
+import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
+import com.eriqaugustine.ocr.classifier.reduce.KLTReducer;
+
+import com.eriqaugustine.ocr.plove.PLOVE;
+
+import com.eriqaugustine.ocr.utils.Props;
+
 /**
  * Translate a single image (page).
  */
@@ -12,19 +21,27 @@ public class ImageTranslationTest {
    public static void main(String[] args) throws Exception {
       String outDirectory = FileUtils.itterationDir("out", "transTest");
 
-      /*
-      String[] images = new String[]{"testImages/page.png", "testImages/page2.jpg"};
-      String[] images = new String[]{"../jocr-reference/manga/Initial D/Vol 35/raw/File0114.jpg"};
-      */
       String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_022.jpg"};
+      String[] fonts = Props.getList("CLASSIFIER_TRAINING_FONTS").toArray(new String[0]);
+      String trainingCharacters = Props.getString("KYOIKU_FULL") + Props.getString("KANA_FULL");
 
-      String[] fonts = new String[]{"RyuminStd-Heavy-KO"};
-
-      imageTranslateTest(images, fonts, outDirectory);
+      imageTranslateTest(images, fonts, trainingCharacters, outDirectory);
    }
 
-   public static void imageTranslateTest(String[] images, String[] fonts, String outDirectory) throws Exception {
-      ImageTranslator translator = new ImageTranslator(fonts);
+   public static void imageTranslateTest(String[] images, String[] fonts,
+                                         String trainingCharacters, String outDirectory) throws Exception {
+      System.err.println("Begin");
+      long time = System.currentTimeMillis();
+
+      FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 650);
+      CharacterClassifier classy = new PLOVEClassifier(trainingCharacters, fonts, reduce);
+
+      System.err.println("Training finished (" + (System.currentTimeMillis() - time) + ")");
+      time = System.currentTimeMillis();
+
+      ImageTranslator translator = new ImageTranslator(classy);
+
+      System.err.println("Translation finished (" + (System.currentTimeMillis() - time) + ")");
 
       for (int i = 0; i < images.length; i++) {
          WrapImage baseImage = WrapImage.getImageFromFile(images[i]);

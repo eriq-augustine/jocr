@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.drivers;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.RegionClassifier;
 
 import com.eriqaugustine.ocr.utils.Props;
@@ -15,7 +15,7 @@ public class RegionClassifierTest extends ClassifierTest {
    }
 
    private void run() throws Exception {
-      CharacterClassifier classy =
+      OCRClassifier classy =
          new RegionClassifier(trainingCharacters,
                               8,
                               new String[]{Props.getString("DEFAULT_FONT_FAMILY")});

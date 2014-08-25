@@ -431,7 +431,18 @@ public class CharacterImage {
    public static double[][][] getFontDensityMaps(String characters,
                                                  int mapRows,
                                                  int mapCols) {
-      WrapImage[] characterImages = generateFontImages(characters);
+      return getFontDensityMaps(
+         characters,
+         mapRows,
+         mapCols,
+         new String[]{Props.getString("DEFAULT_FONT_FAMILY")});
+   }
+
+   public static double[][][] getFontDensityMaps(String characters,
+                                                 int mapRows,
+                                                 int mapCols,
+                                                 String[] fonts) {
+      WrapImage[] characterImages = generateFontImages(characters, fonts);
       double[][][] maps = new double[characterImages.length][][];
 
       for (int i = 0; i < characterImages.length; i++) {

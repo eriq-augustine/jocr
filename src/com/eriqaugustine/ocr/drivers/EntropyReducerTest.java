@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.drivers;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.PLOVEClassifier;
 import com.eriqaugustine.ocr.classifier.reduce.EntropyReducer;
 import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
@@ -38,7 +38,7 @@ public class EntropyReducerTest extends ClassifierTest {
          for (int numFeatures = numFeaturesStart; numFeatures <= numFeaturesEnd; numFeatures += numFeaturesDelta) {
             FeatureVectorReducer reduce = new EntropyReducer(PLOVE.getNumberOfFeatures(), numFeatures, numBuckets);
 
-            CharacterClassifier classy =
+            OCRClassifier classy =
                new PLOVEClassifier(trainingCharacters, fonts, reduce);
 
             long startTime = System.currentTimeMillis();

@@ -157,6 +157,22 @@ public class MathUtils {
       }
    }
 
+   public static void stats(double[] vals) {
+      stats(vals, System.out);
+   }
+
+   public static void stats(double[] vals, java.io.PrintStream outstream) {
+      outstream.println("Count: " + vals.length);
+
+      double[] range = range(vals);
+      outstream.println("Min: " + range[0]);
+      outstream.println("Max: " + range[1]);
+
+      outstream.println("Mean: " + mean(vals));
+      outstream.println("Median: " + median(vals));
+      outstream.println("Variance: " + variance(vals));
+   }
+
    // TEST
    public static void main(String[] args) {
       double[] test = {

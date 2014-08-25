@@ -1,9 +1,10 @@
 package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.PDCClassifier;
 import com.eriqaugustine.ocr.translate.Translator;
 import com.eriqaugustine.ocr.utils.ImageUtils;
+import com.eriqaugustine.ocr.utils.Props;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,17 +19,16 @@ public class ImageTranslator {
 
    private static final String[] FONTS = new String[]{"Baekmuk Batang", "RyuminStd-Bold-KO"};
 
-   private static final String ALPHABET = com.eriqaugustine.ocr.Test.HIRAGANA +
-                                          com.eriqaugustine.ocr.Test.KATAKANA;
+   private static final String ALPHABET = Props.getString("FULL_KANA");
 
-   private CharacterClassifier classy;
+   private OCRClassifier classy;
    private Translator trans;
 
    public ImageTranslator() throws Exception {
       this(FONTS);
    }
 
-   public ImageTranslator(CharacterClassifier classy) throws Exception {
+   public ImageTranslator(OCRClassifier classy) throws Exception {
       this.classy = classy;
       trans = new Translator("ja", "en");
    }

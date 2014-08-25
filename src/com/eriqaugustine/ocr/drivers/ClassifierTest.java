@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.drivers;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.TextImage;
@@ -8,6 +8,7 @@ import com.eriqaugustine.ocr.image.WrapImage;
 
 import com.eriqaugustine.ocr.utils.FontUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
+import com.eriqaugustine.ocr.utils.SystemUtils;
 
 import com.eriqaugustine.ocr.utils.Props;
 
@@ -23,11 +24,11 @@ public abstract class ClassifierTest {
       trainingCharacters = Props.getString("HIRAGANA");
    }
 
-   protected double classifierTest(CharacterClassifier classy) throws Exception {
+   protected double classifierTest(OCRClassifier classy) throws Exception {
       return classifierTest(classy, false);
    }
 
-   protected double classifierTest(CharacterClassifier classy, boolean verbose) throws Exception {
+   protected double classifierTest(OCRClassifier classy, boolean verbose) throws Exception {
       FontUtils.registerLocalFonts();
 
       // Not exactly hiragana.
@@ -40,6 +41,9 @@ public abstract class ClassifierTest {
       int hits = 0;
 
       WrapImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
+
+      SystemUtils.memoryMark("Test BEGIN", System.err);
+
       for (int row = 0; row < gridTextImages.length; row++) {
          for (int col = 0; col < gridTextImages[row].length; col++) {
             WrapImage gridTextImage = gridTextImages[row][col];
@@ -62,6 +66,8 @@ public abstract class ClassifierTest {
             count++;
          }
       }
+
+      SystemUtils.memoryMark("Test END", System.err);
 
       double accuracy = (double)hits / count;
       System.err.println("Hits: " + hits + " / " + count + " (" + accuracy + ")");

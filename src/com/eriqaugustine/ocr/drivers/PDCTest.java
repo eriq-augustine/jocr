@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.drivers;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.PDCClassifier;
 
 import com.eriqaugustine.ocr.utils.Props;
@@ -15,7 +15,7 @@ public class PDCTest extends ClassifierTest {
    }
 
    private void run() throws Exception {
-      CharacterClassifier classy =
+      OCRClassifier classy =
          new PDCClassifier(trainingCharacters,
                            true,
                            1,

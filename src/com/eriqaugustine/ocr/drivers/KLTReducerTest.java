@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.drivers;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.PLOVEClassifier;
 import com.eriqaugustine.ocr.classifier.reduce.KLTReducer;
 import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
@@ -33,7 +33,7 @@ public class KLTReducerTest extends ClassifierTest {
       for (int numFeatures = numFeaturesStart; numFeatures <= numFeaturesEnd; numFeatures += numFeaturesDelta) {
          FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), numFeatures);
 
-         CharacterClassifier classy =
+         OCRClassifier classy =
             new PLOVEClassifier(trainingCharacters, fonts, reduce);
 
          long startTime = System.currentTimeMillis();

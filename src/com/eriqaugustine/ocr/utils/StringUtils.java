@@ -1,6 +1,7 @@
 package com.eriqaugustine.ocr.utils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -37,6 +38,20 @@ public class StringUtils {
 
       for (String str : strs) {
          rtn += str + delim;
+      }
+
+      return rtn.replaceFirst(delim + "$", "");
+   }
+
+   public static String join(Collection<Character> data) {
+      return join(data, ",");
+   }
+
+   public static String join(Collection<Character> data, String  delim) {
+      String rtn = "";
+
+      for (Character chr : data) {
+         rtn += chr + delim;
       }
 
       return rtn.replaceFirst(delim + "$", "");

@@ -2,7 +2,8 @@
 
 ARGV.each{|line|
    line.strip().each_char{|char|
-      print "\\u#{char.unpack('U*')[0].to_s(16)}"
+      # print "\\u#{char.unpack('U*')[0].to_s(16)}"
+      print "\\u%04x" % char.unpack('U*')[0]
    }
    puts ''
 }

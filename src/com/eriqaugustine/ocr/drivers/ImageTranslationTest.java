@@ -5,7 +5,7 @@ import com.eriqaugustine.ocr.image.ImageTranslator;
 import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.FileUtils;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.PLOVEClassifier;
 import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
 import com.eriqaugustine.ocr.classifier.reduce.KLTReducer;
@@ -34,7 +34,7 @@ public class ImageTranslationTest {
       long time = System.currentTimeMillis();
 
       FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 650);
-      CharacterClassifier classy = new PLOVEClassifier(trainingCharacters, fonts, reduce);
+      OCRClassifier classy = new PLOVEClassifier(trainingCharacters, fonts, reduce);
 
       System.err.println("Training finished (" + (System.currentTimeMillis() - time) + ")");
       time = System.currentTimeMillis();

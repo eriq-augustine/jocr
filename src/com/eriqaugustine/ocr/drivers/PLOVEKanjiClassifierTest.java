@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.drivers;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.PLOVEClassifier;
 import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
 import com.eriqaugustine.ocr.classifier.reduce.NoReducer;
@@ -23,7 +23,7 @@ public class PLOVEKanjiClassifierTest extends KanjiClassifierTest {
       // FeatureVectorReducer reduce = new NoReducer(PLOVE.getNumberOfFeatures());
       FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 650);
 
-      CharacterClassifier classy =
+      OCRClassifier classy =
          new PLOVEClassifier(trainingCharacters,
                              // new String[]{Props.getString("DEFAULT_FONT_FAMILY")});
                              // new String[]{"IPAGothic", "HGMinchoB", "RyuminStd-Regular-KS", "FutoMinA101Pro-Bold"});

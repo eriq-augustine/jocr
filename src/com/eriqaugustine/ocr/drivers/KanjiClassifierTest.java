@@ -1,6 +1,6 @@
 package com.eriqaugustine.ocr.drivers;
 
-import com.eriqaugustine.ocr.classifier.CharacterClassifier;
+import com.eriqaugustine.ocr.classifier.OCRClassifier;
 
 import com.eriqaugustine.ocr.image.CharacterImage;
 import com.eriqaugustine.ocr.image.TextImage;
@@ -24,11 +24,11 @@ public abstract class KanjiClassifierTest {
       trainingCharacters = Props.getString("KYOIKU_FULL");
    }
 
-   protected void classifierTest(CharacterClassifier classy) throws Exception {
+   protected void classifierTest(OCRClassifier classy) throws Exception {
       classifierTest(classy, false);
    }
 
-   protected void classifierTest(CharacterClassifier classy, boolean verbose) throws Exception {
+   protected void classifierTest(OCRClassifier classy, boolean verbose) throws Exception {
       FontUtils.registerLocalFonts();
 
       // Not exactly hiragana.

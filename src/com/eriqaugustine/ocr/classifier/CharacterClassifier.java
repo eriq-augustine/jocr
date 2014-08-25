@@ -17,7 +17,9 @@ import java.util.Map;
 /**
  * A classifier specialized for ORCing characters.
  */
-public abstract class CharacterClassifier extends VectorClassifier<WrapImage> {
+public abstract class CharacterClassifier
+      extends VectorClassifier<WrapImage>
+      implements OCRClassifier {
    private static Logger logger = LogManager.getLogger(CharacterClassifier.class.getName());
 
    public CharacterClassifier(int featureVectorLength) {

@@ -14,6 +14,7 @@ import java.util.List;
 
 /**
  * A classifier specialized for P-LOVE features.
+ * A quick test has shown that a PLOVE scale size of 28 and a KLT reduction size of 400 yeilds good results.
  */
 public class PLOVEClassifier extends CharacterClassifier {
    private static Logger logger = LogManager.getLogger(PLOVEClassifier.class.getName());

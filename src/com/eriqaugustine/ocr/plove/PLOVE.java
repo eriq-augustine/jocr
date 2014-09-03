@@ -16,7 +16,8 @@ import java.util.Set;
  * Note that this only uses a 3x3 window.
  */
 public final class PLOVE {
-   public static final int SCALE_SIZE = 64;
+   // public static final int SCALE_SIZE = 64;
+   public static int SCALE_SIZE = 28;
 
    private static final int NUM_LAYERS = 3;
 

@@ -21,7 +21,8 @@ public class PLOVEClassifierTest extends ClassifierTest {
 
    private void run() throws Exception {
       // FeatureVectorReducer reduce = new NoReducer(PLOVE.getNumberOfFeatures());
-      FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 650);
+      // FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 650);
+      FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 400);
 
       CharacterClassifier classy =
          new PLOVEClassifier(trainingCharacters,

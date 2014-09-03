@@ -21,13 +21,15 @@ public class PLOVEKanjiClassifierTest extends KanjiClassifierTest {
 
    private void run() throws Exception {
       // FeatureVectorReducer reduce = new NoReducer(PLOVE.getNumberOfFeatures());
-      FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 650);
+      // FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 650);
+      FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 400);
 
       OCRClassifier classy =
          new PLOVEClassifier(trainingCharacters,
                              // new String[]{Props.getString("DEFAULT_FONT_FAMILY")});
                              // new String[]{"IPAGothic", "HGMinchoB", "RyuminStd-Regular-KS", "FutoMinA101Pro-Bold"});
                              Props.getList("CLASSIFIER_TRAINING_FONTS").toArray(new String[0]),
+                             // Props.getList("CLASSIFIER_TRAINING_FONTS").subList(0, 2).toArray(new String[0]),
                              reduce);
 
       classifierTest(classy, true);

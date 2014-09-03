@@ -19,7 +19,7 @@ public class ImageTranslator {
 
    private static final String[] FONTS = new String[]{"Baekmuk Batang", "RyuminStd-Bold-KO"};
 
-   private static final String ALPHABET = Props.getString("FULL_KANA");
+   private static final String ALPHABET = Props.getString("KANA_FULL");
 
    private OCRClassifier classy;
    private Translator trans;

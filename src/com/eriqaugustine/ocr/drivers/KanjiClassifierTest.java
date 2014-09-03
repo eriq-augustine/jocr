@@ -8,6 +8,7 @@ import com.eriqaugustine.ocr.image.WrapImage;
 
 import com.eriqaugustine.ocr.utils.FontUtils;
 import com.eriqaugustine.ocr.utils.ImageUtils;
+import com.eriqaugustine.ocr.utils.SystemUtils;
 
 import com.eriqaugustine.ocr.utils.Props;
 
@@ -21,14 +22,16 @@ public abstract class KanjiClassifierTest {
 
    protected KanjiClassifierTest() {
       // trainingCharacters = Props.getString("KYOIKU_FIRST_GRADE");
-      trainingCharacters = Props.getString("KYOIKU_FULL");
+      // trainingCharacters = Props.getString("KYOIKU_FULL");
+      trainingCharacters = Props.getString("KYOIKU_FULL") + Props.getString("KANA_FULL");
    }
 
    protected void classifierTest(OCRClassifier classy) throws Exception {
       classifierTest(classy, false);
    }
 
-   protected void classifierTest(OCRClassifier classy, boolean verbose) throws Exception {
+   // Returns the number of hits.
+   protected int classifierTest(OCRClassifier classy, boolean verbose) throws Exception {
       FontUtils.registerLocalFonts();
 
       // Not exactly hiragana.
@@ -49,6 +52,9 @@ public abstract class KanjiClassifierTest {
       int hits = 0;
 
       WrapImage[][] gridTextImages = TextImage.gridBreakup(baseImage);
+
+      SystemUtils.memoryMark("Test BEGIN", System.err);
+
       for (int row = 0; row < gridTextImages.length; row++) {
          for (int col = 0; col < gridTextImages[row].length; col++) {
             WrapImage gridTextImage = gridTextImages[row][col];
@@ -58,10 +64,16 @@ public abstract class KanjiClassifierTest {
             String prediction = classy.classify(gridTextImage);
 
             if (verbose) {
-               System.out.println(String.format("Classify (%d, %d)[%s]: {%s}",
-                                                row, col,
-                                                "" + characters.charAt(count),
-                                                prediction));
+               System.out.print(String.format("Classify (%d, %d)[%s]: {%s}",
+                                              row, col,
+                                              "" + characters.charAt(count),
+                                              prediction));
+
+               if (!prediction.equals("" + characters.charAt(count))) {
+                  System.out.println(" X");
+               } else {
+                  System.out.println();
+               }
             }
 
             if (prediction.equals("" + characters.charAt(count))) {
@@ -72,6 +84,10 @@ public abstract class KanjiClassifierTest {
          }
       }
 
+      SystemUtils.memoryMark("Test END", System.err);
+
       System.err.println("Hits: " + hits + " / " + count + " (" + ((double)hits / count) + ")");
+
+      return hits;
    }
 }

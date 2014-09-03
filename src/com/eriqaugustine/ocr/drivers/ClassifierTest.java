@@ -53,10 +53,16 @@ public abstract class ClassifierTest {
             String prediction = classy.classify(gridTextImage);
 
             if (verbose) {
-               System.out.println(String.format("Classify (%d, %d)[%s]: {%s}",
-                                                row, col,
-                                                "" + characters.charAt(count),
-                                                prediction));
+               System.out.print(String.format("Classify (%d, %d)[%s]: {%s}",
+                                              row, col,
+                                              "" + characters.charAt(count),
+                                              prediction));
+
+               if (!prediction.equals("" + characters.charAt(count))) {
+                  System.out.println(" X");
+               } else {
+                  System.out.println();
+               }
             }
 
             if (prediction.equals("" + characters.charAt(count))) {

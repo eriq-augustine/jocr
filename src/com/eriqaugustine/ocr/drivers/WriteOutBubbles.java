@@ -11,6 +11,7 @@ import com.eriqaugustine.ocr.utils.Props;
 public class WriteOutBubbles {
    public static void main(String[] args) throws Exception {
       String outDirectory = FileUtils.itterationDir(Props.getString("OUT_DIR"), "bubbleExtract");
+      System.out.println(outDirectory);
 
       for (String filename : args) {
          extractWriteImage(outDirectory, filename);

@@ -20,6 +20,7 @@ public class GridBreakup {
       }
 
       String outDir = FileUtils.itterationDir(BASE_OUT_DIR, OUT_PREFIX);
+      System.out.println(outDir);
 
       FontUtils.registerLocalFonts();
 

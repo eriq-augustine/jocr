@@ -35,6 +35,9 @@ import java.util.Set;
 public class BubbleText {
    private static Logger logger = LogManager.getLogger(BubbleText.class.getName());
 
+   private static final double STRIPE_MIN_RATIO = 0.66666;
+   private static final int WHITE_THRESHOLD = 150;
+
    private enum Direction {
       LTR,
       DOWN
@@ -49,6 +52,9 @@ public class BubbleText {
    private BubbleText(WrapImage image) {
       textSets = new ArrayList<TextSet>();
 
+      // Breakup the bubbles into sets of texts.
+      // Note that a set of text is a collection of text, typically a sentence or so.
+      // This does not breakup characters within the set or deal with furigana.
       List<Rectangle> setBoundaries = discoverSets(image);
 
       // Order the sets from RTL.
@@ -84,6 +90,8 @@ public class BubbleText {
 
    /**
     * Find the sets of text in the bubble.
+    * Remember, a text set is a set of related text (typically a sentence or two).
+    * This does not deal with individual characters or furigana.
     */
    private static List<Rectangle> discoverSets(WrapImage image) {
       // TODO(eriq): Remove noise before set discovery.
@@ -174,6 +182,7 @@ public class BubbleText {
 
    /**
     * Take in all the groups and merge their bounding boxes.
+    * (Build a minimum bounding box that contains all the rectangles).
     */
    private static List<Rectangle> findGroupBounds(List<List<Rectangle>> groups) {
       List<Rectangle> rtn = new ArrayList<Rectangle>();
@@ -224,7 +233,7 @@ public class BubbleText {
       Set<Integer> neighbors = new HashSet<Integer>();
 
       // Horizontal
-      for (int row = rect.y; row <= rect.y + rect.height; row++) {
+      for (int row = rect.y; row < rect.y + rect.height; row++) {
          // Right
          for (int col = rect.x + rect.width + 1; col < width; col++) {
             int val = boundsMap[MathUtils.rowColToIndex(row, col, width)];
@@ -247,7 +256,7 @@ public class BubbleText {
       }
 
       // Vertical
-      for (int col = rect.x; col <= rect.x + rect.width; col++) {
+      for (int col = rect.x; col < rect.x + rect.width; col++) {
          // Down
          for (int row = rect.y + rect.height + 1; row < boundsMap.length / width; row++) {
             int val = boundsMap[MathUtils.rowColToIndex(row, col, width)];
@@ -304,7 +313,7 @@ public class BubbleText {
     * Ideally, this will bound each and every character.
     */
    private static List<Rectangle> findBoundingRectangles(WrapImage image) {
-      boolean[] pixels = image.getDiscretePixels();
+      boolean[] pixels = image.getDiscretePixels(WHITE_THRESHOLD);
 
       List<int[]> rowStripes = findStripes(pixels, image.width(), true);
       List<int[]> colStripes = findStripes(pixels, image.width(), false);
@@ -384,6 +393,7 @@ public class BubbleText {
 
    /**
     * Find the stripes of non-whitespace.
+    * Returns: A list of arrays ([start, end] (inclusive)).
     */
    private static List<int[]> findStripes(boolean[] pixels, int width, boolean horizontal) {
       List<int[]> stripes = new ArrayList<int[]>();
@@ -441,12 +451,224 @@ public class BubbleText {
     * fit in constant sized boxes.
     * Therefore, the image can be broken up into a grid and each position
     *  will represent a character, puncuation, or space.
-    * TODO(eriq): This totally ignores direction.
+    * TODO(eriq): This totally ignores direction. (marked with TODO(eriq): Direction).
     */
    private static TextSet gridBreakup(WrapImage image, Direction direction) {
+      // TODO(eriq): Right now this is only for vertical.
+      //  Horizontal should be the same, but with the major and minor
+      //  axis switched.
+
+      boolean[] pixels = image.getDiscretePixels(WHITE_THRESHOLD);
+
+      // TODO(eriq): Direction
+      List<int[]> majorStripes = findStripes(pixels, image.width(), false);
+
+      // Merge the stripes going RtL.
+      // TODO(eriq): Direction
+      List<int[]> mergedStripes = mergeStripes(majorStripes, getMeanStripeSize(majorStripes), false);
+      double meanMajorStripeSize = getMeanStripeSize(mergedStripes);
+
+      List<Rectangle> mainCharacters = new ArrayList<Rectangle>();
+
+      // Map a characters index to the furigana associated with it.
+      Map<Rectangle, List<Rectangle>> furiganaMapping = new HashMap<Rectangle, List<Rectangle>>();
+
+      for (int[] majorStripe : mergedStripes) {
+         // TODO(eriq): Direction
+         List<int[]> minorStripes = findMinorStripes(pixels, image.width(), majorStripe, meanMajorStripeSize, true);
+         double meanMinorStripeSize = getMeanStripeSize(minorStripes);
+
+         for (int[] minorStripe : minorStripes) {
+            // TODO(eriq): Direction. Rectangle(x, y, width, height).
+            Rectangle fullCharacter = new Rectangle(majorStripe[0], minorStripe[0],
+                                                    majorStripe[1] - majorStripe[0] + 1,
+                                                    minorStripe[1] - minorStripe[0] + 1);
+
+            // Mask out the pixels that are not in this character.
+            boolean[] fullCharacherPixels = new boolean[pixels.length];
+            for (int index = 0; index < pixels.length; index++) {
+               int row = MathUtils.indexToRow(index, image.width());
+               int col = MathUtils.indexToCol(index, image.width());
+
+               if (col >= majorStripe[0] && col <= majorStripe[1]
+                   && row >= minorStripe[0] && row <= minorStripe[1]) {
+                  fullCharacherPixels[index] = pixels[index];
+               } else {
+                  fullCharacherPixels[index] = false;
+               }
+            }
+
+            // Look for any furigana.
+            // TODO(eriq): Direction
+            List<int[]> fullCharacterStripes = findStripes(fullCharacherPixels, image.width(), false);
+
+            // TODO(eriq): Direction
+            // TODO(eriq): Consider using the mean from the furi stripes.
+            // Go the opposite direction as normal (LtR for vertical) and merge.
+            // If a normal character is bisected, it should get merged with furigana left off and merged with itself.
+            fullCharacterStripes = mergeStripes(fullCharacterStripes, meanMinorStripeSize, true);
+
+            // Character without furigana.
+            // TODO(eriq): Direction
+            Rectangle mainCharacter = new Rectangle(fullCharacterStripes.get(0)[0], minorStripe[0],
+                                                    fullCharacterStripes.get(0)[1] - fullCharacterStripes.get(0)[0] + 1,
+                                                    minorStripe[1] - minorStripe[0] + 1);
+
+            // There is furigana for this character.
+            if (fullCharacterStripes.size() > 1) {
+               int[] furiMajorStripe = new int[2];
+               furiMajorStripe[0] = fullCharacterStripes.get(1)[0];
+               furiMajorStripe[1] = fullCharacterStripes.get(fullCharacterStripes.size() - 1)[1];
+
+               // Mask out the pixels that are not in this furigana stripe.
+               boolean[] furiCharacherPixels = new boolean[pixels.length];
+               for (int index = 0; index < pixels.length; index++) {
+                  int row = MathUtils.indexToRow(index, image.width());
+                  int col = MathUtils.indexToCol(index, image.width());
+
+                  if (col >= majorStripe[0] && col <= majorStripe[1]
+                     && row >= minorStripe[0] && row <= minorStripe[1]) {
+                     furiCharacherPixels[index] = pixels[index];
+                  } else {
+                     furiCharacherPixels[index] = false;
+                  }
+               }
+
+               // Split multiple furigana characters.
+               // TODO(eriq): Should we merge these? (forward?)
+               // TODO(eriq): Direction
+               List<int[]> furiMinorStripes = findStripes(furiCharacherPixels, image.width(), true);
+
+               // furiMinorStripes = mergeStripes(furiMinorStripes, getMeanStripeSize(furiMinorStripes), true);
+
+               List<Rectangle> furiCharacters = new ArrayList<Rectangle>();
+               for (int[] furiMinorStripe : furiMinorStripes) {
+                  // TODO(eriq): Direction
+                  furiCharacters.add(new Rectangle(furiMajorStripe[0], furiMinorStripe[0],
+                                                   furiMajorStripe[1] - furiMajorStripe[0] + 1,
+                                                   furiMinorStripe[1] - furiMinorStripe[0] + 1));
+               }
+
+               // Map the furigana to the character.
+               furiganaMapping.put(mainCharacter, furiCharacters);
+            }
+
+            mainCharacters.add(mainCharacter);
+         }
+      }
+
+      List<Rectangle> ordered = orderCharacters(mainCharacters);
+
+      return new TextSet(image, ordered, furiganaMapping);
+   }
+
+   /**
+    * Discover the proper stripes along the minor axis.
+    * Do not let the name fool you, this is not a trivial method.
+    * We are finding "minor" stripes because it is along the minor axis.
+    * This is supposed to be called only after a proper stripe in the major
+    * axis is discovered (|majorStripe|).
+    * So, we assume that the strip of text we get represents only a single row or column of text.
+    */
+   private static List<int[]> findMinorStripes(boolean[] oldPixels, int imageWidth, int[] majorStripe, double meanMajorStripeSize, boolean horizontal) {
+      // TODO(eriq): This is a simplified, test version.
+      //  See notes for full version.
+
+      // Mask out any pixels not in this stripe.
+      // TODO(eriq): Direction
+      boolean[] pixels = new boolean[oldPixels.length];
+      for (int index = 0; index < pixels.length; index++) {
+         int col = MathUtils.indexToCol(index, imageWidth);
+         if (col >= majorStripe[0] && col <= majorStripe[1]) {
+            pixels[index] = oldPixels[index];
+         } else {
+            pixels[index] = false;
+         }
+      }
+
+      // TODO(eriq): Direction.
+      List<int[]> minorStripes = findStripes(pixels, imageWidth, true);
+
+      // Merge the stripes going Top to Bottom.
+      // TODO(eriq): Direction
+      // List<int[]> mergedStripes = mergeStripes(minorStripes, meanMajorStripeSize, true);
+      List<int[]> mergedStripes = mergeStripes(minorStripes, getMeanStripeSize(minorStripes), true);
+
+      return mergedStripes;
+   }
+
+   /**
+    * Just find the arithmetic mean of the size of the given stripes.
+    */
+   private static double getMeanStripeSize(List<int[]> stripes) {
+      double[] stripeSizes = new double[stripes.size()];
+      for (int i = 0; i < stripes.size(); i++) {
+         stripeSizes[i] = stripes.get(i)[1] - stripes.get(i)[0] + 1;
+      }
+
+      return MathUtils.mean(stripeSizes);
+   }
+
+   /**
+    * Merge small stripes into larger stripes.
+    * The idea here is that splitting the text into stripes has
+    * the potential to bisect characters and we want to re-include those.
+    * If |forward| is true, then |stripes| will be iterated forwards when
+    * merging backwards if false.
+    */
+   private static List<int[]> mergeStripes(List<int[]> oldStripes, double meanStripeSize, boolean forward) {
+      // Get a copy.
+      List<int[]> stripes = new ArrayList<int[]>(oldStripes);
+
+      int start;
+      int end;
+      int delta;
+
+      boolean merged = true;
+      while (merged) {
+         merged = false;
+
+         // Note that we do not want to hit the last stripe because it
+         //  may be the target of a merge.
+         if (forward) {
+            start = 0;
+            end = stripes.size() - 1;
+            delta = 1;
+         } else {
+            start = stripes.size() - 1;
+            end = 0;
+            delta = -1;
+         }
+
+         for (int i = start; i != end; i += delta) {
+            int[] stripe = stripes.get(i);
+            if ((stripe[1] - stripe[0] + 1) < (meanStripeSize * STRIPE_MIN_RATIO)) {
+               // Merge this strip in with the "next" one.
+               // (Use the delta to determine what "next" means.)
+               stripes.get(i + delta)[0] = Math.min(stripes.get(i + delta)[0], stripe[0]);
+               stripes.get(i + delta)[1] = Math.max(stripes.get(i + delta)[1], stripe[1]);
+
+               // Remove this stripe.
+               stripes.remove(i);
+
+               // Only process one merge at a time because they might cascade.
+               merged = true;
+               break;
+            }
+         }
+      }
+
+      return stripes;
+   }
+
+   // An old version that ignores direction.
+   private static TextSet gridBreakupOld(WrapImage image, Direction direction) {
       List<Rectangle> boundingRects = findBoundingRectangles(image);
 
       List<Rectangle> furiganaCandidates = getFuriganaCandidates(boundingRects);
+
+      // Merge back in any furigana candidates that actually look like parts of characters.
+      // TODO
 
       // All the characters.
       List<Rectangle> allCharacters = new ArrayList<Rectangle>(boundingRects);
@@ -509,7 +731,7 @@ public class BubbleText {
                                                 Rectangle furiganaBounds) {
       List<Rectangle> rtn = new ArrayList<Rectangle>();
 
-      boolean[] pixels = furiganaImage.getDiscretePixels();
+      boolean[] pixels = furiganaImage.getDiscretePixels(WHITE_THRESHOLD);
 
       // Assert that |furiganaImage| is local while |furiganaBounds| is global.
       assert(furiganaImage.width() == furiganaBounds.width);
@@ -663,7 +885,7 @@ public class BubbleText {
 
    /**
     * Find the character (bounding boxes) of potential furigana.
-    * Do this my looking at the width of the characters.
+    * Do this by looking at the width of the characters.
     * Any character that is half the size of the median character is a candidate.
     */
    private static List<Rectangle> getFuriganaCandidates(List<Rectangle> characters) {

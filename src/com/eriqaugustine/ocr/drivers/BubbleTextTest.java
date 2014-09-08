@@ -13,12 +13,22 @@ import java.util.Arrays;
 public class BubbleTextTest {
    public static void main(String[] args) throws Exception {
       String outDir = FileUtils.itterationDir("out", "bubbleText");
+      System.out.println(outDir);
 
-      File base = new File("testImages/testSets/gridBreakup");
-      assert(base.exists() && base.isDirectory());
+      File[] imageFiles = null;
 
-      File[] imageFiles = base.listFiles();
-      Arrays.sort(imageFiles);
+      if (args.length == 0) {
+         File base = new File("testImages/testSets/gridBreakup");
+         assert(base.exists() && base.isDirectory());
+
+         imageFiles = base.listFiles();
+         Arrays.sort(imageFiles);
+      } else {
+         imageFiles = new File[args.length];
+         for (int i = 0; i < args.length; i++) {
+            imageFiles[i] = new File(args[i]);
+         }
+      }
 
       for (int i = 0; i < imageFiles.length; i++) {
          testFile(outDir, imageFiles[i], i);

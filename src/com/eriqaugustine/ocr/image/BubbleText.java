@@ -38,6 +38,12 @@ public class BubbleText {
    private static final double STRIPE_MIN_RATIO = 0.66666;
    private static final int WHITE_THRESHOLD = 150;
 
+   /**
+    * The ratio between width and height for doing diagonal bound expansion (see gridBreakup()).
+    * width * BREAKUP_EXPANSION_RATIO = height
+    */
+   private static final double BREAKUP_EXPANSION_RATIO = 0.9;
+
    private enum Direction {
       LTR,
       DOWN
@@ -69,7 +75,7 @@ public class BubbleText {
          WrapImage setImage = image.crop(setBoundary);
 
          Direction direction = guessDirection(setImage);
-         textSets.add(gridBreakup(setImage, direction));
+         textSets.add(diagonalExpansionGridBreakup(setImage, direction));
       }
    }
 
@@ -443,6 +449,122 @@ public class BubbleText {
       }
 
       return Direction.LTR;
+   }
+
+   /**
+    * Break up an image into smaller images that each represent a single character.
+    * This method will focus around growing bounds diagonally.
+    * The general idea is as follows:
+    *  - Bound blobs.
+    *  - Merge overlapping bounding boxes.
+    *  - Start from the top-left most (bounded) pixel.
+    *    - Begin expanding diagonally, until one of the following:
+    *      - The current bounding box is circumscribed and no other bounding box is in contact.
+    *      - A wall is hit. Continue expanding in the other direction.
+    *      - Another bounding box is hit. Merge these two bounding boxes and restart the expansion.
+    *  - Continue until there are no more bounding boxes.
+    * TODO(eriq): Use direction.
+    */
+   private static TextSet diagonalExpansionGridBreakup(WrapImage image, Direction direction) {
+      // Get the bounding boxes.
+      List<Rectangle> boundingBoxes = findBoundingRectangles(image);
+
+      // Merge the bounding boxes.
+      boundingBoxes = mergeBounds(boundingBoxes);
+
+      // Order the bounding boxes (vertical, then horizontal; top left is first).
+      Collections.sort(boundingBoxes, new Comparator<Rectangle>() {
+         public int compare(Rectangle a, Rectangle b) {
+            if (a.y != b.y) {
+               return a.y - b.y;
+            }
+
+            return a.x - b.x;
+         }
+      });
+
+      List<Rectangle> completeBounds = new ArrayList<Rectangle>();
+      while (!boundingBoxes.isEmpty()) {
+         Rectangle boundingBox = boundingBoxes.remove(0);
+
+         boolean done = false;
+         while (!done) {
+            done = true;
+
+            // We choose different starting sides depending on if the expansion ratio is greater than 1.
+            // Make sure to round up.
+            assert(BREAKUP_EXPANSION_RATIO > 0);
+
+            int width;
+            int height;
+            if (BREAKUP_EXPANSION_RATIO >= 1) {
+               width = boundingBox.width;
+               height = (int)(0.5 + (width * BREAKUP_EXPANSION_RATIO));
+            } else {
+               height = boundingBox.height;
+               width = (int)(0.5 + (height / BREAKUP_EXPANSION_RATIO));
+            }
+
+            // Clip out-of-bounds.
+            width = (width >= image.width()) ? image.width() - 1 : width;
+            height = (height >= image.height()) ? image.height() - 1 : height;
+
+            Rectangle expandedBounds = new Rectangle(boundingBox.x, boundingBox.y, width, height);
+
+            // Check to see if the final bounding box overlaps any other bounds.
+            for (int i = 0; i < boundingBoxes.size(); i++) {
+               if (expandedBounds.intersects(boundingBoxes.get(i))) {
+                  // Merge them, remove the target from the available bounding boxes, and restart the expansion..
+                  // Note that we are using the original bounding box and not the expanded one for the union so
+                  // that we do not grow the new bounds any larger than necessary.
+                  boundingBox = boundingBox.union(boundingBoxes.remove(i));
+                  done = false;
+                  break;
+               }
+            }
+         }
+
+         completeBounds.add(boundingBox);
+      }
+
+      WrapImage blackoutImage = WrapImage.getImageWithBlackouts(image.width(), image.height(), completeBounds);
+
+      // Apply the old grid breakup.
+      // TextSet blackoutSets = gridBreakup(blackoutImage, direction);
+      TextSet blackoutSets = gridBreakupOld(blackoutImage, direction);
+
+      return blackoutSets.swapImage(image);
+   }
+
+   /**
+    * Merge overlapping bounds.
+    * TODO(eriq): We can go faster.
+    */
+   private static List<Rectangle> mergeBounds(List<Rectangle> bounds) {
+      List<Rectangle> rtn = new ArrayList<Rectangle>(bounds);
+
+      boolean done = false;
+      while (!done) {
+         done = true;
+
+         for (int i = 0; i < rtn.size(); i++) {
+            for (int j = i + 1; j < rtn.size(); j++) {
+               if (rtn.get(i).intersects(rtn.get(j))) {
+                  rtn.add(i, rtn.get(i).union(rtn.get(j)));
+                  rtn.remove(i);
+                  rtn.remove(j);
+                  done = false;
+                  break;
+               }
+            }
+
+            if (!done) {
+               break;
+            }
+         }
+      }
+
+      return rtn;
    }
 
    /**
@@ -928,10 +1050,20 @@ public class BubbleText {
        */
       public final List<WrapImage> furiganaReplacementText;
 
+      /**
+       * Keep the original params to make swapImage() easier.
+       */
+      private List<Rectangle> origFullText;
+      private Map<Rectangle, List<Rectangle>> origFuriganaMapping;
+
       public TextSet(WrapImage image,
                      List<Rectangle> fullText,
                      Map<Rectangle, List<Rectangle>> furiganaMapping) {
          baseImage = image.copy();
+
+         // Keep the original information.
+         origFullText = new ArrayList<Rectangle>(fullText);
+         origFuriganaMapping = new HashMap<Rectangle, List<Rectangle>>(furiganaMapping);
 
          noFuriganaText = new ArrayList<WrapImage>();
          for (Rectangle rect : fullText) {
@@ -948,6 +1080,13 @@ public class BubbleText {
                furiganaReplacementText.add(baseImage.crop(rect));
             }
          }
+      }
+
+      /**
+       * Get a new TextSet that has |newImage| as the base.
+       */
+      public TextSet swapImage(WrapImage newImage) {
+         return new TextSet(newImage, origFullText, origFuriganaMapping);
       }
    }
 }

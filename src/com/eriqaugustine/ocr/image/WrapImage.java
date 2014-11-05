@@ -161,6 +161,34 @@ public class WrapImage {
    }
 
    /**
+    * Get an image that has the specified areas blacked out.
+    */
+   public static WrapImage getImageWithBlackouts(int width, int height, List<Rectangle> blackouts) {
+      assert(width >= 0 && height >= 0);
+
+      if (width == 0 || height == 0) {
+         return getEmptyImage();
+      }
+
+      byte[] pixels = new byte[width * height];
+
+      for (int i = 0; i < pixels.length; i++) {
+         pixels[i] = (byte)0xFF;
+      }
+
+      // Backout the rectangles.
+      for (Rectangle blackout : blackouts) {
+         for (int dx = 0; dx < blackout.width; dx++) {
+            for (int dy = 0; dy < blackout.height; dy++) {
+               pixels[MathUtils.rowColToIndex(dy + blackout.y, dx + blackout.x, width)] = 0;
+            }
+         }
+      }
+
+      return getImageFromPixels(pixels, width, height);
+   }
+
+   /**
     * Generate an image for |character|.
     * The image will have a white backgrond with |character| in black.
     */

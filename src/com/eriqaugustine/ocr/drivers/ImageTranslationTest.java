@@ -10,6 +10,7 @@ import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.PLOVEClassifier;
 import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
 import com.eriqaugustine.ocr.classifier.reduce.KLTReducer;
+import com.eriqaugustine.ocr.classifier.reduce.ChangingValueReducer;
 
 import com.eriqaugustine.ocr.plove.PLOVE;
 
@@ -24,7 +25,9 @@ public class ImageTranslationTest {
 
       String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_022.jpg"};
       String[] fonts = Props.getList("CLASSIFIER_TRAINING_FONTS").toArray(new String[0]);
-      String trainingCharacters = Props.getString("KYOIKU_FULL") + Props.getString("KANA_FULL") + Props.getString("PUNCTUATION");
+
+      // String trainingCharacters = Props.getString("KYOIKU_FULL") + Props.getString("KANA_FULL") + Props.getString("PUNCTUATION");
+      String trainingCharacters = Props.getString("KANA_FULL") + Props.getString("PUNCTUATION");
 
       imageTranslateTest(images, fonts, trainingCharacters, outDirectory);
    }
@@ -33,7 +36,9 @@ public class ImageTranslationTest {
                                          String trainingCharacters, String outDirectory) throws Exception {
       SystemUtils.memoryMark("Training BEGIN", System.err);
 
-      FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 400);
+      // FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 400);
+      FeatureVectorReducer reduce = new ChangingValueReducer(PLOVE.getNumberOfFeatures());
+
       OCRClassifier classy = new PLOVEClassifier(trainingCharacters, fonts, reduce);
 
       SystemUtils.memoryMark("Training END", System.err);

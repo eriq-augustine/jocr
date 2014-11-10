@@ -8,6 +8,7 @@ import com.eriqaugustine.ocr.utils.SystemUtils;
 
 import com.eriqaugustine.ocr.classifier.OCRClassifier;
 import com.eriqaugustine.ocr.classifier.PLOVEClassifier;
+import com.eriqaugustine.ocr.classifier.RemoteClassifier;
 import com.eriqaugustine.ocr.classifier.reduce.FeatureVectorReducer;
 import com.eriqaugustine.ocr.classifier.reduce.KLTReducer;
 import com.eriqaugustine.ocr.classifier.reduce.ChangingValueReducer;
@@ -34,19 +35,7 @@ public class ImageTranslationTest {
 
    public static void imageTranslateTest(String[] images, String[] fonts,
                                          String trainingCharacters, String outDirectory) throws Exception {
-      SystemUtils.memoryMark("Training BEGIN", System.err);
-
-      // FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 400);
-      FeatureVectorReducer reduce = new ChangingValueReducer(PLOVE.getNumberOfFeatures());
-
-      OCRClassifier classy = new PLOVEClassifier(trainingCharacters, fonts, reduce);
-
-      SystemUtils.memoryMark("Training END", System.err);
-      SystemUtils.memoryMark("Translation BEGIN", System.err);
-
-      ImageTranslator translator = new ImageTranslator(classy);
-
-      SystemUtils.memoryMark("Translation END", System.err);
+      ImageTranslator translator = new ImageTranslator(getClassifier(fonts, trainingCharacters));
 
       for (int i = 0; i < images.length; i++) {
          WrapImage baseImage = WrapImage.getImageFromFile(images[i]);
@@ -58,5 +47,23 @@ public class ImageTranslationTest {
          WrapImage transImage = translator.translate(baseImage);
          transImage.write(outDirectory + "/transTest-" + i + "-99-trans.png");
       }
+   }
+
+   public static OCRClassifier getClassifier(String[] fonts, String trainingCharacters) throws Exception {
+      OCRClassifier classy = null;
+
+      SystemUtils.memoryMark("Training BEGIN", System.err);
+
+      /*
+      FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 400);
+      // FeatureVectorReducer reduce = new ChangingValueReducer(PLOVE.getNumberOfFeatures());
+      classy = new PLOVEClassifier(trainingCharacters, fonts, reduce);
+      */
+
+      classy = new RemoteClassifier();
+
+      SystemUtils.memoryMark("Training END", System.err);
+
+      return classy;
    }
 }

@@ -16,6 +16,8 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.Dimension;
 
+import java.nio.ByteBuffer;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -138,6 +140,29 @@ public class WrapImage {
 
    public static WrapImage getImageFromPixels(Pixel[] pixels, int width, int height) {
       return getImageFromPixels(pixelsToRGBChannel(pixels), width, height, "RGB");
+   }
+
+   /**
+    * Get an image from just an array of bytes.
+    * The format of the data must agree with getBytes().
+    * Data Layout:
+    * - width (int)
+    * - height (int)
+    * - number of pixels (int)
+    * - pixels (bytes)
+    */
+   public static WrapImage getImageFromBytes(byte[] bytes) {
+      assert(bytes.length > 0);
+
+      ByteBuffer buffer = ByteBuffer.wrap(bytes);
+
+      int width = buffer.getInt();
+      int height = buffer.getInt();
+      int numPixels = buffer.getInt();
+      byte[] pixels = new byte[numPixels];
+      buffer.get(pixels, 0, numPixels);
+
+      return getImageFromPixels(pixels, width, height, "RGB");
    }
 
    /**
@@ -291,7 +316,6 @@ public class WrapImage {
       }
    }
 
-
    // END Static Constructors.
 
    public int width() {
@@ -312,6 +336,32 @@ public class WrapImage {
     */
    public void clear() {
       makeEmpty();
+   }
+
+   /**
+    * Get the image as an array of bytes.
+    * Great for seriaalization.
+    * The format of the data must agree with getImageFromBytes().
+    * Data Layout:
+    * - width (int)
+    * - height (int)
+    * - number of pixels (int)
+    * - pixels (bytes)
+    */
+   public byte[] getBytes() {
+      if (isEmpty()) {
+         return new byte[0];
+      }
+
+      byte[] pixels = pixelsToRGBChannel(getPixels(true));
+
+      ByteBuffer buffer = ByteBuffer.allocate(12 + pixels.length);
+      buffer.putInt(imageWidth);
+      buffer.putInt(imageHeight);
+      buffer.putInt(pixels.length);
+      buffer.put(pixels, 0, pixels.length);
+
+      return buffer.array();
    }
 
    /**

@@ -242,6 +242,9 @@ public class ImageTranslator {
       // Change any remaining periods to japanese periods.
       input = input.replaceAll("\\.", "。");
 
+      // Change any remaining bars or dashes with an elongation.
+      input = input.replaceAll("[|-]", "ー");
+
       // System.err.println("Post: " + input);
 
       return input;

@@ -72,8 +72,8 @@ public class ImageUtils {
                                         int rowOffset, int colOffset) {
       assert(rowOffset >= 0 && rowOffset < baseImage.height());
       assert(colOffset >= 0 && colOffset < baseImage.width());
-      assert(rowOffset + overlayImage.height() < baseImage.height());
-      assert(colOffset + overlayImage.width() < baseImage.width());
+      assert(rowOffset + overlayImage.height() <= baseImage.height());
+      assert(colOffset + overlayImage.width() <= baseImage.width());
 
       Pixel[] basePixels = baseImage.getPixels(true);
       Pixel[] overlayPixels = overlayImage.getPixels(true);

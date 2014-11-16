@@ -296,11 +296,12 @@ public class WrapImage {
     * The same tactic as getCharacterImage().
     */
    public static WrapImage getStringImage(String content, boolean shrink,
-                                          int maxWidth, int maxHeight) {
+                                          int maxWidth, int maxHeight,
+                                          String font) {
       try {
          ImageInfo info = new ImageInfo("caption: " + content);
          info.setSize(String.format("%dx%d", maxWidth, maxHeight));
-         info.setFont("Arial");
+         info.setFont(font);
          MagickImage image = new MagickImage(info);
 
          WrapImage rtn = new WrapImage(image);
@@ -314,6 +315,11 @@ public class WrapImage {
          logger.error("Could not create an image from a string.", ex);
          return null;
       }
+   }
+
+   public static WrapImage getStringImage(String content, boolean shrink,
+                                          int maxWidth, int maxHeight) {
+      return getStringImage(content, shrink, maxWidth, maxHeight, "Arial");
    }
 
    // END Static Constructors.

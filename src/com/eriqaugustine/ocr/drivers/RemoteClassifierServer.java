@@ -20,7 +20,14 @@ import java.net.Socket;
  */
 public class RemoteClassifierServer {
    public static void main(String[] args) throws Exception {
-      OCRClassifier classy = getClassifier();
+      String[] fonts = null;
+      if (args.length == 0) {
+         fonts = Props.getList("CLASSIFIER_TRAINING_FONTS").toArray(new String[0]);
+      } else {
+         fonts = args;
+      }
+
+      OCRClassifier classy = getClassifier(fonts);
       ServerSocket socket = new ServerSocket(Props.getInt("DEFAULT_TRANSLATION_SERVER_PORT"));
 
       while (true) {
@@ -34,18 +41,16 @@ public class RemoteClassifierServer {
       }
    }
 
-   public static OCRClassifier getClassifier() throws Exception {
+   public static OCRClassifier getClassifier(String[] fonts) throws Exception {
       String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_022.jpg"};
 
       SystemUtils.memoryMark("Training BEGIN", System.err);
 
       /*
-      String[] fonts = new String[]{"IPAGothic"};
       String trainingCharacters = Props.getString("HIRAGANA");
       FeatureVectorReducer reduce = new NoReducer(PLOVE.getNumberOfFeatures());
       */
 
-      String[] fonts = Props.getList("CLASSIFIER_TRAINING_FONTS").toArray(new String[0]);
       String trainingCharacters = Props.getString("KYOIKU_FULL") + Props.getString("KANA_FULL") + Props.getString("PUNCTUATION");
       FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 400);
 

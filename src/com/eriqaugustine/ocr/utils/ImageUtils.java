@@ -66,6 +66,36 @@ public class ImageUtils {
    }
 
    /**
+    * Concat together |images| into a single (potentially long) image.
+    */
+   public static WrapImage concatImages(List<WrapImage> images) {
+      if (images.size() == 0) {
+         return WrapImage.getEmptyImage();
+      }
+
+      int maxHeight = 0;
+      int maxWidth = 0;
+
+      for (WrapImage image : images) {
+         if (maxWidth < image.width()) {
+            maxWidth = image.width();
+         }
+
+         if (maxHeight < image.height()) {
+            maxHeight = image.height();
+         }
+      }
+
+      WrapImage rtn = WrapImage.getBlankImage(maxWidth * images.size(), maxHeight);
+
+      for (int i = 0; i < images.size(); i++) {
+         rtn = overlayImage(rtn, images.get(i), 0, maxWidth * i);
+      }
+
+      return rtn;
+   }
+
+   /**
     * Overlay |overlay| over |base|.
     */
    public static WrapImage overlayImage(WrapImage baseImage, WrapImage overlayImage,

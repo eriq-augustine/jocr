@@ -1,6 +1,7 @@
 package com.eriqaugustine.ocr.drivers;
 
 import com.eriqaugustine.ocr.image.BubbleDetection;
+import com.eriqaugustine.ocr.image.BubbleDetector;
 import com.eriqaugustine.ocr.image.ImageTranslator;
 import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.utils.FileUtils;
@@ -39,13 +40,7 @@ public class ImageTranslationTest {
 
       for (int i = 0; i < images.length; i++) {
          WrapImage baseImage = WrapImage.getImageFromFile(images[i]);
-         baseImage.write(outDirectory + "/transTest-" + i + "-0-base.png");
-
-         WrapImage bubbles = BubbleDetection.fillBubbles(baseImage);
-         bubbles.write(outDirectory + "/transTest-" + i + "-88-base.png");
-
-         WrapImage transImage = translator.translate(baseImage);
-         transImage.write(outDirectory + "/transTest-" + i + "-99-trans.png");
+         translator.translate(baseImage, true, outDirectory, String.format("%03d", i));
       }
    }
 

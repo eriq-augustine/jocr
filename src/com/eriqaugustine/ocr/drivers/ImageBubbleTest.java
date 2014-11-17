@@ -1,6 +1,7 @@
 package com.eriqaugustine.ocr.drivers;
 
 import com.eriqaugustine.ocr.image.BubbleDetection;
+import com.eriqaugustine.ocr.image.BubbleDetector;
 import com.eriqaugustine.ocr.image.BubbleText;
 import com.eriqaugustine.ocr.image.ImageTranslator;
 import com.eriqaugustine.ocr.image.WrapImage;
@@ -32,10 +33,11 @@ public class ImageBubbleTest {
       WrapImage baseImage = WrapImage.getImageFromFile(imagePath);
       baseImage.write(outDirectory + "/0-base.png");
 
-      WrapImage fillBubbles = BubbleDetection.fillBubbles(baseImage);
+      BubbleDetector bubbleDetector = new BubbleDetection();
+      WrapImage fillBubbles = bubbleDetector.colorBubbles(baseImage);
       fillBubbles.write(outDirectory + "/1-base.png");
 
-      WrapImage[] bubbles = BubbleDetection.extractBubbles(baseImage);
+      WrapImage[] bubbles = bubbleDetector.extractBubbles(baseImage);
       for (int i = 0; i < bubbles.length; i++) {
          bubbles[i].write(outDirectory + "/2-" + i + "-base.png");
 

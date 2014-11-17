@@ -2,7 +2,6 @@ package com.eriqaugustine.ocr.image;
 
 import static com.eriqaugustine.ocr.image.WrapImage.Pixel;
 import com.eriqaugustine.ocr.math.BinaryConfusionMatrix;
-import com.eriqaugustine.ocr.utils.ColorUtils;
 import com.eriqaugustine.ocr.utils.FileUtils;
 import com.eriqaugustine.ocr.utils.MathUtils;
 
@@ -19,9 +18,10 @@ import java.util.Queue;
 import java.util.Set;
 
 /**
- * A static class for detecting callouts (speech bubbles).
+ * This exact method does not currently have a name.
+ * This was created before the formal API, so it is still a bit messy.
  */
-public class BubbleDetection {
+public class BubbleDetection extends BubbleDetector {
    // BEGIN deprecated, use ratios.
    public static final int DEFAULT_MIN_CHARACTER_BLOB_SIZE = 100;
    public static final int DEFAULT_MAX_CHARACTER_BLOB_SIZE = 3000;
@@ -57,7 +57,7 @@ public class BubbleDetection {
     * Note: The training sets are constructed so that there are no two valid bubbles inside
     *  of a single training bounding box. So, if there are multiples, all but one are FP.
     */
-   public static WrapImage bubbleFillTest(String imageFile,
+   public WrapImage bubbleFillTest(String imageFile,
                                           FileUtils.BubbleTrainingSet trainingData,
                                           BinaryConfusionMatrix matrix) {
       String baseImageName = new File(imageFile).getName();
@@ -106,9 +106,9 @@ public class BubbleDetection {
    }
 
    /**
-    * Get the raw blobs that represent the bubbles.
+    * @inheritDoc
     */
-   public static List<Blob> getBubbles(WrapImage image) {
+   public List<Blob> getBubbles(WrapImage image) {
       image = image.copy();
       image.blur(3, 1);
 
@@ -123,18 +123,9 @@ public class BubbleDetection {
    }
 
    /**
-    * Extract the pixels for each bubble and convert them to an image.
+    * @inheritDoc
     */
-   public static WrapImage[] extractBubbles(WrapImage image) {
-      BubbleInfo[] bubbles = extractBubblesWithInfo(image);
-      WrapImage[] images = new WrapImage[bubbles.length];
-      for (int i = 0; i < bubbles.length; i++) {
-         images[i] = bubbles[i].image;
-      }
-      return images;
-   }
-
-   public static BubbleInfo[] extractBubblesWithInfo(WrapImage image) {
+   public BubbleInfo[] extractBubblesWithInfo(WrapImage image) {
       List<Blob> bubbles = getBubbles(image);
 
       Pixel[] pixels = image.getPixels();
@@ -167,61 +158,16 @@ public class BubbleDetection {
 
          infos[count++] = new BubbleInfo(blob.getMinRow(), blob.getMinCol(),
                                          blob.getBoundingWidth(), blob.getBoundingHeight(),
-                                         blobImage);
+                                         blobImage, blob);
       }
 
       return infos;
    }
 
    /**
-    * Color all the text bubbles.
-    * It is assumed that |image| has been edged, and that it has
-    *  only two colors, true black and true white.
-    * White pixels are edges.
-    */
-   public static WrapImage fillBubbles(WrapImage image) {
-      List<Blob> bubbles = getBubbles(image);
-      return colorBubbles(image, bubbles);
-   }
-
-   public static WrapImage colorBubbles(WrapImage image, List<Blob> bubbles) {
-      Pixel[] pixels = image.getPixels();
-
-      // Fill the blobs.
-      fillBlobs(pixels, bubbles, null);
-
-      WrapImage newImage = WrapImage.getImageFromPixels(pixels, image.width(), image.height());
-
-      return newImage;
-   }
-
-   /**
-    * Modify |pixels| to fill in all the blobs as red.
-    */
-   private static void fillBlobs(Pixel[] pixels, List<Blob> blobs) {
-      fillBlobs(pixels, blobs, new Color(255, 0, 0));
-   }
-
-   /**
-    * If |color| is null, then pick a different colot every time.
-    */
-   private static void fillBlobs(Pixel[] pixels, List<Blob> blobs, Color color) {
-      for (Blob blob : blobs) {
-         Color activeColor = color != null ? color : ColorUtils.nextColor();
-
-         for (Integer index : blob.getPoints()) {
-            int pixelIndex = index.intValue();
-
-            // Mark the blobs as red.
-            pixels[pixelIndex] = new Pixel(activeColor);
-         }
-      }
-   }
-
-   /**
     * Get all the blobs.
     */
-   private static List<Blob> getRawBlobs(int width, boolean[] pixels) {
+   private List<Blob> getRawBlobs(int width, boolean[] pixels) {
       List<Blob> allBlobs = new ArrayList<Blob>();
 
       boolean[] visited = new boolean[pixels.length];
@@ -284,7 +230,7 @@ public class BubbleDetection {
    /**
     * Get the bubbles (callouts with text).
     */
-   private static List<Blob> getBubbles(int width, boolean[] edgedPixels, boolean[] rawPixels) {
+   private List<Blob> getBubbles(int width, boolean[] edgedPixels, boolean[] rawPixels) {
       assert(edgedPixels.length == rawPixels.length);
 
       List<Blob> allBlobs = getRawBlobs(width, edgedPixels);
@@ -375,10 +321,10 @@ public class BubbleDetection {
     * This one is expensive, but will find the optimal parent.
     * To be a parent, a blob must completley surround a child.
     */
-   private static void resolveParentage(List<Blob> kids,
-                                        List<Blob> possibleParents,
-                                        boolean[] edgedPixels,
-                                        int imageWidth) {
+   private void resolveParentage(List<Blob> kids,
+                                 List<Blob> possibleParents,
+                                 boolean[] edgedPixels,
+                                 int imageWidth) {
       for (Blob kidCandidate : kids) {
          int[][] outline = kidCandidate.approximateOutline();
          Blob parentCandidate = null;
@@ -438,7 +384,7 @@ public class BubbleDetection {
       }
    }
 
-   private static Blob getBlobWithPixel(List<Blob> blobs, int index) {
+   private Blob getBlobWithPixel(List<Blob> blobs, int index) {
       for (Blob blob : blobs) {
          if (blob.contains(index)) {
             return blob;
@@ -454,8 +400,8 @@ public class BubbleDetection {
     * Because of contains(), this is a quick approximation.
     * Use resolveParentage() for more accurate results (at a computational cost).
     */
-   private static void quickResolveParentage(List<Blob> kids,
-                                             List<Blob> possibleParents) {
+   private void quickResolveParentage(List<Blob> kids,
+                                      List<Blob> possibleParents) {
       for (Blob kidCandidate : kids) {
          double minContainingDist = Integer.MAX_VALUE;
          Blob parent = null;
@@ -479,8 +425,8 @@ public class BubbleDetection {
 
    // Endure that |index| is adjacent to |base|.
    // Assume both of these live in a 1D vector representing a 2D plain.
-   private static boolean inBoundsAdjacent(int base, int index,
-                                           int width, int length) {
+   private boolean inBoundsAdjacent(int base, int index,
+                                    int width, int length) {
       int baseRowStart = base / width * width;
 
       return index >= 0 && index < length &&
@@ -490,24 +436,5 @@ public class BubbleDetection {
              (Math.abs(index - base) == 1 &&
               index >= baseRowStart &&
               index < baseRowStart + width));
-   }
-
-   /**
-    * A container for information about bubbles.
-    */
-   public static class BubbleInfo {
-      public final int startRow;
-      public final int startCol;
-      public final int width;
-      public final int height;
-      public final WrapImage image;
-
-      public BubbleInfo(int startRow, int startCol, int width, int height, WrapImage image) {
-         this.startRow = startRow;
-         this.startCol = startCol;
-         this.width = width;
-         this.height = height;
-         this.image = image;
-      }
    }
 }

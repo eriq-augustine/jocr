@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.classifier;
+package com.eriqaugustine.ocr.classifier.prepost;
 
 import com.eriqaugustine.ocr.image.WrapImage;
 import com.eriqaugustine.ocr.image.ImageText;

@@ -1,11 +1,11 @@
 package com.eriqaugustine.ocr.image;
 
-import com.eriqaugustine.ocr.classifier.BasePreClassifier;
-import com.eriqaugustine.ocr.classifier.BasePostClassifier;
 import com.eriqaugustine.ocr.classifier.OCRClassifier;
-import com.eriqaugustine.ocr.classifier.PreClassifier;
-import com.eriqaugustine.ocr.classifier.PostClassifier;
 import com.eriqaugustine.ocr.classifier.RemoteClassifier;
+import com.eriqaugustine.ocr.classifier.prepost.BasePreClassifier;
+import com.eriqaugustine.ocr.classifier.prepost.BasePostClassifier;
+import com.eriqaugustine.ocr.classifier.prepost.PreClassifier;
+import com.eriqaugustine.ocr.classifier.prepost.PostClassifier;
 import com.eriqaugustine.ocr.translate.Translator;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 

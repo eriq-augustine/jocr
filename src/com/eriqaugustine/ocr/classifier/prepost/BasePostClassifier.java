@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.classifier;
+package com.eriqaugustine.ocr.classifier.prepost;
 
 /**
  * Translate and replace the text in an image.

@@ -1,4 +1,4 @@
-package com.eriqaugustine.ocr.classifier;
+package com.eriqaugustine.ocr.classifier.prepost;
 
 /**
   * Apply some heuristics after the text has been classified.

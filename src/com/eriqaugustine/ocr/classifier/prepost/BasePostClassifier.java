@@ -37,6 +37,20 @@ public class BasePostClassifier implements PostClassifier {
       input = input.replaceAll("‼", "!");
       input = input.replaceAll("!(\\s*!)*", "!");
 
+      // Replace closing brackets (] or ］) or lenticular brackets (】) with コ if there is no corresponding opener.
+      // HACK(eriq): We really need to use some sort of state machine or more advanced logic than regular expressions to find matching pairs.
+      if (input.contains("]") && !input.contains("[")) {
+         input = input.replaceAll("]", "コ");
+      }
+
+      if (input.contains("］") && !input.contains("［")) {
+         input = input.replaceAll("］", "コ");
+      }
+
+      if (input.contains("】") && !input.contains("【")) {
+         input = input.replaceAll("】", "コ");
+      }
+
       // Change any remaining periods to japanese periods.
       input = input.replaceAll("\\.", "。");
 

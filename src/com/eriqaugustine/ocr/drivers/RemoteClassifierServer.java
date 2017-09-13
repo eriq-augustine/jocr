@@ -42,17 +42,19 @@ public class RemoteClassifierServer {
    }
 
    public static OCRClassifier getClassifier(String[] fonts) throws Exception {
-      String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_022.jpg"};
-
       SystemUtils.memoryMark("Training BEGIN", System.err);
 
       /*
-      String trainingCharacters = Props.getString("HIRAGANA");
       FeatureVectorReducer reduce = new NoReducer(PLOVE.getNumberOfFeatures());
       */
 
-      String trainingCharacters = Props.getString("KYOIKU_FULL") + Props.getString("KANA_FULL") + Props.getString("PUNCTUATION");
+      // String trainingCharacters = Props.getString("HIRAGANA");
+      String trainingCharacters = Props.getString("KANA_FULL") + Props.getString("PUNCTUATION");
+      // String trainingCharacters = Props.getString("KYOIKU_FULL") + Props.getString("KANA_FULL") + Props.getString("PUNCTUATION");
+
       FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 400);
+      // FeatureVectorReducer reduce = new KLTReducer(PLOVE.getNumberOfFeatures(), 1024);
+      // FeatureVectorReducer reduce = new NoReducer(PLOVE.getNumberOfFeatures());
 
       OCRClassifier classy = new PLOVEClassifier(trainingCharacters, fonts, reduce);
 

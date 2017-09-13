@@ -16,8 +16,11 @@ import java.util.Set;
  * Note that this only uses a 3x3 window.
  */
 public final class PLOVE {
-   // public static final int SCALE_SIZE = 64;
-   public static int SCALE_SIZE = 28;
+   public static int SCALE_SIZE = 64;
+   // public static int SCALE_SIZE = 28;
+
+   public static final int WHITE_THRESHOLD = 100;
+   public static final int MIN_BLOB_SIZE = 9;
 
    private static final int NUM_LAYERS = 3;
 
@@ -76,7 +79,8 @@ public final class PLOVE {
 
       image = image.copy();
       image.scale(SCALE_SIZE, SCALE_SIZE);
-      boolean[] discretePixels = image.getDiscretePixels();
+      image.scrub(WHITE_THRESHOLD, MIN_BLOB_SIZE);
+      boolean[] discretePixels = image.getDiscretePixels(WHITE_THRESHOLD);
 
       List<Integer> peripherals = ImageUtils.getPeripheralPoints(discretePixels, SCALE_SIZE,
                                                                  NUM_LAYERS, true);

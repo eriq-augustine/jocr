@@ -33,7 +33,7 @@ public class TextExtraction extends TextExtractor {
     * The ratio between width and height for doing diagonal bound expansion (see gridBreakup()).
     * width * BREAKUP_EXPANSION_RATIO = height
     */
-   private static final double BREAKUP_EXPANSION_RATIO = 0.9;
+   private static final double BREAKUP_EXPANSION_RATIO = 1.0;
 
    /**
     * @inheritDoc

@@ -27,7 +27,8 @@ public class Translator {
     * A testing main.
     */
    public static void main(String[] args) {
-      String toTranslate = "こんにちは世界";
+      // String toTranslate = "こんにちは世界";
+      String toTranslate = "こうやつてあそぶの";
       String fromLang = "ja";
       String toLang = "en";
 
@@ -63,6 +64,9 @@ public class Translator {
                                         fromLanguage,
                                         targetLanguage,
                                         text);
+
+      // TEST
+      System.out.println(requestUrl);
 
       String response = WebUtils.fetchPageAsString(requestUrl);
       if (response == null) {

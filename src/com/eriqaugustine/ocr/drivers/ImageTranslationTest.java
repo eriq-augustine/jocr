@@ -26,6 +26,11 @@ public class ImageTranslationTest {
       String outDirectory = FileUtils.itterationDir("out", "transTest");
 
       String[] images = new String[]{"testImages/testSets/youbatoVol1_kana/Yotsubato_v01_022.jpg"};
+
+      if (args.length > 0) {
+         images = args;
+      }
+
       String[] fonts = Props.getList("CLASSIFIER_TRAINING_FONTS").toArray(new String[0]);
 
       // String trainingCharacters = Props.getString("KYOIKU_FULL") + Props.getString("KANA_FULL") + Props.getString("PUNCTUATION");

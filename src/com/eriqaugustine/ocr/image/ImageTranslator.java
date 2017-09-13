@@ -6,6 +6,7 @@ import com.eriqaugustine.ocr.classifier.prepost.BasePreClassifier;
 import com.eriqaugustine.ocr.classifier.prepost.BasePostClassifier;
 import com.eriqaugustine.ocr.classifier.prepost.PreClassifier;
 import com.eriqaugustine.ocr.classifier.prepost.PostClassifier;
+import com.eriqaugustine.ocr.plove.PLOVE;
 import com.eriqaugustine.ocr.translate.Translator;
 import com.eriqaugustine.ocr.utils.ImageUtils;
 
@@ -97,16 +98,34 @@ public class ImageTranslator {
                WrapImage noFuriReplace = textSet.toImage(false);
                WrapImage withFuriReplace = textSet.toImage(true);
 
-               noFuriReplace.write(String.format("%s/%s-translate-02a-%02d-%02d-noFuriReplace.png",
+               noFuriReplace.write(String.format("%s/%s-translate-02-%02d-%02d-10-noFuriReplace.png",
                                                  outDirectory, prefix, bubbleIndex, textSetIndex));
-               withFuriReplace.write(String.format("%s/%s-translate-02a-%02d-%02d-yesFuriReplace.png",
+               withFuriReplace.write(String.format("%s/%s-translate-02-%02d-%02d-11-yesFuriReplace.png",
                                                    outDirectory, prefix, bubbleIndex, textSetIndex));
 
                noFuriReplace.clear();
                withFuriReplace.clear();
             }
 
-            List<ImageText> imageTexts = preClassy.preClassify(textSet.furiganaReplacementText);
+            // Clean up the characters a bit.
+            List<WrapImage> characterImages = new ArrayList<WrapImage>();
+            for (WrapImage image : textSet.furiganaReplacementText) {
+               WrapImage cleanImage = image.copy();
+               cleanImage.scale(PLOVE.SCALE_SIZE, PLOVE.SCALE_SIZE);
+               cleanImage.scrub(PLOVE.WHITE_THRESHOLD, PLOVE.MIN_BLOB_SIZE);
+               characterImages.add(cleanImage);
+            }
+
+            if (debug) {
+               WrapImage withFuriReplace = ImageUtils.concatImages(characterImages);
+
+               withFuriReplace.write(String.format("%s/%s-translate-02-%02d-%02d-21-yesFuriReplace-clean.png",
+                                                   outDirectory, prefix, bubbleIndex, textSetIndex));
+
+               withFuriReplace.clear();
+            }
+
+            List<ImageText> imageTexts = preClassy.preClassify(characterImages);
             String currentSetText = "";
 
             if (debug) {
@@ -155,14 +174,14 @@ public class ImageTranslator {
 
 
          if (debug) {
-            baseImage.write(String.format("%s/%s-translate-02b-%02d-renderInto.png",
+            baseImage.write(String.format("%s/%s-translate-02-%02d-99-renderInto.png",
                                           outDirectory, prefix, bubbleIndex));
-         }                                      
+         }
       }
 
       if (debug) {
          baseImage.write(String.format("%s/%s-translate-99-final.png", outDirectory, prefix));
-      }                                      
+      }
 
       return baseImage;
    }

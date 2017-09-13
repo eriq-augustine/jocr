@@ -1,6 +1,8 @@
 package com.eriqaugustine.ocr.utils;
 
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Math utilities.
@@ -35,6 +37,44 @@ public class MathUtils {
    public static boolean inBounds(int row, int col, int width, int length) {
       return row >= 0 && row < length / width &&
              col >= 0 && col < width;
+   }
+
+   /**
+    * Get the Manhattan neighbors for given point.
+    * There will never be more than four neighbors returned.
+    * As long as |index| is in bounds, there will be at least two neighbors.
+    */
+   public static List<Integer> neighbors(int index, int width, int length) {
+      List<Integer> rtn = new ArrayList<Integer>();
+
+      if (index < 0 && index >= length) {
+         return rtn;
+      }
+
+      int row = indexToRow(index, width);
+      int col = indexToCol(index, width);
+
+      // North
+      if (inBounds(row - 1, col, width, length)) {
+         rtn.add(new Integer(rowColToIndex(row - 1, col, width)));
+      }
+
+      // East
+      if (inBounds(row, col + 1, width, length)) {
+         rtn.add(new Integer(rowColToIndex(row, col + 1, width)));
+      }
+
+      // South
+      if (inBounds(row + 1, col, width, length)) {
+         rtn.add(new Integer(rowColToIndex(row + 1, col, width)));
+      }
+
+      // West
+      if (inBounds(row, col - 1, width, length)) {
+         rtn.add(new Integer(rowColToIndex(row, col - 1, width)));
+      }
+
+      return rtn;
    }
 
    public static boolean doubleEquals(double a, double b, double epsilon) {

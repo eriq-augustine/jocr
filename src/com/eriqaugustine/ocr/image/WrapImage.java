@@ -20,8 +20,12 @@ import java.nio.ByteBuffer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Queue;
 
 /**
  * A wrapper for whatever image library/representation that we are using.
@@ -598,6 +602,11 @@ public class WrapImage {
          return false;
       }
 
+      // Don't bother scaling if the image is already the correct size.
+      if (imageWidth == newWidth && imageHeight == newHeight) {
+         return true;
+      }
+
       clearCache();
 
       try {
@@ -612,6 +621,105 @@ public class WrapImage {
       }
 
       return true;
+   }
+
+   /**
+    * Clean up the image some.
+    * Do the following operations:
+    *  - Remove white-out any pixels with an intensity greater than |threhsold|.
+    *  - Remove and blobs smaller than |minBlobSize|.
+    */
+   public boolean scrub(int threshold, int minBlobSize) {
+      if (isEmpty()) {
+         return false;
+      }
+
+      clearCache();
+
+      boolean[] pixels = extractDiscretePixels(extractPixels(), threshold);
+      List<Integer> blob;
+
+      boolean[] visited = new boolean[pixels.length];
+      for (int i = 0; i < pixels.length; i++) {
+         visited[i] = false;
+      }
+
+      for (int i = 0; i < pixels.length; i++) {
+         if (visited[i]) {
+            continue;
+         }
+
+         visited[i] = true;
+
+         if (pixels[i]) {
+            blob = getBlob(pixels, imageWidth, i);
+
+            // If the blob is too small, clear out all its pixels.
+            if (blob.size() < minBlobSize) {
+               for (Integer blobPixel : blob) {
+                  pixels[blobPixel.intValue()] = false;
+               }
+            }
+
+            // Mark all the blob pixels as visited.
+            // Could use an else when checking the blob size, but this is
+            // more readable.
+            for (Integer blobPixel : blob) {
+               visited[blobPixel.intValue()] = true;
+            }
+         }
+      }
+
+      byte[] bytePixels = new byte[pixels.length];
+      for (int i = 0; i < pixels.length; i++) {
+         bytePixels[i] = pixels[i] ? 0 : (byte)0xFF;
+      }
+
+      try {
+         internalImage.constituteImage(imageWidth, imageHeight, "I", bytePixels);
+      } catch (MagickException ex) {
+         logger.error("Could not consitite scrubbed image from bytes.", ex);
+         return false;
+      }
+
+      return true;
+   }
+
+   /**
+    * Find the region of connecting pixels that contains |startIndex|.
+    */
+   private static List<Integer> getBlob(boolean[] pixels, int width, int startIndex) {
+      List<Integer> rtn = new ArrayList<Integer>();
+
+      if (!pixels[startIndex]) {
+         return rtn;
+      }
+
+      Set<Integer> explored = new HashSet<Integer>();
+      Queue<Integer> toExplore = new LinkedList<Integer>();
+      List<Integer> neighbors;
+
+      toExplore.add(new Integer(startIndex));
+      while (!toExplore.isEmpty()) {
+         int index = toExplore.remove().intValue();
+
+         if (explored.contains(new Integer(index))) {
+            continue;
+         }
+
+         explored.add(new Integer(index));
+         rtn.add(new Integer(index));
+
+         // Check all the cardinal directions.
+         neighbors = MathUtils.neighbors(index, width, pixels.length);
+         for (Integer neighborIndex : neighbors) {
+            if (pixels[neighborIndex.intValue()] && !explored.contains(neighborIndex.intValue())) {
+               toExplore.add(neighborIndex);
+            }
+         }
+      }
+
+      return rtn;
    }
 
    // Immutable Transformations
